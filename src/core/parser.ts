@@ -15,7 +15,7 @@ import {
   TextNode,
   NodeType,
 } from './types';
-import { APTLSyntaxError } from '../utils/errors';
+import { APTLSyntaxError } from '@/utils/errors';
 
 export class Parser {
   private tokens: Token[] = [];

@@ -4,7 +4,7 @@
  * Supports APTL syntax for variable interpolation
  */
 
-import { VariableResolutionOptions } from '../core/types';
+import { VariableResolutionOptions } from '@/core/types';
 
 export class VariableResolver {
   private options: VariableResolutionOptions;

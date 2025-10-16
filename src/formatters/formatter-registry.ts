@@ -3,7 +3,7 @@
  * Manages and selects output formatters based on section attributes
  */
 
-import { OutputFormatter, FormatterRegistry, Section } from '../core/types';
+import { OutputFormatter, FormatterRegistry } from '@/core/types';
 import { PlainFormatter } from './plain-formatter';
 import { StructuredFormatter } from './structured-formatter';
 import { MarkdownFormatter } from './markdown-formatter';

@@ -4,7 +4,7 @@
  */
 
 import { Token, TokenType } from './types';
-import { APTLSyntaxError } from '../utils/errors';
+import { APTLSyntaxError } from '@/utils/errors';
 
 export interface TokenizerOptions {
   preserveComments?: boolean;

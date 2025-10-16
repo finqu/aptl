@@ -19,10 +19,10 @@ import {
   FormatterRegistry,
   Section,
 } from './types';
-import { APTLRuntimeError } from '../utils/errors';
-import { VariableResolver } from '../data/variable-resolver';
-import { ConditionalEvaluator } from '../conditionals/conditional-evaluator';
-import { DefaultFormatterRegistry } from '../formatters/formatter-registry';
+import { APTLRuntimeError } from '@/utils/errors';
+import { VariableResolver } from '@/data/variable-resolver';
+import { ConditionalEvaluator } from '@/conditionals/conditional-evaluator';
+import { DefaultFormatterRegistry } from '@/formatters/formatter-registry';
 
 export interface CompilerOptions {
   strict?: boolean;

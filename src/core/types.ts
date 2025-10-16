@@ -179,7 +179,6 @@ export interface APTLOptions {
 }
 
 export interface TemplateRegistryOptions {
-  watch?: boolean;
   cache?: boolean;
   extensions?: string[];
 }

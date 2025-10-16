@@ -13,7 +13,7 @@ import {
   HelperFunction,
   FormatterRegistry,
 } from './types';
-import { DefaultFormatterRegistry } from '../formatters/formatter-registry';
+import { DefaultFormatterRegistry } from '@/formatters/formatter-registry';
 
 export class APTLEngine {
   private tokenizer: Tokenizer;

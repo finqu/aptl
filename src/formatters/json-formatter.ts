@@ -3,7 +3,7 @@
  * Outputs sections as formatted JSON
  */
 
-import { OutputFormatter, Section } from '../core/types';
+import { OutputFormatter, Section } from '@/core/types';
 
 export class JsonFormatter implements OutputFormatter {
   format(sections: Section[]): string {

@@ -16,7 +16,10 @@ export * from './core/types';
 export * from './formatters';
 
 // Template management
-export { TemplateRegistry } from './templates/template-registry';
+export {
+  TemplateRegistry,
+  TemplateRegistryConfig,
+} from './templates/template-registry';
 export { TemplateValidator } from './templates/template-validator';
 
 // Data processing
@@ -24,6 +27,9 @@ export { VariableResolver } from './data/variable-resolver';
 
 // Conditionals
 export { ConditionalEvaluator } from './conditionals/conditional-evaluator';
+
+// FileSystem and Utils
+export * from './utils';
 
 // Errors
 export * from './utils/errors';

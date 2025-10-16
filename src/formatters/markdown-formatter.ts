@@ -3,7 +3,7 @@
  * Outputs sections as markdown with headings
  */
 
-import { OutputFormatter, Section } from '../core/types';
+import { OutputFormatter, Section } from '@/core/types';
 
 export class MarkdownFormatter implements OutputFormatter {
   format(sections: Section[]): string {

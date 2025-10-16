@@ -1,6 +1,6 @@
 /**
  * Template Registry
- * Auto-discovers and manages template files
+ * Auto-discovers and manages template files using a FileSystem abstraction
  */
 
 import {
@@ -9,31 +9,105 @@ import {
   LoadOptions,
 } from '../core/types';
 import { APTLEngine } from '../core/engine';
+import { FileSystem } from '../filesystem/filesystem';
+import { ObjectFileSystem } from '../filesystem/object-filesystem';
+
+export interface TemplateRegistryConfig extends TemplateRegistryOptions {
+  fileSystem?: FileSystem;
+}
 
 export class TemplateRegistry {
   private templates: Map<string, CompiledTemplate>;
   private engine: APTLEngine;
-  private options: TemplateRegistryOptions;
+  private options: TemplateRegistryConfig;
+  private fileSystem: FileSystem;
+  private loadedDirectories: Map<string, LoadOptions>;
 
-  constructor(engine?: APTLEngine, options: TemplateRegistryOptions = {}) {
+  constructor(engine?: APTLEngine, options: TemplateRegistryConfig = {}) {
     this.templates = new Map();
     this.engine = engine || new APTLEngine();
     this.options = {
-      watch: false,
       cache: true,
       extensions: ['.aptl'],
       ...options,
     };
+    // Default to ObjectFileSystem if none provided
+    this.fileSystem = options.fileSystem || new ObjectFileSystem();
+    this.loadedDirectories = new Map();
   }
 
   /**
    * Load templates from a directory
-   * TODO: Implement directory scanning
    */
-  async loadDirectory(path: string, options?: LoadOptions): Promise<void> {
-    throw new Error(
-      'loadDirectory not yet implemented - requires file system access',
-    );
+  async loadDirectory(dirPath: string, options?: LoadOptions): Promise<void> {
+    const { recursive = true, pattern } = options || {};
+
+    // Track this directory for refresh capability
+    this.loadedDirectories.set(dirPath, { recursive, pattern });
+
+    await this.loadFromPath(dirPath, recursive, pattern);
+  }
+
+  /**
+   * Recursively load templates from a path
+   */
+  private async loadFromPath(
+    dirPath: string,
+    recursive: boolean,
+    pattern?: RegExp,
+  ): Promise<void> {
+    const entries = await this.fileSystem.readdir(dirPath);
+
+    for (const entry of entries) {
+      if (entry.isDirectory && recursive) {
+        await this.loadFromPath(entry.path, recursive, pattern);
+      } else if (!entry.isDirectory) {
+        // Check if file matches extensions
+        const matchesExtension = this.options.extensions?.some((ext) =>
+          entry.path.endsWith(ext),
+        );
+
+        // Check if file matches pattern
+        const matchesPattern = pattern ? pattern.test(entry.path) : true;
+
+        if (matchesExtension && matchesPattern) {
+          await this.loadFile(entry.path);
+        }
+      }
+    }
+  }
+
+  /**
+   * Load a single template file
+   */
+  async loadFile(filePath: string): Promise<void> {
+    const content = await this.fileSystem.readFile(filePath);
+    const templateName = this.getTemplateName(filePath);
+
+    this.register(templateName, content);
+  }
+
+  /**
+   * Extract template name from file path
+   */
+  private getTemplateName(filePath: string): string {
+    // Remove extension and normalize path
+    let name = filePath;
+
+    // Remove extensions
+    for (const ext of this.options.extensions || []) {
+      if (name.endsWith(ext)) {
+        name = name.slice(0, -ext.length);
+        break;
+      }
+    }
+
+    // Normalize path separators
+    name = name.replace(/\\/g, '/');
+
+    // Remove leading slash/directory
+    const parts = name.split('/');
+    return parts[parts.length - 1];
   }
 
   /**
@@ -59,16 +133,27 @@ export class TemplateRegistry {
   }
 
   /**
-   * Reload templates
-   * TODO: Implement template reloading
+   * Refresh templates by reloading from the filesystem
+   * If no name is provided, reloads all previously loaded directories
    */
-  async reload(name?: string): Promise<void> {
+  async refresh(name?: string): Promise<void> {
     if (name) {
-      // Reload specific template
-      throw new Error('reload not yet implemented');
+      // Refresh specific template by name (not implemented yet as we'd need to track file paths)
+      throw new Error(
+        'Refreshing individual templates by name is not supported. Use refresh() without arguments to reload all templates.',
+      );
     } else {
-      // Reload all templates
-      throw new Error('reload not yet implemented');
+      // Clear all templates and reload from tracked directories
+      this.templates.clear();
+
+      // Reload all previously loaded directories
+      for (const [dirPath, options] of this.loadedDirectories.entries()) {
+        await this.loadFromPath(
+          dirPath,
+          options.recursive ?? true,
+          options.pattern,
+        );
+      }
     }
   }
 
@@ -94,9 +179,33 @@ export class TemplateRegistry {
   }
 
   /**
-   * Clear all templates
+   * Clear all templates and tracked directories
    */
   clear(): void {
     this.templates.clear();
+    this.loadedDirectories.clear();
+  }
+
+  /**
+   * Get the underlying file system
+   */
+  getFileSystem(): FileSystem {
+    return this.fileSystem;
+  }
+
+  /**
+   * Set a different file system
+   * Note: This will clear all templates and tracked directories
+   */
+  setFileSystem(fileSystem: FileSystem): void {
+    this.clear();
+    this.fileSystem = fileSystem;
+  }
+
+  /**
+   * Get the list of tracked directories
+   */
+  getLoadedDirectories(): string[] {
+    return Array.from(this.loadedDirectories.keys());
   }
 }

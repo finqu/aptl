@@ -3,7 +3,7 @@
  * Outputs sections as plain text without any special formatting
  */
 
-import { OutputFormatter, Section } from '../core/types';
+import { OutputFormatter, Section } from '@/core/types';
 
 export class PlainFormatter implements OutputFormatter {
   format(sections: Section[]): string {
