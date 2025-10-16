@@ -78,7 +78,7 @@ export interface CommentNode extends ASTNode {
 export interface DirectiveNode extends ASTNode {
   type: NodeType.DIRECTIVE;
   name: string;
-  rawArgs: string;  // Raw unparsed arguments from the template
+  rawArgs: string; // Raw unparsed arguments from the template
   parsedArgs?: any; // Parsed arguments (set by directive-specific parser)
   children: ASTNode[];
 }

@@ -14,7 +14,10 @@ import {
   FormatterRegistry,
 } from './types';
 import { DefaultFormatterRegistry } from '@/formatters/formatter-registry';
-import { DirectiveRegistry, createDefaultDirectiveRegistry } from '@/directives';
+import {
+  DirectiveRegistry,
+  createDefaultDirectiveRegistry,
+} from '@/directives';
 import { Directive } from '@/directives/types';
 import { FileSystem } from '@/filesystem';
 
@@ -97,9 +100,7 @@ export class APTLEngine {
     }
 
     // Inject model information into data if available
-    const renderData = this.model
-      ? { ...data, model: this.model }
-      : data;
+    const renderData = this.model ? { ...data, model: this.model } : data;
 
     return compiled.render(renderData);
   }

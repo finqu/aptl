@@ -6,22 +6,22 @@
 import { APTLEngine } from '@/core/engine';
 
 describe('Section Directive Integration', () => {
-    describe('basic section rendering', () => {
-        it('should render simple section without model attribute', () => {
-            const engine = new APTLEngine('gpt-5.1');
-            const template = `
+  describe('basic section rendering', () => {
+    it('should render simple section without model attribute', () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
 @section intro
 Welcome to the system
 @end
             `.trim();
 
-            const result = engine.render(template);
-            expect(result).toContain('Welcome to the system');
-        });
+      const result = engine.render(template);
+      expect(result).toContain('Welcome to the system');
+    });
 
-        it('should render multiple sections', () => {
-            const engine = new APTLEngine('gpt-5.1');
-            const template = `
+    it('should render multiple sections', () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
 @section intro
 Introduction
 @end
@@ -31,125 +31,125 @@ Main content
 @end
             `.trim();
 
-            const result = engine.render(template);
-            expect(result).toContain('Introduction');
-            expect(result).toContain('Main content');
-        });
+      const result = engine.render(template);
+      expect(result).toContain('Introduction');
+      expect(result).toContain('Main content');
+    });
+  });
+
+  describe('model-based conditional rendering', () => {
+    it('should render section only for matching model', () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section intro(model="gpt-5.1")
+This is for GPT-5.1
+@end
+            `.trim();
+
+      const result = engine.render(template);
+      expect(result).toContain('This is for GPT-5.1');
     });
 
-    describe('model-based conditional rendering', () => {
-        it('should render section only for matching model', () => {
-            const engine = new APTLEngine('gpt-5.1');
-            const template = `
+    it('should not render section for non-matching model', () => {
+      const engine = new APTLEngine('claude-4');
+      const template = `
 @section intro(model="gpt-5.1")
 This is for GPT-5.1
 @end
             `.trim();
 
-            const result = engine.render(template);
-            expect(result).toContain('This is for GPT-5.1');
-        });
+      const result = engine.render(template);
+      expect(result.trim()).toBe('');
+    });
 
-        it('should not render section for non-matching model', () => {
-            const engine = new APTLEngine('claude-4');
-            const template = `
-@section intro(model="gpt-5.1")
-This is for GPT-5.1
-@end
-            `.trim();
-
-            const result = engine.render(template);
-            expect(result.trim()).toBe('');
-        });
-
-        it('should render with model-specific format', () => {
-            const engine = new APTLEngine('gpt-5.1');
-            const template = `
+    it('should render with model-specific format', () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
 @section data(model="gpt-5.1/structured")
 Structured data for GPT
 @end
             `.trim();
 
-            const result = engine.render(template);
-            expect(result).toContain('Structured data for GPT');
-        });
+      const result = engine.render(template);
+      expect(result).toContain('Structured data for GPT');
+    });
 
-        it('should use default format for unmatched model', () => {
-            const engine = new APTLEngine('claude-4');
-            const template = `
+    it('should use default format for unmatched model', () => {
+      const engine = new APTLEngine('claude-4');
+      const template = `
 @section data(model="gpt-5.1/structured, md")
 Default markdown format
 @end
             `.trim();
 
-            const result = engine.render(template);
-            expect(result).toContain('Default markdown format');
-        });
+      const result = engine.render(template);
+      expect(result).toContain('Default markdown format');
+    });
 
-        it('should not render when no match and no default', () => {
-            const engine = new APTLEngine('claude-4');
-            const template = `
+    it('should not render when no match and no default', () => {
+      const engine = new APTLEngine('claude-4');
+      const template = `
 @section data(model="gpt-5.1/structured")
 This should not render
 @end
             `.trim();
 
-            const result = engine.render(template);
-            expect(result.trim()).toBe('');
-        });
+      const result = engine.render(template);
+      expect(result.trim()).toBe('');
+    });
 
-        it('should handle multiple model configurations', () => {
-            const engine1 = new APTLEngine('gpt-5.1');
-            const engine2 = new APTLEngine('claude-4');
-            const engine3 = new APTLEngine('llama-3');
+    it('should handle multiple model configurations', () => {
+      const engine1 = new APTLEngine('gpt-5.1');
+      const engine2 = new APTLEngine('claude-4');
+      const engine3 = new APTLEngine('llama-3');
 
-            const template = `
+      const template = `
 @section data(model="gpt-5.1/structured, claude-4/json, md")
 Model-specific content
 @end
             `.trim();
 
-            const result1 = engine1.render(template);
-            const result2 = engine2.render(template);
-            const result3 = engine3.render(template);
+      const result1 = engine1.render(template);
+      const result2 = engine2.render(template);
+      const result3 = engine3.render(template);
 
-            // All should render
-            expect(result1).toContain('Model-specific content');
-            expect(result2).toContain('Model-specific content');
-            expect(result3).toContain('Model-specific content');
-        });
+      // All should render
+      expect(result1).toContain('Model-specific content');
+      expect(result2).toContain('Model-specific content');
+      expect(result3).toContain('Model-specific content');
     });
+  });
 
-    describe('combined with variables', () => {
-        it('should render section with variables', () => {
-            const engine = new APTLEngine('gpt-5.1');
-            const template = `
+  describe('combined with variables', () => {
+    it('should render section with variables', () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
 @section greeting(model="gpt-5.1")
 Hello, @{name}!
 @end
             `.trim();
 
-            const result = engine.render(template, { name: 'Alice' });
-            expect(result).toContain('Hello, Alice!');
-        });
+      const result = engine.render(template, { name: 'Alice' });
+      expect(result).toContain('Hello, Alice!');
+    });
 
-        it('should not render section with variables for non-matching model', () => {
-            const engine = new APTLEngine('claude-4');
-            const template = `
+    it('should not render section with variables for non-matching model', () => {
+      const engine = new APTLEngine('claude-4');
+      const template = `
 @section greeting(model="gpt-5.1")
 Hello, @{name}!
 @end
             `.trim();
 
-            const result = engine.render(template, { name: 'Alice' });
-            expect(result.trim()).toBe('');
-        });
+      const result = engine.render(template, { name: 'Alice' });
+      expect(result.trim()).toBe('');
     });
+  });
 
-    describe('combined with if directive', () => {
-        it('should work with nested if directive', () => {
-            const engine = new APTLEngine('gpt-5.1');
-            const template = `
+  describe('combined with if directive', () => {
+    it('should work with nested if directive', () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
 @section content(model="gpt-5.1")
 @if isActive
 Active user content
@@ -159,18 +159,18 @@ Inactive user content
 @end
             `.trim();
 
-            const result1 = engine.render(template, { isActive: true });
-            expect(result1).toContain('Active user content');
-            expect(result1).not.toContain('Inactive user content');
+      const result1 = engine.render(template, { isActive: true });
+      expect(result1).toContain('Active user content');
+      expect(result1).not.toContain('Inactive user content');
 
-            const result2 = engine.render(template, { isActive: false });
-            expect(result2).toContain('Inactive user content');
-            expect(result2).not.toContain('Active user content');
-        });
+      const result2 = engine.render(template, { isActive: false });
+      expect(result2).toContain('Inactive user content');
+      expect(result2).not.toContain('Active user content');
+    });
 
-        it('should not render section with if directive for non-matching model', () => {
-            const engine = new APTLEngine('claude-4');
-            const template = `
+    it('should not render section with if directive for non-matching model', () => {
+      const engine = new APTLEngine('claude-4');
+      const template = `
 @section content(model="gpt-5.1")
 @if isActive
 Active user content
@@ -178,15 +178,15 @@ Active user content
 @end
             `.trim();
 
-            const result = engine.render(template, { isActive: true });
-            expect(result.trim()).toBe('');
-        });
+      const result = engine.render(template, { isActive: true });
+      expect(result.trim()).toBe('');
     });
+  });
 
-    describe('combined with each directive', () => {
-        it('should work with nested each directive', () => {
-            const engine = new APTLEngine('gpt-5.1');
-            const template = `
+  describe('combined with each directive', () => {
+    it('should work with nested each directive', () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
 @section list(model="gpt-5.1")
 @each item in items
 - @{item}
@@ -194,15 +194,17 @@ Active user content
 @end
             `.trim();
 
-            const result = engine.render(template, { items: ['apple', 'banana', 'cherry'] });
-            expect(result).toContain('- apple');
-            expect(result).toContain('- banana');
-            expect(result).toContain('- cherry');
-        });
+      const result = engine.render(template, {
+        items: ['apple', 'banana', 'cherry'],
+      });
+      expect(result).toContain('- apple');
+      expect(result).toContain('- banana');
+      expect(result).toContain('- cherry');
+    });
 
-        it('should not render section with each directive for non-matching model', () => {
-            const engine = new APTLEngine('claude-4');
-            const template = `
+    it('should not render section with each directive for non-matching model', () => {
+      const engine = new APTLEngine('claude-4');
+      const template = `
 @section list(model="gpt-5.1")
 @each item in items
 - @{item}
@@ -210,14 +212,14 @@ Active user content
 @end
             `.trim();
 
-            const result = engine.render(template, { items: ['apple', 'banana'] });
-            expect(result.trim()).toBe('');
-        });
+      const result = engine.render(template, { items: ['apple', 'banana'] });
+      expect(result.trim()).toBe('');
     });
+  });
 
-    describe('multiple sections with different models', () => {
-        it('should render only matching sections', () => {
-            const template = `
+  describe('multiple sections with different models', () => {
+    it('should render only matching sections', () => {
+      const template = `
 @section gpt_only(model="gpt-5.1")
 GPT-5.1 content
 @end
@@ -231,21 +233,21 @@ Common content
 @end
             `.trim();
 
-            const engine1 = new APTLEngine('gpt-5.1');
-            const result1 = engine1.render(template);
-            expect(result1).toContain('GPT-5.1 content');
-            expect(result1).not.toContain('Claude-4 content');
-            expect(result1).toContain('Common content');
+      const engine1 = new APTLEngine('gpt-5.1');
+      const result1 = engine1.render(template);
+      expect(result1).toContain('GPT-5.1 content');
+      expect(result1).not.toContain('Claude-4 content');
+      expect(result1).toContain('Common content');
 
-            const engine2 = new APTLEngine('claude-4');
-            const result2 = engine2.render(template);
-            expect(result2).not.toContain('GPT-5.1 content');
-            expect(result2).toContain('Claude-4 content');
-            expect(result2).toContain('Common content');
-        });
+      const engine2 = new APTLEngine('claude-4');
+      const result2 = engine2.render(template);
+      expect(result2).not.toContain('GPT-5.1 content');
+      expect(result2).toContain('Claude-4 content');
+      expect(result2).toContain('Common content');
+    });
 
-        it('should handle complex model configurations', () => {
-            const template = `
+    it('should handle complex model configurations', () => {
+      const template = `
 @section structured(model="gpt-5.1/structured, claude-4/json")
 Structured data
 @end
@@ -259,62 +261,62 @@ Default content
 @end
             `.trim();
 
-            const engine1 = new APTLEngine('gpt-5.1');
-            const result1 = engine1.render(template);
-            expect(result1).toContain('Structured data');
-            expect(result1).toContain('Markdown content');
-            expect(result1).toContain('Default content');
+      const engine1 = new APTLEngine('gpt-5.1');
+      const result1 = engine1.render(template);
+      expect(result1).toContain('Structured data');
+      expect(result1).toContain('Markdown content');
+      expect(result1).toContain('Default content');
 
-            const engine2 = new APTLEngine('claude-4');
-            const result2 = engine2.render(template);
-            expect(result2).toContain('Structured data');
-            expect(result2).toContain('Markdown content');
-            // claude-4 matches default section with "md" format (the default fallback)
-            expect(result2).toContain('Default content');
+      const engine2 = new APTLEngine('claude-4');
+      const result2 = engine2.render(template);
+      expect(result2).toContain('Structured data');
+      expect(result2).toContain('Markdown content');
+      // claude-4 matches default section with "md" format (the default fallback)
+      expect(result2).toContain('Default content');
 
-            const engine3 = new APTLEngine('llama-3');
-            const result3 = engine3.render(template);
-            // llama-3 doesn't match structured or markdown, but has default for the third
-            expect(result3).not.toContain('Structured data');
-            expect(result3).not.toContain('Markdown content');
-            expect(result3).toContain('Default content');
-        });
+      const engine3 = new APTLEngine('llama-3');
+      const result3 = engine3.render(template);
+      // llama-3 doesn't match structured or markdown, but has default for the third
+      expect(result3).not.toContain('Structured data');
+      expect(result3).not.toContain('Markdown content');
+      expect(result3).toContain('Default content');
     });
+  });
 
-    describe('edge cases', () => {
-        it('should handle empty model attribute', () => {
-            const engine = new APTLEngine('gpt-5.1');
-            const template = `
+  describe('edge cases', () => {
+    it('should handle empty model attribute', () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
 @section test(model="")
 Content
 @end
             `.trim();
 
-            const result = engine.render(template);
-            expect(result).toContain('Content');
-        });
+      const result = engine.render(template);
+      expect(result).toContain('Content');
+    });
 
-        it('should handle section without children', () => {
-            const engine = new APTLEngine('gpt-5.1');
-            const template = `
+    it('should handle section without children', () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
 @section empty(model="gpt-5.1")
 @end
             `.trim();
 
-            const result = engine.render(template);
-            expect(result.trim()).toBe('');
-        });
+      const result = engine.render(template);
+      expect(result.trim()).toBe('');
+    });
 
-        it('should handle whitespace in model attribute', () => {
-            const engine = new APTLEngine('gpt-5.1');
-            const template = `
+    it('should handle whitespace in model attribute', () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
 @section test(model="  gpt-5.1 / structured  ,  claude-4 / json  ,  md  ")
 Content
 @end
             `.trim();
 
-            const result = engine.render(template);
-            expect(result).toContain('Content');
-        });
+      const result = engine.render(template);
+      expect(result).toContain('Content');
     });
+  });
 });
