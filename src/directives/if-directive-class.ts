@@ -290,7 +290,7 @@ export class IfDirective extends ConditionalDirective {
             if (branch.type === 'else') {
                 // Else branch - always render if we reach it
                 context.metadata.set('childrenToRender', branch.children);
-                return context.renderTemplate('', {});
+                return context.renderTemplate('', context.data);
             }
 
             // Evaluate if or elif condition
@@ -301,7 +301,7 @@ export class IfDirective extends ConditionalDirective {
                     if (result) {
                         // Condition is true - render this branch
                         context.metadata.set('childrenToRender', branch.children);
-                        return context.renderTemplate('', {});
+                        return context.renderTemplate('', context.data);
                     }
                 } catch (error) {
                     // Check strict mode from context options if available

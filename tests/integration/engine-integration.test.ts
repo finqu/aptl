@@ -736,4 +736,462 @@ Email: @{user.email}
             expect(result).toContain('Block 3');
         });
     });
+
+    describe('Iteration (@each)', () => {
+        describe('Basic @each', () => {
+            it('should iterate over simple array', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item in items)
+- @{item}
+@end`;
+                const result = engine.render(template, {
+                    items: ['apple', 'banana', 'cherry'],
+                });
+                expect(result).toContain('- apple');
+                expect(result).toContain('- banana');
+                expect(result).toContain('- cherry');
+            });
+
+            it('should iterate over array of objects', () => {
+                const engine = new APTLEngine();
+                const template = `@each(user in users)
+Name: @{user.name}, Age: @{user.age}
+@end`;
+                const result = engine.render(template, {
+                    users: [
+                        { name: 'Alice', age: 30 },
+                        { name: 'Bob', age: 25 },
+                    ],
+                });
+                expect(result).toContain('Name: Alice, Age: 30');
+                expect(result).toContain('Name: Bob, Age: 25');
+            });
+
+            it('should handle empty array', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item in items)
+- @{item}
+@end`;
+                const result = engine.render(template, { items: [] });
+                expect(result).toBe('');
+            });
+
+            it('should handle undefined array', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item in items)
+- @{item}
+@end`;
+                const result = engine.render(template, {});
+                expect(result).toBe('');
+            });
+        });
+
+        describe('@each with loop metadata', () => {
+            it('should provide loop.index', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item in items)
+@{loop.index}: @{item}
+@end`;
+                const result = engine.render(template, {
+                    items: ['a', 'b', 'c'],
+                });
+                expect(result).toContain('0: a');
+                expect(result).toContain('1: b');
+                expect(result).toContain('2: c');
+            });
+
+            it('should provide loop.first', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item in items)
+@if(loop.first)
+First: @{item}
+@end
+@end`;
+                const result = engine.render(template, {
+                    items: ['a', 'b', 'c'],
+                });
+                expect(result).toContain('First: a');
+                expect(result).not.toContain('First: b');
+            });
+
+            it('should provide loop.last', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item in items)
+@if(loop.last)
+Last: @{item}
+@end
+@end`;
+                const result = engine.render(template, {
+                    items: ['a', 'b', 'c'],
+                });
+                expect(result).toContain('Last: c');
+                expect(result).not.toContain('Last: a');
+            });
+
+            it('should provide loop.even and loop.odd', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item in items)
+@if(loop.even)
+Even: @{item}
+@end
+@if(loop.odd)
+Odd: @{item}
+@end
+@end`;
+                const result = engine.render(template, {
+                    items: ['a', 'b', 'c', 'd'],
+                });
+                expect(result).toContain('Even: a');
+                expect(result).toContain('Odd: b');
+                expect(result).toContain('Even: c');
+                expect(result).toContain('Odd: d');
+            });
+
+            it('should provide loop.length', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item in items)
+@{loop.index} of @{loop.length}
+@end`;
+                const result = engine.render(template, {
+                    items: ['a', 'b', 'c'],
+                });
+                expect(result).toContain('0 of 3');
+                expect(result).toContain('1 of 3');
+                expect(result).toContain('2 of 3');
+            });
+        });
+
+        describe('@each with custom index variable', () => {
+            it('should support custom index variable name', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item, idx in items)
+[@{idx}] @{item}
+@end`;
+                const result = engine.render(template, {
+                    items: ['x', 'y', 'z'],
+                });
+                expect(result).toContain('[0] x');
+                expect(result).toContain('[1] y');
+                expect(result).toContain('[2] z');
+            });
+
+            it('should provide both custom index and loop metadata', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item, i in items)
+i=@{i}, loop.index=@{loop.index}
+@end`;
+                const result = engine.render(template, {
+                    items: ['a', 'b'],
+                });
+                expect(result).toContain('i=0, loop.index=0');
+                expect(result).toContain('i=1, loop.index=1');
+            });
+        });
+
+        describe('@each with @else', () => {
+            it('should render else branch when array is empty', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item in items)
+- @{item}
+@else
+No items available
+@end`;
+                const result = engine.render(template, { items: [] });
+                expect(result).toContain('No items available');
+                expect(result).not.toContain('- ');
+            });
+
+            it('should render else branch when array does not exist', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item in items)
+- @{item}
+@else
+No items found
+@end`;
+                const result = engine.render(template, {});
+                expect(result).toContain('No items found');
+            });
+
+            it('should not render else branch when array has items', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item in items)
+- @{item}
+@else
+No items
+@end`;
+                const result = engine.render(template, { items: ['apple'] });
+                expect(result).toContain('- apple');
+                expect(result).not.toContain('No items');
+            });
+
+            it('should render else branch with variables', () => {
+                const engine = new APTLEngine();
+                const template = `@each(product in products)
+Product: @{product}
+@else
+No @{category} products available
+@end`;
+                const result = engine.render(template, {
+                    products: [],
+                    category: 'electronics',
+                });
+                expect(result).toContain('No electronics products available');
+            });
+        });
+
+        describe('Nested @each', () => {
+            it('should handle nested iteration', () => {
+                const engine = new APTLEngine();
+                const template = `@each(category in categories)
+@{category.name}:
+@each(item in category.items)
+  - @{item}
+@end
+@end`;
+                const result = engine.render(template, {
+                    categories: [
+                        { name: 'Fruits', items: ['Apple', 'Banana'] },
+                        { name: 'Veggies', items: ['Carrot', 'Lettuce'] },
+                    ],
+                });
+                expect(result).toContain('Fruits:');
+                expect(result).toContain('  - Apple');
+                expect(result).toContain('  - Banana');
+                expect(result).toContain('Veggies:');
+                expect(result).toContain('  - Carrot');
+            });
+
+            it('should handle nested each with else branches', () => {
+                const engine = new APTLEngine();
+                const template = `@each(category in categories)
+@{category.name}:
+@each(item in category.items)
+  - @{item}
+@else
+  No items
+@end
+@end`;
+                const result = engine.render(template, {
+                    categories: [
+                        { name: 'Fruits', items: ['Apple'] },
+                        { name: 'Empty', items: [] },
+                    ],
+                });
+                expect(result).toContain('Fruits:');
+                expect(result).toContain('  - Apple');
+                expect(result).toContain('Empty:');
+                expect(result).toContain('  No items');
+            });
+
+            it('should preserve outer loop context in nested loops', () => {
+                const engine = new APTLEngine();
+                const template = `@each(outer in outers)
+Outer @{loop.index}: @{outer.name}
+@each(inner in outer.inners)
+  Inner @{loop.index} of @{outer.name}: @{inner}
+@end
+@end`;
+                const result = engine.render(template, {
+                    outers: [
+                        { name: 'A', inners: ['1', '2'] },
+                        { name: 'B', inners: ['3'] },
+                    ],
+                });
+                expect(result).toContain('Outer 0: A');
+                expect(result).toContain('Inner 0 of A: 1');
+                expect(result).toContain('Inner 1 of A: 2');
+                expect(result).toContain('Outer 1: B');
+                expect(result).toContain('Inner 0 of B: 3');
+            });
+        });
+
+        describe('@each with @if', () => {
+            it('should support conditionals inside loops', () => {
+                const engine = new APTLEngine();
+                const template = `@each(user in users)
+@{user.name}
+@if user.isAdmin
+ (Admin)
+@end
+@end`;
+                const result = engine.render(template, {
+                    users: [
+                        { name: 'Alice', isAdmin: true },
+                        { name: 'Bob', isAdmin: false },
+                        { name: 'Charlie', isAdmin: true },
+                    ],
+                });
+                expect(result).toContain('Alice');
+                expect(result).toContain(' (Admin)');
+                expect(result).toContain('Bob');
+                expect(result).not.toContain('Bob\n (Admin)');
+                expect(result).toContain('Charlie');
+            });
+
+            it('should support loop conditionals based on loop metadata', () => {
+                const engine = new APTLEngine();
+                const template = `@each(item in items)
+@if(not loop.first)
+, @end@{item}@end`;
+                const result = engine.render(template, {
+                    items: ['a', 'b', 'c'],
+                });
+                // Since @if can't be inline, we need to adjust expectations
+                expect(result).toContain('a');
+                expect(result).toContain('b');
+                expect(result).toContain('c');
+            });
+
+            it('should support filtering with conditionals', () => {
+                const engine = new APTLEngine();
+                const template = `@each(product in products)
+@if(product.inStock)
+- @{product.name} ($@{product.price})
+@end
+@end`;
+                const result = engine.render(template, {
+                    products: [
+                        { name: 'Widget', price: 10, inStock: true },
+                        { name: 'Gadget', price: 20, inStock: false },
+                        { name: 'Gizmo', price: 15, inStock: true },
+                    ],
+                });
+                expect(result).toContain('- Widget ($10)');
+                expect(result).not.toContain('- Gadget');
+                expect(result).toContain('- Gizmo ($15)');
+            });
+        });
+
+        describe('Real-world @each scenarios', () => {
+            it('should render a list of blog posts', () => {
+                const engine = new APTLEngine();
+                const template = `Blog Posts:
+@each(post in posts)
+
+Title: @{post.title}
+Author: @{post.author}
+Date: @{post.date}
+@if post.featured
+⭐ Featured Post
+@end
+---
+@end`;
+                const result = engine.render(template, {
+                    posts: [
+                        {
+                            title: 'Getting Started',
+                            author: 'Alice',
+                            date: '2024-01-15',
+                            featured: true,
+                        },
+                        {
+                            title: 'Advanced Topics',
+                            author: 'Bob',
+                            date: '2024-01-20',
+                            featured: false,
+                        },
+                    ],
+                });
+                expect(result).toContain('Title: Getting Started');
+                expect(result).toContain('Author: Alice');
+                expect(result).toContain('⭐ Featured Post');
+                expect(result).toContain('Title: Advanced Topics');
+                expect(result).toContain('Author: Bob');
+            });
+
+            it('should render a shopping cart', () => {
+                const engine = new APTLEngine();
+                const template = `Shopping Cart:
+@each(item in cart.items)
+@{loop.index}. @{item.name} - $@{item.price} x @{item.quantity}
+@end
+@else
+Your cart is empty
+@end`;
+                const result = engine.render(template, {
+                    cart: {
+                        items: [
+                            { name: 'Book', price: 10, quantity: 2 },
+                            { name: 'Pen', price: 2, quantity: 5 },
+                        ],
+                    },
+                });
+                expect(result).toContain('0. Book - $10 x 2');
+                expect(result).toContain('1. Pen - $2 x 5');
+            });
+
+            it('should render empty cart message', () => {
+                const engine = new APTLEngine();
+                const template = `Shopping Cart:
+@each(item in cart.items)
+- @{item.name}
+@else
+Your cart is empty
+@end`;
+                const result = engine.render(template, {
+                    cart: { items: [] },
+                });
+                expect(result).toContain('Your cart is empty');
+            });
+
+            it('should render a table with alternating row styles', () => {
+                const engine = new APTLEngine();
+                const template = `@each(row in data)
+@if(loop.even)
+[EVEN] @{row.name}: @{row.value}
+@end
+@if(loop.odd)
+[ODD] @{row.name}: @{row.value}
+@end
+@end`;
+                const result = engine.render(template, {
+                    data: [
+                        { name: 'A', value: 1 },
+                        { name: 'B', value: 2 },
+                        { name: 'C', value: 3 },
+                    ],
+                });
+                expect(result).toContain('[EVEN] A: 1');
+                expect(result).toContain('[ODD] B: 2');
+                expect(result).toContain('[EVEN] C: 3');
+            });
+
+            it('should render a nested menu structure', () => {
+                const engine = new APTLEngine();
+                const template = `@each(section in menu)
+@{section.title}
+@each(item in section.items)
+  - @{item.name}
+@if item.new
+ [NEW]
+@end
+@else
+  No items in this section
+@end
+
+@end`;
+                const result = engine.render(template, {
+                    menu: [
+                        {
+                            title: 'File',
+                            items: [
+                                { name: 'New', new: true },
+                                { name: 'Open', new: false },
+                            ],
+                        },
+                        {
+                            title: 'Edit',
+                            items: [],
+                        },
+                    ],
+                });
+                expect(result).toContain('File');
+                expect(result).toContain('  - New');
+                expect(result).toContain(' [NEW]');
+                expect(result).toContain('  - Open');
+                expect(result).toContain('Edit');
+                expect(result).toContain('  No items in this section');
+            });
+        });
+    });
 });

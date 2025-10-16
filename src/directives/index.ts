@@ -12,6 +12,7 @@ export { slotDirective } from './slot-directive';
 export { ifDirective, elifDirective, elseDirective } from './if-directive';
 export { IfDirective } from './if-directive-class';
 export { eachDirective } from './each-directive';
+export { EachDirective } from './each-directive-class';
 export { sectionDirective } from './section-directive';
 
 // Re-export for convenience
@@ -19,7 +20,7 @@ import { DirectiveRegistry } from './directive-registry';
 import { extendsDirective } from './extends-directive';
 import { slotDirective } from './slot-directive';
 import { IfDirective } from './if-directive-class';
-import { eachDirective } from './each-directive';
+import { EachDirective } from './each-directive-class';
 import { sectionDirective } from './section-directive';
 
 /**
@@ -32,10 +33,10 @@ export function createDefaultDirectiveRegistry(): DirectiveRegistry {
     registry.register(extendsDirective);
     registry.register(slotDirective);
 
-    // Control flow directives - use class-based IfDirective
+    // Control flow directives - use class-based directives
     registry.register(new IfDirective());
-    // NOTE: elif and else are now handled by IfDirective, no separate registration needed
-    registry.register(eachDirective);
+    // NOTE: elif and else are now handled by IfDirective/EachDirective, no separate registration needed
+    registry.register(new EachDirective());
 
     // Section directive
     registry.register(sectionDirective);

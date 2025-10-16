@@ -291,9 +291,12 @@ export class Compiler {
         const childrenToRender = metadata.get('childrenToRender');
         const children = childrenToRender !== undefined ? childrenToRender : node.children;
 
+        // Use provided data or fall back to context data
+        const renderContext = data ? { ...context, data } : context;
+
         // Render the children
         return children
-          .map((child: any) => this.renderNode(child, context))
+          .map((child: any) => this.renderNode(child, renderContext))
           .join('');
       },
     };
