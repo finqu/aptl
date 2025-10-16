@@ -1,891 +1,348 @@
 /**
- * Template Validator Unit Tests
+ * Template Validator Tests
+ * Tests for template validation (structure, nesting, variable paths)
+ * Note: Syntax validation is primarily tested through tokenizer/parser tests
  */
 
 import { TemplateValidator } from '@/templates/template-validator';
 import { Parser } from '@/core/parser';
 import { Tokenizer } from '@/core/tokenizer';
-import {
-  NodeType,
-  TemplateNode,
-  SectionNode,
-  ConditionalNode,
-  IterationNode,
-  VariableNode,
-} from '@/core/types';
+import { NodeType, TemplateNode } from '@/core/types';
 import { APTLValidationError } from '@/utils/errors';
 
 describe('TemplateValidator', () => {
-  let validator: TemplateValidator;
-  let parser: Parser;
-  let tokenizer: Tokenizer;
+    let validator: TemplateValidator;
+    let parser: Parser;
+    let tokenizer: Tokenizer;
 
-  beforeEach(() => {
-    validator = new TemplateValidator();
-    parser = new Parser();
-    tokenizer = new Tokenizer();
-  });
-
-  const parseTemplate = (template: string): TemplateNode => {
-    const tokens = tokenizer.tokenize(template);
-    return parser.parse(tokens);
-  };
-
-  describe('validate() - AST Validation', () => {
-    describe('Valid Templates', () => {
-      it('should validate empty template', () => {
-        const ast = parseTemplate('');
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should validate plain text template', () => {
-        const ast = parseTemplate('Hello world');
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should validate template with variables', () => {
-        const ast = parseTemplate('Hello @{name}!');
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should validate template with sections', () => {
-        const template = `
-@section system
-You are a helpful assistant.
-@end
-`;
-        const ast = parseTemplate(template);
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should validate template with section attributes', () => {
-        const template = `
-@section user(role="admin", status="active")
-User content
-@end
-`;
-        const ast = parseTemplate(template);
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should validate template with conditionals', () => {
-        const template = `
-@if active == true
-Active user
-@end
-`;
-        const ast = parseTemplate(template);
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should validate template with conditionals with elif and else', () => {
-        const template = `
-@if status == "active"
-Active
-@elif status == "pending"
-Pending
-@else
-Inactive
-@end
-`;
-        const ast = parseTemplate(template);
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should validate template with iterations', () => {
-        const template = `
-@each item in items
-- @{item.name}
-@end
-`;
-        const ast = parseTemplate(template);
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should validate template with nested structures', () => {
-        const template = `
-@section main
-@if showList == true
-@each item in items
-- @{item.name}
-@end
-@end
-@end
-`;
-        const ast = parseTemplate(template);
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should validate nested variable paths', () => {
-        const ast = parseTemplate('@{user.profile.address.city}');
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
+    beforeEach(() => {
+        validator = new TemplateValidator();
+        parser = new Parser();
+        tokenizer = new Tokenizer();
     });
 
-    describe('Invalid Variable Paths', () => {
-      it('should detect invalid variable paths', () => {
-        const validator = new TemplateValidator({ validateVariables: true });
+    // Helper to parse a template
+    const parseTemplate = (template: string): TemplateNode => {
+        const tokens = tokenizer.tokenize(template);
+        return parser.parse(tokens);
+    };
 
-        // Manually create AST with invalid variable path
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.VARIABLE,
-              path: 'user..name', // Double dot is invalid
-              line: 1,
-              column: 1,
-            } as VariableNode,
-          ],
-        };
+    describe('Syntax Validation', () => {
+        it('should validate valid templates', () => {
+            const result = validator.validateSyntax('Hello @{name}!');
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+        });
 
-        const result = validator.validate(ast);
+        it('should detect syntax errors', () => {
+            const result = validator.validateSyntax('Hello @{unclosed');
+            expect(result.valid).toBe(false);
+            expect(result.errors.length).toBeGreaterThan(0);
+        });
 
-        expect(result.valid).toBe(false);
-        expect(result.errors.length).toBeGreaterThan(0);
-        expect(result.errors[0]).toContain('Invalid variable path');
-      });
+        it('should validate templates with multiple variables', () => {
+            const result = validator.validateSyntax(
+                'Hello @{name}, you are @{age} years old.',
+            );
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+        });
 
-      it('should detect empty variable path', () => {
-        const validator = new TemplateValidator({ validateVariables: true });
-
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.VARIABLE,
-              path: '',
-              line: 1,
-              column: 1,
-            } as VariableNode,
-          ],
-        };
-
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(false);
-        expect(
-          result.errors.some((e) => e.includes('Empty variable path')),
-        ).toBe(true);
-      });
-
-      it('should detect variable path starting with number', () => {
-        const validator = new TemplateValidator({ validateVariables: true });
-
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.VARIABLE,
-              path: '123invalid',
-              line: 1,
-              column: 1,
-            } as VariableNode,
-          ],
-        };
-
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(false);
-        expect(
-          result.errors.some((e) => e.includes('Invalid variable path')),
-        ).toBe(true);
-      });
+        it('should validate templates with comments', () => {
+            const result = validator.validateSyntax(`
+        // This is a comment
+        Hello @{name}!
+      `);
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+        });
     });
 
-    describe('Invalid Sections', () => {
-      it('should detect empty section name', () => {
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.SECTION,
-              name: '',
-              attributes: {},
-              children: [],
-              line: 1,
-              column: 1,
-            } as SectionNode,
-          ],
-        };
+    describe('AST Validation', () => {
+        it('should validate simple AST', () => {
+            const ast = parseTemplate('Hello World!');
+            const result = validator.validate(ast);
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+        });
 
-        const result = validator.validate(ast);
+        it('should validate AST with variables', () => {
+            const ast = parseTemplate('Hello @{user.name}!');
+            const result = validator.validate(ast);
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+        });
 
-        expect(result.valid).toBe(false);
-        expect(result.errors.some((e) => e.includes('empty name'))).toBe(true);
-      });
+        it('should validate AST with nested property access', () => {
+            const ast = parseTemplate('@{user.profile.settings.theme}');
+            const result = validator.validate(ast);
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+        });
 
-      it('should detect invalid section name characters', () => {
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.SECTION,
-              name: 'invalid@section',
-              attributes: {},
-              children: [],
-              line: 1,
-              column: 1,
-            } as SectionNode,
-          ],
-        };
-
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(false);
-        expect(
-          result.errors.some((e) => e.includes('Invalid section name')),
-        ).toBe(true);
-      });
-
-      it('should detect empty sections when not allowed', () => {
-        const validator = new TemplateValidator({ allowEmptySections: false });
-
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.SECTION,
-              name: 'empty',
-              attributes: {},
-              children: [],
-              line: 1,
-              column: 1,
-            } as SectionNode,
-          ],
-        };
-
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors.some((e) => e.includes('Empty section'))).toBe(
-          true,
-        );
-      });
-
-      it('should allow empty sections by default', () => {
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.SECTION,
-              name: 'empty',
-              attributes: {},
-              children: [],
-              line: 1,
-              column: 1,
-            } as SectionNode,
-          ],
-        };
-
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(true);
-      });
-
-      it('should detect invalid attribute names', () => {
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.SECTION,
-              name: 'section1',
-              attributes: { 'invalid@attr': 'value' },
-              children: [],
-              line: 1,
-              column: 1,
-            } as SectionNode,
-          ],
-        };
-
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(false);
-        expect(
-          result.errors.some((e) => e.includes('Invalid attribute name')),
-        ).toBe(true);
-      });
-    });
-
-    describe('Invalid Conditionals', () => {
-      it('should detect empty condition', () => {
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.CONDITIONAL,
-              condition: '',
-              consequent: [],
-              line: 1,
-              column: 1,
-            } as ConditionalNode,
-          ],
-        };
-
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors.some((e) => e.includes('Empty condition'))).toBe(
-          true,
-        );
-      });
-
-      it('should detect malformed operator usage', () => {
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.CONDITIONAL,
-              condition: '== value',
-              consequent: [],
-              line: 1,
-              column: 1,
-            } as ConditionalNode,
-          ],
-        };
-
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(false);
-        expect(
-          result.errors.some((e) => e.includes('Invalid condition syntax')),
-        ).toBe(true);
-      });
-    });
-
-    describe('Invalid Iterations', () => {
-      it('should detect empty item name', () => {
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.ITERATION,
-              itemName: '',
-              arrayPath: 'items',
-              children: [],
-              line: 1,
-              column: 1,
-            } as IterationNode,
-          ],
-        };
-
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors.some((e) => e.includes('Empty item name'))).toBe(
-          true,
-        );
-      });
-
-      it('should detect empty array path', () => {
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.ITERATION,
-              itemName: 'item',
-              arrayPath: '',
-              children: [],
-              line: 1,
-              column: 1,
-            } as IterationNode,
-          ],
-        };
-
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors.some((e) => e.includes('Empty array path'))).toBe(
-          true,
-        );
-      });
-
-      it('should detect invalid item name', () => {
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.ITERATION,
-              itemName: '123invalid',
-              arrayPath: 'items',
-              children: [],
-              line: 1,
-              column: 1,
-            } as IterationNode,
-          ],
-        };
-
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors.some((e) => e.includes('Invalid item name'))).toBe(
-          true,
-        );
-      });
-
-      it('should detect empty iteration block', () => {
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.ITERATION,
-              itemName: 'item',
-              arrayPath: 'items',
-              children: [],
-              line: 1,
-              column: 1,
-            } as IterationNode,
-          ],
-        };
-
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(false);
-        expect(
-          result.errors.some((e) => e.includes('Empty iteration block')),
-        ).toBe(true);
-      });
+        it('should validate AST with array access', () => {
+            const ast = parseTemplate('@{items[0].name}');
+            const result = validator.validate(ast);
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+        });
     });
 
     describe('Nesting Depth Validation', () => {
-      it('should detect excessive nesting depth', () => {
-        const validator = new TemplateValidator({ maxNestingDepth: 3 });
+        it('should accept normal nesting depth', () => {
+            // Create a simple nested structure (not too deep)
+            const ast = parseTemplate(`
+        @{level1}
+        @{level2}
+        @{level3}
+      `);
+            const result = validator.validate(ast);
+            expect(result.valid).toBe(true);
+        });
 
-        // Create deeply nested structure
-        const ast: TemplateNode = {
-          type: NodeType.TEMPLATE,
-          children: [
-            {
-              type: NodeType.SECTION,
-              name: 'level1',
-              attributes: {},
-              children: [
-                {
-                  type: NodeType.SECTION,
-                  name: 'level2',
-                  attributes: {},
-                  children: [
-                    {
-                      type: NodeType.SECTION,
-                      name: 'level3',
-                      attributes: {},
-                      children: [
-                        {
-                          type: NodeType.SECTION,
-                          name: 'level4',
-                          attributes: {},
-                          children: [],
-                          line: 1,
-                          column: 1,
-                        } as SectionNode,
-                      ],
-                      line: 1,
-                      column: 1,
-                    } as SectionNode,
-                  ],
-                  line: 1,
-                  column: 1,
-                } as SectionNode,
-              ],
-              line: 1,
-              column: 1,
-            } as SectionNode,
-          ],
-        };
+        it('should reject excessive nesting depth', () => {
+            const shallowValidator = new TemplateValidator({ maxNestingDepth: 3 });
 
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(false);
-        expect(
-          result.errors.some((e) =>
-            e.includes('Maximum nesting depth exceeded'),
-          ),
-        ).toBe(true);
-      });
-
-      it('should allow reasonable nesting depth', () => {
-        const validator = new TemplateValidator({ maxNestingDepth: 10 });
-
-        const template = `
-@section level1
-  @section level2
-    @section level3
-      Content
-    @end
-  @end
-@end
-`;
-        const ast = parseTemplate(template);
-        const result = validator.validate(ast);
-
-        expect(result.valid).toBe(true);
-      });
-    });
-  });
-
-  describe('validateSyntax() - Raw Template Validation', () => {
-    describe('Valid Syntax', () => {
-      it('should validate empty template', () => {
-        const result = validator.validateSyntax('');
-
-        expect(result.valid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
-
-      it('should validate plain text', () => {
-        const result = validator.validateSyntax('Hello world');
-
-        expect(result.valid).toBe(true);
-      });
-
-      it('should validate balanced directives', () => {
-        const template = `
-@section test
-Content
-@end
-`;
-        const result = validator.validateSyntax(template);
-
-        expect(result.valid).toBe(true);
-      });
-
-      it('should validate multiple balanced blocks', () => {
-        const template = `
-@section one
-Content
-@end
-@section two
-More content
-@end
-`;
-        const result = validator.validateSyntax(template);
-
-        expect(result.valid).toBe(true);
-      });
-
-      it('should validate nested balanced blocks', () => {
-        const template = `
-@section outer
-  @if condition == true
-    @each item in items
-      Content
-    @end
-  @end
-@end
-`;
-        const result = validator.validateSyntax(template);
-
-        expect(result.valid).toBe(true);
-      });
-    });
-
-    describe('Parser-Detected Errors', () => {
-      it('should detect unclosed section', () => {
-        const template = `
-@section test
-Content without end
-`;
-        const result = validator.validateSyntax(template);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors.length).toBeGreaterThan(0);
-      });
-
-      it('should detect unclosed if', () => {
-        const template = `
-@if condition == true
-Content without end
-`;
-        const result = validator.validateSyntax(template);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors.length).toBeGreaterThan(0);
-      });
-
-      it('should detect unclosed each', () => {
-        const template = `
-@each item in items
-Content without end
-`;
-        const result = validator.validateSyntax(template);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors.length).toBeGreaterThan(0);
-      });
-
-      it('should detect unclosed variable interpolation', () => {
-        const result = validator.validateSyntax('Hello @{name');
-
-        expect(result.valid).toBe(false);
-        expect(result.errors.length).toBeGreaterThan(0);
-      });
-
-      it('should detect invalid @each syntax', () => {
-        const template = `
-@each item
-Content
-@end
-`;
-        const result = validator.validateSyntax(template);
-
-        expect(result.valid).toBe(false);
-        expect(result.errors.length).toBeGreaterThan(0);
-      });
-    });
-
-    describe('Integration with Parser', () => {
-      it('should validate complex valid templates', () => {
-        const template = `
-@section system
-You are a helpful assistant.
-@end
-
-@section user
-@if user.authenticated == true
-Hello @{user.name}!
-
-@each message in messages
-- @{message.text}
-@end
-@else
-Please log in.
-@end
-@end
-`;
-        const result = validator.validateSyntax(template);
-
-        expect(result.valid).toBe(true);
-      });
-
-      it('should catch empty variable interpolation', () => {
-        const result = validator.validateSyntax('Hello @{}!');
-
-        expect(result.valid).toBe(false);
-        expect(result.errors.length).toBeGreaterThan(0);
-      });
-    });
-  });
-
-  describe('assertValid()', () => {
-    it('should not throw for valid template', () => {
-      const ast = parseTemplate('Hello @{name}!');
-
-      expect(() => {
-        validator.assertValid(ast);
-      }).not.toThrow();
-    });
-
-    it('should throw APTLValidationError for invalid template', () => {
-      const ast: TemplateNode = {
-        type: NodeType.TEMPLATE,
-        children: [
-          {
-            type: NodeType.SECTION,
-            name: '',
-            attributes: {},
-            children: [],
-            line: 1,
-            column: 1,
-          } as SectionNode,
-        ],
-      };
-
-      expect(() => {
-        validator.assertValid(ast);
-      }).toThrow(APTLValidationError);
-    });
-
-    it('should include validation errors in exception message', () => {
-      const ast: TemplateNode = {
-        type: NodeType.TEMPLATE,
-        children: [
-          {
-            type: NodeType.SECTION,
-            name: '',
-            attributes: {},
-            children: [],
-            line: 1,
-            column: 1,
-          } as SectionNode,
-        ],
-      };
-
-      try {
-        validator.assertValid(ast);
-        fail('Should have thrown');
-      } catch (e) {
-        expect(e).toBeInstanceOf(APTLValidationError);
-        const error = e as APTLValidationError;
-        expect(error.errors.length).toBeGreaterThan(0);
-        expect(error.errors[0]).toContain('empty name');
-      }
-    });
-  });
-
-  describe('Validation Options', () => {
-    it('should respect strict mode option', () => {
-      const strictValidator = new TemplateValidator({ strict: true });
-      const lenientValidator = new TemplateValidator({ strict: false });
-
-      const ast = parseTemplate('@{name}');
-
-      // Both should validate syntax correctly
-      expect(strictValidator.validate(ast).valid).toBe(true);
-      expect(lenientValidator.validate(ast).valid).toBe(true);
-    });
-
-    it('should respect allowEmptySections option', () => {
-      const strictValidator = new TemplateValidator({
-        allowEmptySections: false,
-      });
-      const lenientValidator = new TemplateValidator({
-        allowEmptySections: true,
-      });
-
-      const ast: TemplateNode = {
-        type: NodeType.TEMPLATE,
-        children: [
-          {
-            type: NodeType.SECTION,
-            name: 'empty',
-            attributes: {},
-            children: [],
-            line: 1,
-            column: 1,
-          } as SectionNode,
-        ],
-      };
-
-      expect(strictValidator.validate(ast).valid).toBe(false);
-      expect(lenientValidator.validate(ast).valid).toBe(true);
-    });
-
-    it('should respect validateVariables option', () => {
-      const validatingValidator = new TemplateValidator({
-        validateVariables: true,
-      });
-      const nonValidatingValidator = new TemplateValidator({
-        validateVariables: false,
-      });
-
-      const ast: TemplateNode = {
-        type: NodeType.TEMPLATE,
-        children: [
-          {
-            type: NodeType.VARIABLE,
-            path: '123invalid',
-            line: 1,
-            column: 1,
-          } as VariableNode,
-        ],
-      };
-
-      expect(validatingValidator.validate(ast).valid).toBe(false);
-      expect(nonValidatingValidator.validate(ast).valid).toBe(true);
-    });
-
-    it('should respect maxNestingDepth option', () => {
-      const shallowValidator = new TemplateValidator({ maxNestingDepth: 2 });
-      const deepValidator = new TemplateValidator({ maxNestingDepth: 10 });
-
-      const ast: TemplateNode = {
-        type: NodeType.TEMPLATE,
-        children: [
-          {
-            type: NodeType.SECTION,
-            name: 'level1',
-            attributes: {},
-            children: [
-              {
-                type: NodeType.SECTION,
-                name: 'level2',
-                attributes: {},
-                children: [
-                  {
-                    type: NodeType.SECTION,
-                    name: 'level3',
-                    attributes: {},
-                    children: [],
+            // Create a deeply nested AST manually
+            const createDeepAST = (depth: number): TemplateNode => {
+                let current: any = {
+                    type: NodeType.TEXT,
+                    value: 'deep',
                     line: 1,
                     column: 1,
-                  } as SectionNode,
+                };
+
+                for (let i = 0; i < depth; i++) {
+                    current = {
+                        type: NodeType.TEMPLATE,
+                        children: [current],
+                        line: 1,
+                        column: 1,
+                    };
+                }
+
+                return current as TemplateNode;
+            };
+
+            const deepAST = createDeepAST(5);
+            const result = shallowValidator.validate(deepAST);
+
+            expect(result.valid).toBe(false);
+            expect(result.errors).toContain('Maximum nesting depth exceeded (3)');
+        });
+
+        it('should allow configurable nesting depth', () => {
+            const deepValidator = new TemplateValidator({ maxNestingDepth: 100 });
+            const ast = parseTemplate('@{a.b.c.d.e.f.g.h}');
+            const result = deepValidator.validate(ast);
+            expect(result.valid).toBe(true);
+        });
+    });
+
+    describe('Variable Path Validation', () => {
+        it('should accept valid variable paths', () => {
+            const validPaths = [
+                '@{name}',
+                '@{user.name}',
+                '@{user.profile.email}',
+                '@{items[0]}',
+                '@{items[0].name}',
+                '@{data.items[5].value}',
+                '@{_private}',
+                '@{value123}',
+            ];
+
+            for (const template of validPaths) {
+                const ast = parseTemplate(template);
+                const result = validator.validate(ast);
+                expect(result.valid).toBe(true);
+            }
+        });
+
+        it('should reject invalid variable paths', () => {
+            const ast: TemplateNode = {
+                type: NodeType.TEMPLATE,
+                children: [
+                    {
+                        type: NodeType.VARIABLE,
+                        path: '123invalid', // starts with number
+                        line: 1,
+                        column: 1,
+                    } as any,
                 ],
                 line: 1,
                 column: 1,
-              } as SectionNode,
-            ],
-            line: 1,
-            column: 1,
-          } as SectionNode,
-        ],
-      };
+            };
 
-      expect(shallowValidator.validate(ast).valid).toBe(false);
-      expect(deepValidator.validate(ast).valid).toBe(true);
+            const result = validator.validate(ast);
+            expect(result.valid).toBe(false);
+            expect(result.errors.length).toBeGreaterThan(0);
+            expect(result.errors[0]).toContain('Invalid variable path');
+        });
+
+        it('should reject empty variable paths', () => {
+            const ast: TemplateNode = {
+                type: NodeType.TEMPLATE,
+                children: [
+                    {
+                        type: NodeType.VARIABLE,
+                        path: '',
+                        line: 1,
+                        column: 5,
+                    } as any,
+                ],
+                line: 1,
+                column: 1,
+            };
+
+            const result = validator.validate(ast);
+            expect(result.valid).toBe(false);
+            expect(result.errors).toContain('Empty variable path at line 1, column 5');
+        });
+
+        it('should skip variable validation when disabled', () => {
+            const noVarValidator = new TemplateValidator({ validateVariables: false });
+
+            const ast: TemplateNode = {
+                type: NodeType.TEMPLATE,
+                children: [
+                    {
+                        type: NodeType.VARIABLE,
+                        path: '!!!invalid!!!',
+                        line: 1,
+                        column: 1,
+                    } as any,
+                ],
+                line: 1,
+                column: 1,
+            };
+
+            const result = noVarValidator.validate(ast);
+            expect(result.valid).toBe(true); // Should pass when validation is disabled
+        });
     });
-  });
 
-  describe('Edge Cases', () => {
-    it('should handle templates with only whitespace', () => {
-      const result = validator.validateSyntax('   \n\n   ');
+    describe('assertValid', () => {
+        it('should not throw for valid templates', () => {
+            const ast = parseTemplate('Hello @{name}!');
+            expect(() => validator.assertValid(ast)).not.toThrow();
+        });
 
-      expect(result.valid).toBe(true);
+        it('should throw APTLValidationError for invalid templates', () => {
+            const ast: TemplateNode = {
+                type: NodeType.TEMPLATE,
+                children: [
+                    {
+                        type: NodeType.VARIABLE,
+                        path: '',
+                        line: 1,
+                        column: 1,
+                    } as any,
+                ],
+                line: 1,
+                column: 1,
+            };
+
+            expect(() => validator.assertValid(ast)).toThrow(APTLValidationError);
+            expect(() => validator.assertValid(ast)).toThrow('Template validation failed');
+        });
+
+        it('should include validation errors in thrown exception', () => {
+            const ast: TemplateNode = {
+                type: NodeType.TEMPLATE,
+                children: [
+                    {
+                        type: NodeType.VARIABLE,
+                        path: '',
+                        line: 1,
+                        column: 1,
+                    } as any,
+                ],
+                line: 1,
+                column: 1,
+            };
+
+            try {
+                validator.assertValid(ast);
+                fail('Should have thrown an error');
+            } catch (error) {
+                expect(error).toBeInstanceOf(APTLValidationError);
+                if (error instanceof APTLValidationError) {
+                    expect(error.errors.length).toBeGreaterThan(0);
+                }
+            }
+        });
     });
 
-    it('should handle templates with comments', () => {
-      const template = `
-// This is a comment
-@section test
-Content
-@end
-`;
-      const result = validator.validateSyntax(template);
+    describe('Real-World Scenarios', () => {
+        it('should validate complex templates', () => {
+            const template = `
+        Hello @{user.name}!
 
-      expect(result.valid).toBe(true);
+        Your email is @{user.email}.
+        You have @{notifications.count} notifications.
+      `;
+
+            const result = validator.validateSyntax(template);
+            expect(result.valid).toBe(true);
+        });
+
+        it('should validate templates with array access', () => {
+            const template = `
+        First item: @{items[0].name}
+        Second item: @{items[1].name}
+      `;
+
+            const result = validator.validateSyntax(template);
+            expect(result.valid).toBe(true);
+        });
+
+        it('should detect multiple errors', () => {
+            const ast: TemplateNode = {
+                type: NodeType.TEMPLATE,
+                children: [
+                    {
+                        type: NodeType.VARIABLE,
+                        path: '',
+                        line: 1,
+                        column: 1,
+                    } as any,
+                    {
+                        type: NodeType.VARIABLE,
+                        path: '123invalid',
+                        line: 2,
+                        column: 1,
+                    } as any,
+                ],
+                line: 1,
+                column: 1,
+            };
+
+            const result = validator.validate(ast);
+            expect(result.valid).toBe(false);
+            expect(result.errors.length).toBeGreaterThan(1); // Multiple errors detected
+        });
     });
 
-    it('should handle Windows line endings', () => {
-      const template = '@section test\r\nContent\r\n@end';
-      const result = validator.validateSyntax(template);
+    describe('Edge Cases', () => {
+        it('should handle empty templates', () => {
+            const ast = parseTemplate('');
+            const result = validator.validate(ast);
+            expect(result.valid).toBe(true);
+        });
 
-      expect(result.valid).toBe(true);
+        it('should handle whitespace-only templates', () => {
+            const ast = parseTemplate('   \n\n   ');
+            const result = validator.validate(ast);
+            expect(result.valid).toBe(true);
+        });
+
+        it('should handle templates with only comments', () => {
+            const result = validator.validateSyntax(`
+        // Comment 1
+        // Comment 2
+      `);
+            expect(result.valid).toBe(true);
+        });
     });
-
-    it('should handle mixed line endings', () => {
-      const template = '@section test\nContent\r\n@end';
-      const result = validator.validateSyntax(template);
-
-      expect(result.valid).toBe(true);
-    });
-  });
 });

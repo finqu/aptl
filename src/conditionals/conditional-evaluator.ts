@@ -241,7 +241,8 @@ export class ConditionalEvaluator {
     if (typeof value === 'number') return value !== 0;
     if (typeof value === 'string') return value.length > 0;
     if (Array.isArray(value)) return value.length > 0;
-    if (typeof value === 'object') return Object.keys(value).length > 0;
+    // Objects (including empty objects) are truthy, consistent with JavaScript
+    if (typeof value === 'object') return true;
     return Boolean(value);
   }
 }

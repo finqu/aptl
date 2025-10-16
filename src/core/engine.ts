@@ -14,6 +14,9 @@ import {
   FormatterRegistry,
 } from './types';
 import { DefaultFormatterRegistry } from '@/formatters/formatter-registry';
+import { DirectiveRegistry, createDefaultDirectiveRegistry } from '@/directives';
+import { Directive } from '@/directives/types';
+import { FileSystem } from '@/filesystem';
 
 export class APTLEngine {
   private tokenizer: Tokenizer;
@@ -22,7 +25,9 @@ export class APTLEngine {
   private options: APTLOptions;
   private helpers: Record<string, HelperFunction>;
   private formatterRegistry: FormatterRegistry;
+  private directiveRegistry: DirectiveRegistry;
   private cache: Map<string, CompiledTemplate>;
+  private fileSystem?: FileSystem;
 
   constructor(options: APTLOptions = {}) {
     this.options = {
@@ -31,8 +36,26 @@ export class APTLEngine {
       ...options,
     };
 
+    // Store file system if provided
+    this.fileSystem = options.fileSystem;
+
+    // Initialize directive registry with default directives (extends, slot, if, each, section)
+    this.directiveRegistry = createDefaultDirectiveRegistry();
+
+    // Get list of all directive keywords for tokenizer (including elif/else from conditional directives)
+    // Exclude 'end' which is handled specially
+    const directiveNames = this.directiveRegistry
+      .getAllKeywords()
+      .filter((name: string) => name !== 'end');
+
     this.tokenizer = new Tokenizer();
-    this.parser = new Parser();
+
+    // Register all directive keywords with the tokenizer
+    for (const name of directiveNames) {
+      this.tokenizer.registerDirective(name);
+    }
+
+    this.parser = new Parser(this.directiveRegistry);
     this.helpers = options.helpers || {};
 
     // Initialize formatter registry
@@ -47,6 +70,7 @@ export class APTLEngine {
       strict: this.options.strict,
       helpers: this.helpers,
       formatterRegistry: this.formatterRegistry,
+      directiveRegistry: this.directiveRegistry,
     });
 
     this.cache = new Map();
@@ -79,10 +103,17 @@ export class APTLEngine {
     filePath: string,
     data: Record<string, any> = {},
   ): Promise<string> {
-    // TODO: Implement file reading - requires fs module or custom file loader
-    throw new Error(
-      'renderFile not yet implemented - use render() with file contents',
-    );
+    if (!this.fileSystem) {
+      throw new Error(
+        'FileSystem not configured. Pass a fileSystem option to the APTLEngine constructor to use renderFile().',
+      );
+    }
+
+    // Read the template file
+    const template = await this.fileSystem.readFile(filePath);
+
+    // Render using the standard render method
+    return this.render(template, data);
   }
 
   /**
@@ -118,6 +149,28 @@ export class APTLEngine {
    */
   setDefaultFormatter(formatter: OutputFormatter): void {
     this.formatterRegistry.setDefaultFormatter(formatter);
+  }
+
+  /**
+   * Register a custom directive
+   */
+  registerDirective(directive: Directive): void {
+    this.directiveRegistry.register(directive);
+
+    // Also register the directive name with the tokenizer
+    this.tokenizer.registerDirective(directive.name);
+
+    // Clear cache since directives might affect rendering
+    this.clearCache();
+  }
+
+  /**
+   * Unregister a directive
+   */
+  unregisterDirective(name: string): void {
+    this.directiveRegistry.unregister(name);
+    this.tokenizer.unregisterDirective(name);
+    this.clearCache();
   }
 
   /**

@@ -6,115 +6,147 @@
 
 <statement>         ::= <text> 
                       | <variable>
-                      | <section>
-                      | <conditional>
-                      | <iteration>
                       | <directive>
                       | <comment>
-                      | <blank-line>
+                      | <newline>
 
 // Basic elements
-<text>              ::= (<any-char-except> "@" | "//" | "/*")+
-                      | "@" <not-keyword-char>  // allows @ in text if not followed by keyword
-<blank-line>        ::= "\n\n"
-<variable>          ::= "@{" <identifier> <accessor>? <default>? "}"
-<accessor>          ::= "." <identifier> <accessor>?
-<default>           ::= "|" <value>  // e.g., @{name|"Anonymous"}
-<identifier>        ::= <letter> <alphanumeric>*
-<escaped>           ::= "\@" | "\/" | "\\"  // produces literal @, /, \
-
-// Sections
-<section>           ::= "@section" <section-name> <section-attributes>? "\n"
-                        <indented-content>
-                        "@end"
-
-<section-name>      ::= <identifier>
-<section-attributes>::= "(" <attribute-list> ")"
-<attribute-list>    ::= <attribute> | <attribute> "," <attribute-list>
-<attribute>         ::= <identifier> "=" <string-literal>
-
-// Conditionals
-<conditional>       ::= "@if" <condition> "\n"
-                        <indented-content>
-                        <else-clause>?
-                        "@end"
-
-<else-clause>       ::= "@else" "\n" <indented-content>
-                      | "@elif" <condition> "\n" <indented-content> <else-clause>?
-
-<condition>         ::= <variable-ref>
-                      | <comparison>
-                      | <logical-expression>
-                      | "not" <condition>
-
-<comparison>        ::= <variable-ref> <comparison-op> <value>
-<comparison-op>     ::= "==" | "!=" | ">" | "<" | ">=" | "<=" | "in" | "not in"
-<logical-expression>::= <condition> <logical-op> <condition>
-<logical-op>        ::= "and" | "or"
-
-// Iterations
-<iteration>         ::= "@each" <identifier> "in" <variable-ref> "\n"
-                        <indented-content>
-                        "@end"
-
-<variable-ref>      ::= <identifier> <accessor>?
+<text>              ::= <text-char>+
+<text-char>         ::= <any-char-except> "@" | "//" | "/*" | "\n"
+                      | <escaped>
+<newline>           ::= "\n" | "\r\n" | "\r"
+<variable>          ::= "@{" <variable-path> <default>? "}"
+<variable-path>     ::= <identifier> <accessor>*
+<accessor>          ::= "." <identifier>
+<default>           ::= "|" <literal-value>  // e.g., @{name|"Anonymous"}
+<identifier>        ::= <letter> (<letter> | <digit> | "_" | "-")*
+<escaped>           ::= "\@" | "\/" | "\\" | "\n" | "\t" | "\r"
 
 // Directives - extensible syntax for custom directives
-<directive>         ::= <inline-directive> | <block-directive>
-
-<inline-directive>  ::= "@" <directive-name> <directive-params>? "\n"
-
-<block-directive>   ::= "@" <directive-name> <directive-params>? "\n"
-                        <indented-content>
-                        "@end"
+// Each directive defines its own argument syntax via parseArguments()
+<directive>         ::= "@" <directive-name> <directive-args>? "\n" <directive-body>?
 
 <directive-name>    ::= <identifier>
-<directive-params>  ::= "(" <param-list>? ")"
-<param-list>        ::= <param> | <param> "," <param-list>
-<param>             ::= <positional-param> | <named-param>
-<positional-param>  ::= <value>
-<named-param>       ::= <identifier> "=" <value>
-<value>             ::= <string-literal> | <number> | <boolean> | <variable-ref>
-
-// Indentation handling
-<indented-content>  ::= <indent> <statement-list> <dedent>
-<indent>            ::= "  " // 2 spaces per level
-<dedent>            ::= // decrease indentation level
+<directive-args>    ::= <any-text-until-newline>  // Parsed by directive-specific parser
+<directive-body>    ::= <statement-list> "@end" "\n"
 
 // Comments - standard syntax
 <comment>           ::= <line-comment> | <block-comment>
-<line-comment>      ::= "//" <any-text-until-newline>
+<line-comment>      ::= "//" <any-text-until-newline> "\n"
 <block-comment>     ::= "/*" <any-text-until-close> "*/"
 
 // Terminal definitions
 <letter>            ::= "a".."z" | "A".."Z" | "_"
-<alphanumeric>      ::= <letter> | <digit>
 <digit>             ::= "0".."9"
+<literal-value>     ::= <string-literal> | <number> | <boolean>
 <string-literal>    ::= '"' <string-content> '"' | "'" <string-content> "'"
-<string-content>    ::= <any-char-except-quote>* | <escaped-char>*
+<string-content>    ::= (<any-char-except-quote> | <escaped-char>)*
 <escaped-char>      ::= "\\" <any-char>
 <number>            ::= <integer> | <float>
-<integer>           ::= <digit>+
-<float>             ::= <digit>+ "." <digit>+
+<integer>           ::= "-"? <digit>+
+<float>             ::= "-"? <digit>+ "." <digit>+
 <boolean>           ::= "true" | "false"
 <whitespace>        ::= " " | "\t"
-<newline>           ::= "\n" | "\r\n" | "\r"
-<optional-ws>       ::= <whitespace>*
 
+// ============================================================================
+// Common Directive Argument Patterns
+// ============================================================================
+// These are handled by directive-specific argument parsers, not the tokenizer
+
+// Conditional arguments: @if <condition>
+<conditional-args>  ::= <expression>
+<expression>        ::= <or-expression>
+<or-expression>     ::= <and-expression> | <and-expression> "or" <or-expression>
+<and-expression>    ::= <not-expression> | <not-expression> "and" <and-expression>
+<not-expression>    ::= "not" <primary-expression> | <primary-expression>
+<primary-expression>::= <comparison> | <in-expression> | <truthiness> | "(" <expression> ")"
+<comparison>        ::= <variable-path> <operator> <operand>
+<in-expression>     ::= <operand> "in" <variable-path>
+<truthiness>        ::= <variable-path>
+<operand>           ::= <literal-value> | <variable-path>
+<operator>          ::= "==" | "!=" | ">" | "<" | ">=" | "<="
+
+// Iteration arguments: @each <item> in <array>
+<iteration-args>    ::= <identifier> "in" <variable-path>
+                      | <identifier> "," <identifier> "in" <variable-path>
+
+// Section arguments: @section <name> or @section <name>(<attributes>)
+<section-args>      ::= <identifier>
+                      | <identifier> "(" <attributes> ")"
+<attributes>        ::= <attribute> | <attribute> "," <attributes>
+<attribute>         ::= <identifier> "=" <string-literal>
+
+// Named parameter arguments: @directive param1, key1=val1, key2="val2"
+<named-params>      ::= <param> | <param> "," <named-params>
+<param>             ::= <literal-value>              // positional
+                      | <identifier> "=" <literal-value>  // named
+
+// ============================================================================
 // Examples
-// Variable:       @{user.name}
-// With default:   @{user.name|"Guest"}
-// With accessor:  @{user.profile.email}
-// Section:        @section header(style="bold")
-//                   Content here
-//                 @end
-// Conditional:    @if user.age >= 18
-//                   Adult content
-//                 @else
-//                   Minor content
-//                 @end
-// Iteration:      @each item in items
-//                   - @{item.name}
-//                 @end
-// Directive:      @include("template.aptl")
-// Escaped:        Email me at user\@example.com
+// ============================================================================
+
+// Variable interpolation:
+//   @{user.name}
+//   @{user.name|"Guest"}
+//   @{user.profile.email}
+
+// Conditional directive:
+//   @if user.isActive
+//     Welcome back!
+//   @end
+//
+//   @if user.age >= 18
+//     Adult content
+//   @elif user.age >= 13
+//     Teen content
+//   @else
+//     Child content
+//   @end
+//
+//   @if user.isActive and user.isPremium
+//     Premium features
+//   @end
+//
+//   @if status == "pending" or status == "approved"
+//     In progress...
+//   @end
+//
+//   @if not user.isBlocked
+//     Welcome!
+//   @end
+//
+//   @if (user.age >= 18 and user.hasConsent) or user.isAdmin
+//     Access granted
+//   @end
+//
+//   @if "premium" in user.roles
+//     Premium content
+//   @end
+
+// Iteration directive:
+//   @each item in items
+//     - @{item.name}
+//   @end
+//
+//   @each user, index in users
+//     @{index}. @{user.name}
+//   @end
+
+// Section directive:
+//   @section header
+//     This is the header
+//   @end
+//
+//   @section code(format="json", lang="javascript")
+//     { "key": "value" }
+//   @end
+
+// Template extension:
+//   @extends "base.aptl"
+//   @slot content
+//     Page-specific content
+//   @end
+
+// Escaped characters:
+//   Email me at user\@example.com
+//   Use \@if to print @if literally

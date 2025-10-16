@@ -8,18 +8,23 @@ import {
   TokenType,
   ASTNode,
   TemplateNode,
-  SectionNode,
-  ConditionalNode,
-  IterationNode,
   VariableNode,
   TextNode,
   NodeType,
+  DirectiveNode,
 } from './types';
 import { APTLSyntaxError } from '@/utils/errors';
+import { DirectiveRegistry, isClassBasedDirective } from '@/directives/directive-registry';
+import { DirectiveParser, BaseDirective } from '@/directives/base-directive';
 
-export class Parser {
+export class Parser implements DirectiveParser {
   private tokens: Token[] = [];
   private current: number = 0;
+  private directiveRegistry?: DirectiveRegistry;
+
+  constructor(directiveRegistry?: DirectiveRegistry) {
+    this.directiveRegistry = directiveRegistry;
+  }
 
   /**
    * Parse tokens into an AST
@@ -43,7 +48,8 @@ export class Parser {
     };
   }
 
-  private parseStatement(): ASTNode | null {
+  // Public methods required by DirectiveParser interface
+  parseStatement(): ASTNode | null {
     const token = this.peek();
 
     switch (token.type) {
@@ -51,21 +57,24 @@ export class Parser {
         return this.parseText();
       case TokenType.VARIABLE:
         return this.parseVariable();
-      case TokenType.SECTION_START:
-        return this.parseSection();
-      case TokenType.IF:
-        return this.parseConditional();
-      case TokenType.EACH:
-        return this.parseIteration();
+      case TokenType.DIRECTIVE:
+        return this.parseDirective();
       case TokenType.NEWLINE:
         // Handle standalone newlines as text nodes
-        return this.parseText(); // This will now handle the newline properly
+        return this.parseText();
       case TokenType.COMMENT_LINE:
       case TokenType.COMMENT_BLOCK:
         this.advance();
         return null;
       case TokenType.EOF:
         return null;
+      case TokenType.END:
+        // END tokens should be handled by directive parsing, not here
+        throw new APTLSyntaxError(
+          `Unexpected @end token without matching directive`,
+          token.line,
+          token.column,
+        );
       // Treat punctuation, operators, parentheses, etc. as text when they appear in statement context
       case TokenType.PUNCTUATION:
       case TokenType.OPERATOR:
@@ -86,12 +95,16 @@ export class Parser {
     const startToken = this.peek();
     let value = '';
 
-    // Handle the first token (could be TEXT or NEWLINE or various punctuation)
+    // Handle the first token (could be TEXT or NEWLINE or various punctuation or STRING)
     if (startToken.type === TokenType.TEXT) {
       value = this.advance().value;
     } else if (startToken.type === TokenType.NEWLINE) {
       value = '\n';
       this.advance();
+    } else if (startToken.type === TokenType.STRING) {
+      // Re-add quotes for string literals in text context
+      const token = this.advance();
+      value = `"${token.value}"`;
     } else if (
       startToken.type === TokenType.PUNCTUATION ||
       startToken.type === TokenType.OPERATOR ||
@@ -102,7 +115,7 @@ export class Parser {
       value = this.advance().value;
     }
 
-    // Combine consecutive text, newline, and punctuation tokens
+    // Combine consecutive text, newline, punctuation, and string tokens
     while (!this.isAtEnd()) {
       const nextToken = this.peek();
 
@@ -111,6 +124,10 @@ export class Parser {
       } else if (nextToken.type === TokenType.NEWLINE) {
         value += '\n';
         this.advance();
+      } else if (nextToken.type === TokenType.STRING) {
+        // Re-add quotes for string literals
+        const token = this.advance();
+        value += `"${token.value}"`;
       } else if (
         nextToken.type === TokenType.PUNCTUATION ||
         nextToken.type === TokenType.OPERATOR ||
@@ -142,274 +159,120 @@ export class Parser {
     };
   }
 
-  private parseSection(): SectionNode {
-    const startToken = this.advance(); // consume @section
+  parseDirective(): DirectiveNode {
+    const startToken = this.advance(); // consume @directive token
+    const directiveName = startToken.value.toLowerCase();
 
-    // Read section name and attributes
-    const headerText = this.readUntilNewline().trim();
-    const { name, attributes } = this.parseSectionHeader(
-      headerText,
-      startToken,
-    );
+    // Read raw arguments until newline (everything after the directive name)
+    const rawArgs = this.readUntilNewline().trim();
 
-    // Parse section body until @end
+    // Get the directive from the registry to check if it has special parsing needs
+    const directive = this.directiveRegistry?.get(directiveName);
+
+    // Parse directive body until @end or terminating directive
     const children: ASTNode[] = [];
-    while (!this.isAtEnd() && this.peek().type !== TokenType.END) {
-      const node = this.parseStatement();
-      if (node) {
-        children.push(node);
-      }
-    }
 
-    if (this.peek().type !== TokenType.END) {
-      throw new APTLSyntaxError(
-        `Unclosed section: ${name}`,
-        startToken.line,
-        startToken.column,
-      );
-    }
+    // Check if this directive has a body
+    const hasBody = this.checkForDirectiveBody();
 
-    this.advance(); // consume @end
-
-    return {
-      type: NodeType.SECTION,
-      name,
-      attributes,
-      children,
-      line: startToken.line,
-      column: startToken.column,
-    };
-  }
-
-  /**
-   * Parse section header to extract name and attributes
-   * Format: name(attr1="value1", attr2="value2")
-   */
-  private parseSectionHeader(
-    headerText: string,
-    startToken: Token,
-  ): { name: string; attributes: Record<string, string> } {
-    const match = headerText.match(/^(\w+)(?:\((.*?)\))?$/);
-
-    if (!match) {
-      throw new APTLSyntaxError(
-        `Invalid section header: ${headerText}`,
-        startToken.line,
-        startToken.column,
-      );
-    }
-
-    const name = match[1];
-    const attributesText = match[2];
-    const attributes: Record<string, string> = {};
-
-    if (attributesText && attributesText.trim()) {
-      // Parse attributes: attr1="value1", attr2="value2"
-      const attrRegex = /(\w+)\s*=\s*"([^"]*)"/g;
-      let attrMatch;
-
-      while ((attrMatch = attrRegex.exec(attributesText)) !== null) {
-        const attrName = attrMatch[1];
-        const attrValue = attrMatch[2];
-        attributes[attrName] = attrValue;
-      }
-
-      // Validate that we parsed some attributes if text was provided
-      if (Object.keys(attributes).length === 0) {
-        throw new APTLSyntaxError(
-          `Invalid attribute syntax in section header: ${headerText}`,
-          startToken.line,
-          startToken.column,
-        );
-      }
-    }
-
-    return { name, attributes };
-  }
-
-  private parseConditional(): ConditionalNode {
-    const startToken = this.advance(); // consume @if
-
-    // Read condition
-    const condition = this.readUntilNewline().trim();
-
-    // Parse consequent
-    const consequent: ASTNode[] = [];
-    while (!this.isAtEnd()) {
-      const token = this.peek();
-      if (
-        token.type === TokenType.ELIF ||
-        token.type === TokenType.ELSE ||
-        token.type === TokenType.END
-      ) {
-        break;
-      }
-      const node = this.parseStatement();
-      if (node) {
-        consequent.push(node);
-      }
-    }
-
-    // Parse alternate (elif/else)
-    let alternate: ConditionalNode | ASTNode[] | undefined;
-
-    if (this.peek().type === TokenType.ELIF) {
-      // Parse elif as a nested conditional but don't consume the @end
-      const elifToken = this.advance(); // consume @elif
-      const elifCondition = this.readUntilNewline().trim();
-
-      // Parse elif consequent
-      const elifConsequent: ASTNode[] = [];
+    if (hasBody && directive && isClassBasedDirective(directive)) {
+      // Class-based directive with hooks
       while (!this.isAtEnd()) {
-        const token = this.peek();
-        if (
-          token.type === TokenType.ELIF ||
-          token.type === TokenType.ELSE ||
-          token.type === TokenType.END
-        ) {
+        const nextToken = this.peek();
+
+        // Stop at @end
+        if (nextToken.type === TokenType.END) {
+          break;
+        }
+
+        // Check if the next token is a directive that should terminate this directive's body
+        if (nextToken.type === TokenType.DIRECTIVE) {
+          const nextDirectiveName = nextToken.value.toLowerCase();
+
+          // Ask the directive if this child directive should terminate the body
+          if (directive.shouldTerminateBody && directive.shouldTerminateBody(nextDirectiveName)) {
+            break;
+          }
+
+          // If the directive handles child directives specially, let it do so
+          if (directive.handleChildDirective) {
+            const handled = directive.handleChildDirective(nextDirectiveName, this, children);
+            if (handled) {
+              continue; // The directive handled it, so skip the normal parsing
+            }
+          }
+        }
+
+        const node = this.parseStatement();
+        if (node) {
+          children.push(node);
+        }
+      }
+    } else if (hasBody && directive && !isClassBasedDirective(directive)) {
+      // Legacy object-based directive - check for bodyTerminators
+      while (!this.isAtEnd()) {
+        const nextToken = this.peek();
+        if (nextToken.type === TokenType.END) {
+          break;
+        }
+
+        // Check legacy bodyTerminators field
+        if (nextToken.type === TokenType.DIRECTIVE && directive.bodyTerminators) {
+          const nextDirectiveName = nextToken.value.toLowerCase();
+          if (directive.bodyTerminators.includes(nextDirectiveName)) {
+            break;
+          }
+        }
+
+        const node = this.parseStatement();
+        if (node) {
+          children.push(node);
+        }
+      }
+    } else if (hasBody) {
+      // No directive found in registry, fall back to simple body parsing
+      while (!this.isAtEnd()) {
+        const nextToken = this.peek();
+        if (nextToken.type === TokenType.END) {
           break;
         }
         const node = this.parseStatement();
         if (node) {
-          elifConsequent.push(node);
-        }
-      }
-
-      // Handle further elif/else
-      let elifAlternate: ConditionalNode | ASTNode[] | undefined;
-      if (this.peek().type === TokenType.ELIF) {
-        // Recursively handle more elif
-        const nestedConditional = this.parseConditional();
-        elifAlternate = nestedConditional;
-        // Don't advance past @end here - the recursive call already consumed it
-        return {
-          type: NodeType.CONDITIONAL,
-          condition,
-          consequent,
-          alternate: {
-            type: NodeType.CONDITIONAL,
-            condition: elifCondition,
-            consequent: elifConsequent,
-            alternate: elifAlternate,
-            line: elifToken.line,
-            column: elifToken.column,
-          },
-          line: startToken.line,
-          column: startToken.column,
-        };
-      } else if (this.peek().type === TokenType.ELSE) {
-        this.advance(); // consume @else
-        elifAlternate = [];
-        while (!this.isAtEnd() && this.peek().type !== TokenType.END) {
-          const node = this.parseStatement();
-          if (node) {
-            elifAlternate.push(node);
-          }
-        }
-      }
-
-      alternate = {
-        type: NodeType.CONDITIONAL,
-        condition: elifCondition,
-        consequent: elifConsequent,
-        alternate: elifAlternate,
-        line: elifToken.line,
-        column: elifToken.column,
-      };
-    } else if (this.peek().type === TokenType.ELSE) {
-      this.advance(); // consume @else
-      alternate = [];
-      while (!this.isAtEnd() && this.peek().type !== TokenType.END) {
-        const node = this.parseStatement();
-        if (node) {
-          alternate.push(node);
+          children.push(node);
         }
       }
     }
 
-    if (this.peek().type !== TokenType.END) {
-      throw new APTLSyntaxError(
-        'Unclosed conditional',
-        startToken.line,
-        startToken.column,
-      );
+    // Consume @end if present (some directives like extends might not have @end)
+    if (this.peek().type === TokenType.END) {
+      this.advance(); // consume @end
     }
-
-    this.advance(); // consume @end
 
     return {
-      type: NodeType.CONDITIONAL,
-      condition,
-      consequent,
-      alternate,
+      type: NodeType.DIRECTIVE,
+      name: directiveName,
+      rawArgs,
+      children,
       line: startToken.line,
       column: startToken.column,
     };
   }
 
-  private parseIteration(): IterationNode {
-    const startToken = this.advance(); // consume @each
-
-    // Read iteration spec: "item in array.path"
-    const spec = this.readUntilNewline().trim();
-    const parts = spec.split(/\s+in\s+/);
-
-    if (parts.length !== 2) {
-      throw new APTLSyntaxError(
-        'Invalid iteration syntax. Expected: @each item in array',
-        startToken.line,
-        startToken.column,
-      );
-    }
-
-    const itemName = parts[0].trim();
-    const arrayPath = parts[1].trim();
-
-    // Parse iteration body
-    const children: ASTNode[] = [];
-    while (!this.isAtEnd() && this.peek().type !== TokenType.END) {
-      const node = this.parseStatement();
-      if (node) {
-        children.push(node);
-      }
-    }
-
-    if (this.peek().type !== TokenType.END) {
-      throw new APTLSyntaxError(
-        'Unclosed iteration',
-        startToken.line,
-        startToken.column,
-      );
-    }
-
-    this.advance(); // consume @end
-
-    return {
-      type: NodeType.ITERATION,
-      itemName,
-      arrayPath,
-      children,
-      line: startToken.line,
-      column: startToken.column,
-    };
+  private checkForDirectiveBody(): boolean {
+    // Peek ahead to see if there's content before @end or EOF
+    // This is a simple heuristic - if the next token is not @end, assume there's a body
+    const nextToken = this.peek();
+    return nextToken.type !== TokenType.END && nextToken.type !== TokenType.EOF;
   }
 
   private readUntilNewline(): string {
     let text = '';
     while (!this.isAtEnd() && this.peek().type !== TokenType.NEWLINE) {
       const token = this.peek();
+      // Just concatenate the raw token values
       if (token.type === TokenType.STRING) {
         // Re-add quotes for string literals
         text += `"${token.value}"`;
-      } else if (
-        token.type === TokenType.LPAREN ||
-        token.type === TokenType.RPAREN ||
-        token.type === TokenType.ASSIGN ||
-        token.type === TokenType.OPERATOR ||
-        token.type === TokenType.PUNCTUATION
-      ) {
-        // For punctuation and operators, just add their value
-        text += token.value;
       } else {
         text += token.value;
       }
@@ -421,18 +284,19 @@ export class Parser {
     return text;
   }
 
-  private peek(): Token {
+  // Public methods required by DirectiveParser interface
+  peek(): Token {
     return this.tokens[this.current];
   }
 
-  private advance(): Token {
+  advance(): Token {
     if (!this.isAtEnd()) {
       this.current++;
     }
     return this.tokens[this.current - 1];
   }
 
-  private isAtEnd(): boolean {
+  isAtEnd(): boolean {
     return (
       this.current >= this.tokens.length || this.peek().type === TokenType.EOF
     );

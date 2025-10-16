@@ -28,6 +28,9 @@ export { VariableResolver } from './data/variable-resolver';
 // Conditionals
 export { ConditionalEvaluator } from './conditionals/conditional-evaluator';
 
+// Directives
+export * from './directives';
+
 // FileSystem and Utils
 export * from './utils';
 

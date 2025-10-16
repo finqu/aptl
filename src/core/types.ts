@@ -2,6 +2,8 @@
  * APTL Core Type Definitions
  */
 
+import type { FileSystem } from '@/filesystem';
+
 // ============================================================================
 // Token Types
 // ============================================================================
@@ -9,14 +11,7 @@
 export enum TokenType {
   TEXT = 'TEXT',
   VARIABLE = 'VARIABLE',
-  SECTION_START = 'SECTION_START',
-  SECTION_END = 'SECTION_END',
-  IF = 'IF',
-  ELIF = 'ELIF',
-  ELSE = 'ELSE',
   END = 'END',
-  EACH = 'EACH',
-  IN = 'IN',
   COMMENT_LINE = 'COMMENT_LINE',
   COMMENT_BLOCK = 'COMMENT_BLOCK',
   INDENT = 'INDENT',
@@ -31,6 +26,7 @@ export enum TokenType {
   PUNCTUATION = 'PUNCTUATION',
   IDENTIFIER = 'IDENTIFIER',
   EOF = 'EOF',
+  DIRECTIVE = 'DIRECTIVE',
 }
 
 export interface Token {
@@ -47,12 +43,10 @@ export interface Token {
 
 export enum NodeType {
   TEMPLATE = 'TEMPLATE',
-  SECTION = 'SECTION',
-  CONDITIONAL = 'CONDITIONAL',
-  ITERATION = 'ITERATION',
   VARIABLE = 'VARIABLE',
   TEXT = 'TEXT',
   COMMENT = 'COMMENT',
+  DIRECTIVE = 'DIRECTIVE',
 }
 
 export interface ASTNode {
@@ -63,27 +57,6 @@ export interface ASTNode {
 
 export interface TemplateNode extends ASTNode {
   type: NodeType.TEMPLATE;
-  children: ASTNode[];
-}
-
-export interface SectionNode extends ASTNode {
-  type: NodeType.SECTION;
-  name: string;
-  attributes: Record<string, string>;
-  children: ASTNode[];
-}
-
-export interface ConditionalNode extends ASTNode {
-  type: NodeType.CONDITIONAL;
-  condition: string;
-  consequent: ASTNode[];
-  alternate?: ConditionalNode | ASTNode[];
-}
-
-export interface IterationNode extends ASTNode {
-  type: NodeType.ITERATION;
-  itemName: string;
-  arrayPath: string;
   children: ASTNode[];
 }
 
@@ -100,6 +73,14 @@ export interface TextNode extends ASTNode {
 export interface CommentNode extends ASTNode {
   type: NodeType.COMMENT;
   value: string;
+}
+
+export interface DirectiveNode extends ASTNode {
+  type: NodeType.DIRECTIVE;
+  name: string;
+  rawArgs: string;  // Raw unparsed arguments from the template
+  parsedArgs?: any; // Parsed arguments (set by directive-specific parser)
+  children: ASTNode[];
 }
 
 // ============================================================================
@@ -176,6 +157,7 @@ export interface APTLOptions {
   cache?: boolean;
   formatter?: OutputFormatter;
   helpers?: Record<string, HelperFunction>;
+  fileSystem?: FileSystem;
 }
 
 export interface TemplateRegistryOptions {

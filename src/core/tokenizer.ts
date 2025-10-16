@@ -20,6 +20,7 @@ export class Tokenizer {
   private options: TokenizerOptions;
   private lastTokenType: TokenType | null = null;
   private atStatementStart: boolean = true; // Track if we're at the start of a statement
+  private registeredDirectives: Set<string> = new Set();
 
   constructor(options: TokenizerOptions = {}) {
     this.options = {
@@ -55,11 +56,7 @@ export class Tokenizer {
           this.atStatementStart = true;
         } else if (
           token.type === TokenType.VARIABLE ||
-          token.type === TokenType.SECTION_START ||
-          token.type === TokenType.IF ||
-          token.type === TokenType.ELIF ||
-          token.type === TokenType.ELSE ||
-          token.type === TokenType.EACH
+          token.type === TokenType.DIRECTIVE
         ) {
           // Once we've started a statement with variable/directive start, we're no longer at start
           this.atStatementStart = false;
@@ -75,6 +72,27 @@ export class Tokenizer {
     tokens.push(this.createToken(TokenType.EOF, ''));
 
     return tokens;
+  }
+
+  /**
+   * Register a directive name for recognition
+   */
+  registerDirective(name: string): void {
+    this.registeredDirectives.add(name.toLowerCase());
+  }
+
+  /**
+   * Unregister a directive name
+   */
+  unregisterDirective(name: string): void {
+    this.registeredDirectives.delete(name.toLowerCase());
+  }
+
+  /**
+   * Get all registered directives
+   */
+  getRegisteredDirectives(): string[] {
+    return Array.from(this.registeredDirectives);
   }
 
   private nextToken(): Token | null {
@@ -132,7 +150,8 @@ export class Tokenizer {
       return this.handlePunctuation();
     }
 
-    // Handle string literals
+    // Handle string literals - content inside quotes is NOT interpolated
+    // Strings are literals: "@{var}" stays as "@{var}", not interpolated
     if (this.peek() === '"' || this.peek() === "'") {
       return this.handleString();
     }
@@ -179,6 +198,11 @@ export class Tokenizer {
       this.advance();
     }
 
+    // Consume the newline after the comment
+    if (!this.isAtEnd() && this.peek() === '\n') {
+      this.advance();
+    }
+
     if (this.options.preserveComments) {
       return {
         type: TokenType.COMMENT_LINE,
@@ -209,6 +233,11 @@ export class Tokenizer {
         this.column = 0;
       }
       value += this.peek();
+      this.advance();
+    }
+
+    // Consume the newline after the block comment (if present)
+    if (!this.isAtEnd() && this.peek() === '\n') {
       this.advance();
     }
 
@@ -246,9 +275,29 @@ export class Tokenizer {
     const keywordStart = this.position;
     const keyword = this.readIdentifier();
 
-    // Check if it's a known directive keyword
-    const knownDirectives = ['section', 'end', 'if', 'elif', 'else', 'each'];
-    if (!knownDirectives.includes(keyword.toLowerCase())) {
+    // Special case: @end is always recognized as it closes all directives
+    if (keyword.toLowerCase() === 'end') {
+      if (!this.atStatementStart) {
+        if (this.options.strictMode) {
+          throw new APTLSyntaxError(
+            `Directive @end must be at the start of a statement (after a newline).`,
+            this.line,
+            startColumn,
+          );
+        } else {
+          // In lenient mode, backtrack and treat as text
+          this.position = keywordStart - 1;
+          this.column = startColumn;
+          return this.handleText();
+        }
+      }
+      return this.createToken(TokenType.END, keyword, startColumn);
+    }
+
+    // Check if it's a registered directive
+    const isRegistered = this.registeredDirectives.has(keyword.toLowerCase());
+
+    if (!isRegistered) {
       // Not a known directive - this is an error!
       // According to BNF, @ followed by letters is reserved for directives
       // Users must escape @ when followed by letters: \@example
@@ -278,27 +327,8 @@ export class Tokenizer {
     }
 
     // It's a valid directive!
-    switch (keyword.toLowerCase()) {
-      case 'section':
-        return this.createToken(TokenType.SECTION_START, keyword, startColumn);
-      case 'end':
-        return this.createToken(TokenType.END, keyword, startColumn);
-      case 'if':
-        return this.createToken(TokenType.IF, keyword, startColumn);
-      case 'elif':
-        return this.createToken(TokenType.ELIF, keyword, startColumn);
-      case 'else':
-        return this.createToken(TokenType.ELSE, keyword, startColumn);
-      case 'each':
-        return this.createToken(TokenType.EACH, keyword, startColumn);
-      default:
-        // This shouldn't happen since we checked above
-        throw new APTLSyntaxError(
-          `Unknown directive: @${keyword}`,
-          this.line,
-          startColumn,
-        );
-    }
+    // All directives use the DIRECTIVE token type (except @end which is special)
+    return this.createToken(TokenType.DIRECTIVE, keyword, startColumn);
   }
 
   private handleVariable(startColumn: number): Token {
@@ -408,17 +438,11 @@ export class Tokenizer {
           this.column = savedCol;
           this.line = savedLine;
 
-          // Check if it's a known directive AND we're at statement start
-          const knownDirectives = [
-            'section',
-            'end',
-            'if',
-            'elif',
-            'else',
-            'each',
-          ];
+          // Check if it's a registered directive (or 'end' which is always valid)
+          const isEndKeyword = keyword.toLowerCase() === 'end';
+          const isRegisteredKeyword = this.registeredDirectives.has(keyword.toLowerCase());
 
-          if (knownDirectives.includes(keyword.toLowerCase())) {
+          if (isEndKeyword || isRegisteredKeyword) {
             if (this.atStatementStart) {
               break; // Let handleDirective process it
             } else if (this.options.strictMode) {

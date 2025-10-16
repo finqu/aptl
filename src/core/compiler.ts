@@ -6,9 +6,6 @@
 import {
   ASTNode,
   TemplateNode,
-  SectionNode,
-  ConditionalNode,
-  IterationNode,
   VariableNode,
   TextNode,
   NodeType,
@@ -18,17 +15,21 @@ import {
   APTLOptions,
   FormatterRegistry,
   Section,
+  DirectiveNode,
 } from './types';
 import { APTLRuntimeError } from '@/utils/errors';
 import { VariableResolver } from '@/data/variable-resolver';
 import { ConditionalEvaluator } from '@/conditionals/conditional-evaluator';
 import { DefaultFormatterRegistry } from '@/formatters/formatter-registry';
+import { DirectiveRegistry } from '@/directives/directive-registry';
+import { DirectiveContext } from '@/directives/types';
 
 export interface CompilerOptions {
   strict?: boolean;
   helpers?: Record<string, HelperFunction>;
   preserveWhitespace?: boolean;
   formatterRegistry?: FormatterRegistry;
+  directiveRegistry?: DirectiveRegistry;
 }
 
 export class Compiler {
@@ -36,17 +37,20 @@ export class Compiler {
   private conditionalEvaluator: ConditionalEvaluator;
   private options: CompilerOptions;
   private formatterRegistry: FormatterRegistry;
+  private directiveRegistry?: DirectiveRegistry;
 
   constructor(options: CompilerOptions = {}) {
     this.options = {
       strict: false,
       helpers: {},
-      preserveWhitespace: false,
+      preserveWhitespace: true,
       ...options,
     };
 
     this.formatterRegistry =
       options.formatterRegistry || new DefaultFormatterRegistry();
+
+    this.directiveRegistry = options.directiveRegistry;
 
     this.variableResolver = new VariableResolver({
       allowUndefined: !this.options.strict,
@@ -118,16 +122,12 @@ export class Compiler {
     switch (node.type) {
       case NodeType.TEMPLATE:
         return this.renderTemplate(node as TemplateNode, context);
-      case NodeType.SECTION:
-        return this.renderSection(node as SectionNode, context);
-      case NodeType.CONDITIONAL:
-        return this.renderConditional(node as ConditionalNode, context);
-      case NodeType.ITERATION:
-        return this.renderIteration(node as IterationNode, context);
       case NodeType.VARIABLE:
         return this.renderVariable(node as VariableNode, context);
       case NodeType.TEXT:
         return this.renderText(node as TextNode, context);
+      case NodeType.DIRECTIVE:
+        return this.renderDirective(node as DirectiveNode, context);
       case NodeType.COMMENT:
         return ''; // Comments are stripped
       default:
@@ -138,111 +138,6 @@ export class Compiler {
   private renderTemplate(node: TemplateNode, context: RenderContext): string {
     return node.children
       .map((child) => this.renderNode(child, context))
-      .join('');
-  }
-
-  private renderSection(node: SectionNode, context: RenderContext): string {
-    const content = node.children
-      .map((child) => this.renderNode(child, context))
-      .join('');
-
-    if (!content.trim()) return '';
-
-    const processedContent = this.options.preserveWhitespace
-      ? content
-      : content.trim();
-
-    // Get appropriate formatter based on section attributes
-    const formatter = this.formatterRegistry.getForAttributes(node.attributes);
-
-    const section: Section = {
-      name: node.name,
-      attributes: node.attributes,
-      content: processedContent,
-    };
-
-    return formatter.formatSection(section);
-  }
-
-  private renderConditional(
-    node: ConditionalNode,
-    context: RenderContext,
-  ): string {
-    const condition = this.conditionalEvaluator.evaluate(
-      node.condition,
-      context.data,
-    );
-
-    if (condition) {
-      return node.consequent
-        .map((child) => this.renderNode(child, context))
-        .join('');
-    } else if (node.alternate) {
-      if (Array.isArray(node.alternate)) {
-        return node.alternate
-          .map((child) => this.renderNode(child, context))
-          .join('');
-      } else {
-        return this.renderNode(node.alternate, context);
-      }
-    }
-
-    return '';
-  }
-
-  private renderIteration(node: IterationNode, context: RenderContext): string {
-    const array = this.variableResolver.resolve(node.arrayPath, context.data);
-
-    if (!Array.isArray(array)) {
-      if (this.options.strict && array !== undefined && array !== null) {
-        throw new APTLRuntimeError(
-          `Expected array for iteration, got ${typeof array}`,
-          { arrayPath: node.arrayPath, value: array },
-        );
-      }
-      return '';
-    }
-
-    if (array.length === 0) {
-      return '';
-    }
-
-    return array
-      .map((item, index) => {
-        // Create new scope with iteration variables
-        const iterationData = {
-          ...context.data,
-          [node.itemName]: item,
-          loop: {
-            index,
-            first: index === 0,
-            last: index === array.length - 1,
-            even: index % 2 === 0,
-            odd: index % 2 === 1,
-            length: array.length,
-          },
-        };
-
-        const iterationContext: RenderContext = {
-          ...context,
-          data: iterationData,
-          scope: [...context.scope, { [node.itemName]: item }],
-        };
-
-        try {
-          return node.children
-            .map((child) => this.renderNode(child, iterationContext))
-            .join('');
-        } catch (error) {
-          if (this.options.strict) {
-            throw new APTLRuntimeError(
-              `Error in iteration at index ${index}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-              { index, item, arrayPath: node.arrayPath },
-            );
-          }
-          return '';
-        }
-      })
       .join('');
   }
 
@@ -360,6 +255,60 @@ export class Compiler {
 
   private renderText(node: TextNode, context: RenderContext): string {
     return node.value;
+  }
+
+  private renderDirective(node: DirectiveNode, context: RenderContext): string {
+    if (!this.directiveRegistry) {
+      throw new APTLRuntimeError(
+        `Directive '@${node.name}' found but no directive registry is configured`,
+        { directive: node.name },
+      );
+    }
+
+    // Parse arguments if not already parsed and directive has a parser
+    if (!node.parsedArgs) {
+      const directive = this.directiveRegistry.get(node.name);
+      if (directive?.parseArguments) {
+        try {
+          node.parsedArgs = directive.parseArguments(node.rawArgs);
+        } catch (error) {
+          throw new APTLRuntimeError(
+            `Failed to parse arguments for directive '@${node.name}': ${error instanceof Error ? error.message : 'Unknown error'}`,
+            { directive: node.name, rawArgs: node.rawArgs },
+          );
+        }
+      }
+    }
+
+    // Create directive context with metadata
+    const metadata = new Map<string, any>();
+    const directiveContext: DirectiveContext = {
+      ...context,
+      node,
+      metadata,
+      renderTemplate: (template: string, data?: Record<string, any>) => {
+        // Check if specific children should be rendered (e.g., from if directive)
+        const childrenToRender = metadata.get('childrenToRender');
+        const children = childrenToRender !== undefined ? childrenToRender : node.children;
+
+        // Render the children
+        return children
+          .map((child: any) => this.renderNode(child, context))
+          .join('');
+      },
+    };
+
+    // Execute the directive synchronously
+    try {
+      const result = this.directiveRegistry.execute(node, directiveContext);
+      return result;
+    } catch (error) {
+      if (this.options.strict) {
+        throw error;
+      }
+      // In non-strict mode, return empty string on directive errors
+      return '';
+    }
   }
 
   /**

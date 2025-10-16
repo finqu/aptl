@@ -6,7 +6,7 @@
 import {
   VariableResolver,
   resolveVariables,
-} from '../../../src/data/variable-resolver';
+} from '@/data/variable-resolver';
 
 describe('VariableResolver', () => {
   let resolver: VariableResolver;
