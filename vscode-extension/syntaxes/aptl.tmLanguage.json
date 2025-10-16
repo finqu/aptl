@@ -1,0 +1,271 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "APTL",
+  "scopeName": "source.aptl",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#conditionals" },
+    { "include": "#iterations" },
+    { "include": "#sections" },
+    { "include": "#variables" },
+    { "include": "#directives" },
+    { "include": "#escaped-chars" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.aptl",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.aptl",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "variables": {
+      "patterns": [
+        {
+          "name": "meta.variable.aptl",
+          "begin": "@\\{",
+          "end": "\\}",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.variable.begin.aptl" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.variable.end.aptl" }
+          },
+          "patterns": [
+            {
+              "name": "meta.variable.default.aptl",
+              "match": "(\\|)\\s*(.+?)(?=\\})",
+              "captures": {
+                "1": { "name": "keyword.operator.default.aptl" },
+                "2": { "name": "string.quoted.default.aptl" }
+              }
+            },
+            {
+              "name": "variable.parameter.aptl",
+              "match": "[a-zA-Z_][a-zA-Z0-9_]*(?:\\.[a-zA-Z_][a-zA-Z0-9_]*)*"
+            }
+          ]
+        }
+      ]
+    },
+    "sections": {
+      "patterns": [
+        {
+          "name": "meta.section.aptl",
+          "begin": "(@section)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+          "end": "(@end)\\b",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.section.aptl" },
+            "2": { "name": "entity.name.type.aptl" }
+          },
+          "endCaptures": {
+            "1": { "name": "keyword.control.end.aptl" }
+          },
+          "patterns": [
+            { "include": "#section-attributes" },
+            { "include": "$self" }
+          ]
+        }
+      ]
+    },
+    "section-attributes": {
+      "patterns": [
+        {
+          "name": "meta.section.attributes.aptl",
+          "begin": "\\(",
+          "end": "\\)",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.attributes.begin.aptl" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.attributes.end.aptl" }
+          },
+          "patterns": [
+            {
+              "match": "([a-zA-Z_][a-zA-Z0-9_]*)\\s*(=)\\s*(\"[^\"]*\"|'[^']*')",
+              "captures": {
+                "1": { "name": "entity.other.attribute-name.aptl" },
+                "2": { "name": "keyword.operator.assignment.aptl" },
+                "3": { "name": "string.quoted.attribute.aptl" }
+              }
+            },
+            {
+              "name": "punctuation.separator.attribute.aptl",
+              "match": ","
+            }
+          ]
+        }
+      ]
+    },
+    "conditionals": {
+      "patterns": [
+        {
+          "name": "meta.conditional.aptl",
+          "begin": "(@if|@elif)\\b",
+          "end": "$",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.conditional.aptl" }
+          },
+          "patterns": [{ "include": "#condition-expression" }]
+        },
+        {
+          "name": "keyword.control.conditional.aptl",
+          "match": "@else\\b"
+        },
+        {
+          "name": "keyword.control.end.aptl",
+          "match": "(@end)\\b",
+          "captures": {
+            "1": { "name": "keyword.control.end.aptl" }
+          }
+        }
+      ]
+    },
+    "condition-expression": {
+      "patterns": [
+        {
+          "name": "keyword.operator.logical.aptl",
+          "match": "\\b(and|or|not)\\b"
+        },
+        {
+          "name": "keyword.operator.word.aptl",
+          "match": "\\b(in)\\b"
+        },
+        {
+          "name": "keyword.operator.comparison.aptl",
+          "match": "==|!=|>=|<=|>|<"
+        },
+        {
+          "name": "constant.language.boolean.aptl",
+          "match": "\\b(true|false)\\b"
+        },
+        {
+          "name": "constant.numeric.aptl",
+          "match": "\\b\\d+(\\.\\d+)?\\b"
+        },
+        {
+          "name": "string.quoted.double.aptl",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.aptl",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.aptl",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.aptl",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "variable.parameter.aptl",
+          "match": "[a-zA-Z_][a-zA-Z0-9_]*(?:\\.[a-zA-Z_][a-zA-Z0-9_]*)*"
+        }
+      ]
+    },
+    "iterations": {
+      "patterns": [
+        {
+          "name": "meta.iteration.aptl",
+          "begin": "(@each)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s+(in)\\s+([a-zA-Z_][a-zA-Z0-9_]*(?:\\.[a-zA-Z_][a-zA-Z0-9_]*)*)",
+          "end": "(@end)\\b",
+          "beginCaptures": {
+            "1": { "name": "keyword.control.iteration.aptl" },
+            "2": { "name": "variable.parameter.aptl" },
+            "3": { "name": "keyword.control.iteration.in.aptl" },
+            "4": { "name": "variable.parameter.aptl" }
+          },
+          "endCaptures": {
+            "1": { "name": "keyword.control.end.aptl" }
+          },
+          "patterns": [{ "include": "$self" }]
+        }
+      ]
+    },
+    "directives": {
+      "patterns": [
+        {
+          "name": "meta.directive.aptl",
+          "begin": "(@)([a-zA-Z_][a-zA-Z0-9_]*)(?!\\s+(in|and|or)\\b)(?!\\{)",
+          "end": "$|(?=@end)",
+          "beginCaptures": {
+            "1": { "name": "punctuation.definition.directive.aptl" },
+            "2": { "name": "entity.name.function.directive.aptl" }
+          },
+          "patterns": [
+            { "include": "#directive-params" },
+            { "include": "$self" }
+          ]
+        }
+      ]
+    },
+    "directive-params": {
+      "patterns": [
+        {
+          "name": "meta.directive.parameters.aptl",
+          "begin": "\\(",
+          "end": "\\)",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.parameters.begin.aptl" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.parameters.end.aptl" }
+          },
+          "patterns": [
+            {
+              "match": "([a-zA-Z_][a-zA-Z0-9_]*)\\s*(=)",
+              "captures": {
+                "1": { "name": "variable.parameter.aptl" },
+                "2": { "name": "keyword.operator.assignment.aptl" }
+              }
+            },
+            {
+              "name": "string.quoted.double.aptl",
+              "begin": "\"",
+              "end": "\""
+            },
+            {
+              "name": "string.quoted.single.aptl",
+              "begin": "'",
+              "end": "'"
+            },
+            {
+              "name": "constant.numeric.aptl",
+              "match": "\\b\\d+(\\.\\d+)?\\b"
+            },
+            {
+              "name": "constant.language.boolean.aptl",
+              "match": "\\b(true|false)\\b"
+            },
+            {
+              "name": "punctuation.separator.parameter.aptl",
+              "match": ","
+            }
+          ]
+        }
+      ]
+    },
+    "escaped-chars": {
+      "patterns": [
+        {
+          "name": "constant.character.escape.aptl",
+          "match": "\\\\[@/\\\\]"
+        }
+      ]
+    }
+  }
+}

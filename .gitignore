@@ -1,0 +1,45 @@
+# Node
+node_modules/
+
+# Build output
+dist/
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE/editor
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Test coverage
+coverage/
+
+# Misc
+.env
+.env.*
+
+# OS
+Thumbs.db
+
+# Mac
+.DS_Store
+
+# Local config
+*.local.js
+*.local.ts
+
+# Jest
+jest-coverage/
+
+# pnpm
+.pnpm-debug.log
+.pnpm-store/
+shrinkwrap.yaml

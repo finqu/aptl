@@ -1,0 +1,41 @@
+{
+  "name": "aptl-language-support",
+  "displayName": "APTL Language Support",
+  "description": "Syntax highlighting for AI Prompt Template Language (APTL)",
+  "version": "0.1.0",
+  "publisher": "your-publisher-name",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "aptl",
+    "template",
+    "prompt",
+    "ai"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "aptl",
+        "aliases": [
+          "APTL",
+          "AI Prompt Template Language"
+        ],
+        "extensions": [
+          ".aptl"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "aptl",
+        "scopeName": "source.aptl",
+        "path": "./syntaxes/aptl.tmLanguage.json"
+      }
+    ]
+  }
+}
