@@ -9,13 +9,13 @@ import { ObjectFileSystem } from '@/filesystem/object-filesystem';
 describe('APTLEngine Integration', () => {
     describe('Basic Text Rendering', () => {
         it('should render plain text without any directives', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('Hello World');
             expect(result).toBe('Hello World');
         });
 
         it('should render multiline text', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = `Line 1
 Line 2
 Line 3`;
@@ -24,19 +24,19 @@ Line 3`;
         });
 
         it('should preserve whitespace in text', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('Hello   World\t\tTest');
             expect(result).toBe('Hello   World\t\tTest');
         });
 
         it('should handle empty template', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('');
             expect(result).toBe('');
         });
 
         it('should handle special characters', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('Special: !@#$%^&*()_+-=[]{}|;:,.<>?');
             expect(result).toBe('Special: !@#$%^&*()_+-=[]{}|;:,.<>?');
         });
@@ -44,13 +44,13 @@ Line 3`;
 
     describe('Variable Rendering', () => {
         it('should render simple variable', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('Hello @{name}', { name: 'World' });
             expect(result).toBe('Hello World');
         });
 
         it('should render multiple variables', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = '@{greeting} @{name}!';
             const result = engine.render(template, {
                 greeting: 'Hello',
@@ -60,7 +60,7 @@ Line 3`;
         });
 
         it('should render nested object properties', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('@{user.name}', {
                 user: { name: 'Alice' },
             });
@@ -68,7 +68,7 @@ Line 3`;
         });
 
         it('should render deeply nested properties', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('@{company.department.employee.name}', {
                 company: {
                     department: {
@@ -80,7 +80,7 @@ Line 3`;
         });
 
         it('should render array elements', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('@{items.0} and @{items.1}', {
                 items: ['apple', 'banana'],
             });
@@ -88,38 +88,38 @@ Line 3`;
         });
 
         it('should handle undefined variables in non-strict mode', () => {
-            const engine = new APTLEngine({ strict: false });
+            const engine = new APTLEngine('gpt-5.1', { strict: false });
             const result = engine.render('Hello @{missing}', {});
             expect(result).toBe('Hello ');
         });
 
         it('should render variables with numbers', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('Count: @{count}', { count: 42 });
             expect(result).toBe('Count: 42');
         });
 
         it('should render variables with booleans', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('Active: @{active}', { active: true });
             expect(result).toBe('Active: true');
         });
 
         it('should render zero values', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('@{value}', { value: 0 });
             expect(result).toBe('0');
         });
 
         it('should render empty string values', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             // Strings are literals - variables inside strings are NOT interpolated
             const result = engine.render('Value: "@{value}"', { value: '' });
             expect(result).toBe('Value: "@{value}"');
         });
 
         it('should handle variables in multiline templates', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = `Name: @{name}
 Age: @{age}
 City: @{city}`;
@@ -134,7 +134,7 @@ City: @{city}`;
 
     describe('Comments', () => {
         it('should ignore line comments', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = `Hello
 // This is a comment
 World`;
@@ -143,7 +143,7 @@ World`;
         });
 
         it('should ignore block comments', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = `Before
 /* This is
 a block
@@ -154,7 +154,7 @@ After`;
         });
 
         it('should handle multiple comments', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = `Line 1
 // Comment 1
 Line 2
@@ -168,7 +168,7 @@ Line 3`;
     describe('Conditional Rendering (@if)', () => {
         describe('Basic @if', () => {
             it('should render content when condition is true', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(show)
   Content
 @end`;
@@ -177,7 +177,7 @@ Line 3`;
             });
 
             it('should not render content when condition is false', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(show)
   Content
 @end`;
@@ -186,7 +186,7 @@ Line 3`;
             });
 
             it('should handle truthy values', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(value)
   Yes
 @end`;
@@ -196,7 +196,7 @@ Line 3`;
             });
 
             it('should handle falsy values', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(value)
   Yes
 @end`;
@@ -209,7 +209,7 @@ Line 3`;
 
         describe('@if with comparisons', () => {
             it('should support equality comparison', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(status == "active")
   Active
 @end`;
@@ -218,7 +218,7 @@ Line 3`;
             });
 
             it('should support inequality comparison', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(status != "inactive")
   Not Inactive
 @end`;
@@ -227,7 +227,7 @@ Line 3`;
             });
 
             it('should support greater than comparison', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(count > 5)
   Many
 @end`;
@@ -236,7 +236,7 @@ Line 3`;
             });
 
             it('should support less than comparison', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(count < 5)
   Few
 @end`;
@@ -245,7 +245,7 @@ Line 3`;
             });
 
             it('should support greater than or equal comparison', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(count >= 5)
   Five or more
 @end`;
@@ -255,7 +255,7 @@ Line 3`;
             });
 
             it('should support less than or equal comparison', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(count <= 5)
   Five or less
 @end`;
@@ -267,7 +267,7 @@ Line 3`;
 
         describe('@if with logical operators', () => {
             it('should support AND operator', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(isActive and hasPermission)
   Allowed
 @end`;
@@ -283,7 +283,7 @@ Line 3`;
             });
 
             it('should support OR operator', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(isAdmin or isOwner)
   Access Granted
 @end`;
@@ -299,7 +299,7 @@ Line 3`;
             });
 
             it('should support NOT operator', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(not isDeleted)
   Visible
 @end`;
@@ -308,7 +308,7 @@ Line 3`;
             });
 
             it('should support complex logical expressions', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(isActive and (isAdmin or isOwner))
   Full Access
 @end`;
@@ -326,7 +326,7 @@ Line 3`;
 
         describe('@if with @elif and @else', () => {
             it('should render @elif when @if is false and @elif is true', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(status == "draft")
   Draft
 @elif(status == "published")
@@ -337,7 +337,7 @@ Line 3`;
             });
 
             it('should render @else when all conditions are false', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(status == "draft")
   Draft
 @elif(status == "published")
@@ -351,7 +351,7 @@ Line 3`;
             });
 
             it('should support multiple @elif clauses', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(grade >= 90)
   A
 @elif(grade >= 80)
@@ -371,7 +371,7 @@ Line 3`;
             });
 
             it('should only render the first matching branch', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(value > 5)
   Greater than 5
 @elif(value > 3)
@@ -388,7 +388,7 @@ Line 3`;
 
         describe('Nested @if', () => {
             it('should support nested if statements', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(isLoggedIn)
   Welcome!
   @if(isAdmin)
@@ -407,7 +407,7 @@ Line 3`;
             });
 
             it('should support deeply nested conditionals', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(level1)
   Level 1
   @if(level2)
@@ -426,7 +426,7 @@ Line 3`;
             });
 
             it('should support nested if/elif/else', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(outer)
   @if(inner == 1)
     Inner One
@@ -447,7 +447,7 @@ Line 3`;
 
         describe('@if with variables in content', () => {
             it('should render variables inside conditional blocks', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(showGreeting)
   Hello @{name}!
 @end`;
@@ -457,7 +457,7 @@ Line 3`;
             });
 
             it('should not render variables when condition is false', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(show)
   @{message}
 @end`;
@@ -467,7 +467,7 @@ Line 3`;
             });
 
             it('should render different variables in different branches', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@if(isPremium)
   Premium: @{premiumMessage}
 @else
@@ -493,7 +493,7 @@ Line 3`;
 
     describe('Template Caching', () => {
         it('should cache compiled templates when cache is enabled', () => {
-            const engine = new APTLEngine({ cache: true });
+            const engine = new APTLEngine('gpt-5.1', { cache: true });
             const template = 'Hello @{name}';
 
             const result1 = engine.render(template, { name: 'Alice' });
@@ -504,7 +504,7 @@ Line 3`;
         });
 
         it('should not cache when cache is disabled', () => {
-            const engine = new APTLEngine({ cache: false });
+            const engine = new APTLEngine('gpt-5.1', { cache: false });
             const template = 'Hello @{name}';
 
             const result1 = engine.render(template, { name: 'Alice' });
@@ -515,7 +515,7 @@ Line 3`;
         });
 
         it('should clear cache when clearCache is called', () => {
-            const engine = new APTLEngine({ cache: true });
+            const engine = new APTLEngine('gpt-5.1', { cache: true });
             const template = 'Hello @{name}';
 
             engine.render(template, { name: 'Alice' });
@@ -532,7 +532,7 @@ Line 3`;
                 '/templates/greeting.aptl': 'Hello @{name}!',
             });
 
-            const engine = new APTLEngine({ fileSystem: fs });
+            const engine = new APTLEngine('gpt-5.1', { fileSystem: fs });
             const result = await engine.renderFile('/templates/greeting.aptl', {
                 name: 'World',
             });
@@ -549,7 +549,7 @@ Line 3`;
 @end`,
             });
 
-            const engine = new APTLEngine({ fileSystem: fs });
+            const engine = new APTLEngine('gpt-5.1', { fileSystem: fs });
             const result1 = await engine.renderFile('/templates/conditional.aptl', {
                 show: true,
             });
@@ -566,7 +566,7 @@ Line 3`;
                 '/templates/test.aptl': 'Value: @{value}',
             });
 
-            const engine = new APTLEngine({ fileSystem: fs, cache: true });
+            const engine = new APTLEngine('gpt-5.1', { fileSystem: fs, cache: true });
 
             const result1 = await engine.renderFile('/templates/test.aptl', {
                 value: 1,
@@ -582,7 +582,7 @@ Line 3`;
 
     describe('Real-world Scenarios', () => {
         it('should render a user profile template', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = `User Profile
 Name: @{user.name}
 Email: @{user.email}
@@ -615,7 +615,7 @@ Email: @{user.email}
         });
 
         it('should render a notification template', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = `@if(notification.type == "success")
   ✓ Success: @{notification.message}
 @elif(notification.type == "error")
@@ -640,7 +640,7 @@ Email: @{user.email}
         });
 
         it('should render a complex conditional structure', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = `@if(user.role == "admin")
   Admin Dashboard
   @if(user.permissions.canDelete)
@@ -677,19 +677,19 @@ Email: @{user.email}
 
     describe('Edge Cases', () => {
         it('should handle empty data object', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('Static text', {});
             expect(result).toBe('Static text');
         });
 
         it('should handle template with only whitespace', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('   \n  \t  \n   ');
             expect(result).toBe('   \n  \t  \n   ');
         });
 
         it('should handle consecutive variables', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('@{a}@{b}@{c}', {
                 a: '1',
                 b: '2',
@@ -699,13 +699,13 @@ Email: @{user.email}
         });
 
         it('should handle variables with no spaces', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('@{name}', { name: 'Test' });
             expect(result).toBe('Test');
         });
 
         it('should handle conditions with nested properties', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = `@if(config.settings.enabled)
   Enabled
 @end`;
@@ -716,7 +716,7 @@ Email: @{user.email}
         });
 
         it('should handle multiple conditionals in sequence', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = `@if(show1)
   Block 1
 @end
@@ -740,7 +740,7 @@ Email: @{user.email}
     describe('Iteration (@each)', () => {
         describe('Basic @each', () => {
             it('should iterate over simple array', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item in items)
 - @{item}
 @end`;
@@ -753,7 +753,7 @@ Email: @{user.email}
             });
 
             it('should iterate over array of objects', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(user in users)
 Name: @{user.name}, Age: @{user.age}
 @end`;
@@ -768,7 +768,7 @@ Name: @{user.name}, Age: @{user.age}
             });
 
             it('should handle empty array', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item in items)
 - @{item}
 @end`;
@@ -777,7 +777,7 @@ Name: @{user.name}, Age: @{user.age}
             });
 
             it('should handle undefined array', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item in items)
 - @{item}
 @end`;
@@ -788,7 +788,7 @@ Name: @{user.name}, Age: @{user.age}
 
         describe('@each with loop metadata', () => {
             it('should provide loop.index', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item in items)
 @{loop.index}: @{item}
 @end`;
@@ -801,7 +801,7 @@ Name: @{user.name}, Age: @{user.age}
             });
 
             it('should provide loop.first', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item in items)
 @if(loop.first)
 First: @{item}
@@ -815,7 +815,7 @@ First: @{item}
             });
 
             it('should provide loop.last', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item in items)
 @if(loop.last)
 Last: @{item}
@@ -829,7 +829,7 @@ Last: @{item}
             });
 
             it('should provide loop.even and loop.odd', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item in items)
 @if(loop.even)
 Even: @{item}
@@ -848,7 +848,7 @@ Odd: @{item}
             });
 
             it('should provide loop.length', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item in items)
 @{loop.index} of @{loop.length}
 @end`;
@@ -863,7 +863,7 @@ Odd: @{item}
 
         describe('@each with custom index variable', () => {
             it('should support custom index variable name', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item, idx in items)
 [@{idx}] @{item}
 @end`;
@@ -876,7 +876,7 @@ Odd: @{item}
             });
 
             it('should provide both custom index and loop metadata', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item, i in items)
 i=@{i}, loop.index=@{loop.index}
 @end`;
@@ -890,7 +890,7 @@ i=@{i}, loop.index=@{loop.index}
 
         describe('@each with @else', () => {
             it('should render else branch when array is empty', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item in items)
 - @{item}
 @else
@@ -902,7 +902,7 @@ No items available
             });
 
             it('should render else branch when array does not exist', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item in items)
 - @{item}
 @else
@@ -913,7 +913,7 @@ No items found
             });
 
             it('should not render else branch when array has items', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item in items)
 - @{item}
 @else
@@ -925,7 +925,7 @@ No items
             });
 
             it('should render else branch with variables', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(product in products)
 Product: @{product}
 @else
@@ -941,7 +941,7 @@ No @{category} products available
 
         describe('Nested @each', () => {
             it('should handle nested iteration', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(category in categories)
 @{category.name}:
 @each(item in category.items)
@@ -962,7 +962,7 @@ No @{category} products available
             });
 
             it('should handle nested each with else branches', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(category in categories)
 @{category.name}:
 @each(item in category.items)
@@ -984,7 +984,7 @@ No @{category} products available
             });
 
             it('should preserve outer loop context in nested loops', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(outer in outers)
 Outer @{loop.index}: @{outer.name}
 @each(inner in outer.inners)
@@ -1007,7 +1007,7 @@ Outer @{loop.index}: @{outer.name}
 
         describe('@each with @if', () => {
             it('should support conditionals inside loops', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(user in users)
 @{user.name}
 @if user.isAdmin
@@ -1029,7 +1029,7 @@ Outer @{loop.index}: @{outer.name}
             });
 
             it('should support loop conditionals based on loop metadata', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(item in items)
 @if(not loop.first)
 , @end@{item}@end`;
@@ -1043,7 +1043,7 @@ Outer @{loop.index}: @{outer.name}
             });
 
             it('should support filtering with conditionals', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(product in products)
 @if(product.inStock)
 - @{product.name} ($@{product.price})
@@ -1064,7 +1064,7 @@ Outer @{loop.index}: @{outer.name}
 
         describe('Real-world @each scenarios', () => {
             it('should render a list of blog posts', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `Blog Posts:
 @each(post in posts)
 
@@ -1100,7 +1100,7 @@ Date: @{post.date}
             });
 
             it('should render a shopping cart', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `Shopping Cart:
 @each(item in cart.items)
 @{loop.index}. @{item.name} - $@{item.price} x @{item.quantity}
@@ -1121,7 +1121,7 @@ Your cart is empty
             });
 
             it('should render empty cart message', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `Shopping Cart:
 @each(item in cart.items)
 - @{item.name}
@@ -1135,7 +1135,7 @@ Your cart is empty
             });
 
             it('should render a table with alternating row styles', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(row in data)
 @if(loop.even)
 [EVEN] @{row.name}: @{row.value}
@@ -1157,7 +1157,7 @@ Your cart is empty
             });
 
             it('should render a nested menu structure', () => {
-                const engine = new APTLEngine();
+                const engine = new APTLEngine('gpt-5.1');
                 const template = `@each(section in menu)
 @{section.title}
 @each(item in section.items)

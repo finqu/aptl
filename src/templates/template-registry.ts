@@ -25,7 +25,7 @@ export class TemplateRegistry {
 
   constructor(engine?: APTLEngine, options: TemplateRegistryConfig = {}) {
     this.templates = new Map();
-    this.engine = engine || new APTLEngine();
+    this.engine = engine || new APTLEngine('gpt-5.1');
     this.options = {
       cache: true,
       extensions: ['.aptl'],

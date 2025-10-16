@@ -53,23 +53,23 @@ class MockFileSystem implements FileSystem {
 describe('APTLEngine', () => {
     describe('constructor', () => {
         it('should create an engine with default options', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(engine).toBeDefined();
             expect(engine).toBeInstanceOf(APTLEngine);
         });
 
         it('should accept empty options object', () => {
-            const engine = new APTLEngine({});
+            const engine = new APTLEngine('gpt-5.1', {});
             expect(engine).toBeDefined();
         });
 
         it('should accept strict option', () => {
-            const engine = new APTLEngine({ strict: true });
+            const engine = new APTLEngine('gpt-5.1', { strict: true });
             expect(engine).toBeDefined();
         });
 
         it('should accept cache option', () => {
-            const engine = new APTLEngine({ cache: false });
+            const engine = new APTLEngine('gpt-5.1', { cache: false });
             expect(engine).toBeDefined();
         });
 
@@ -77,7 +77,7 @@ describe('APTLEngine', () => {
             const helpers = {
                 test: () => 'test',
             };
-            const engine = new APTLEngine({ helpers });
+            const engine = new APTLEngine('gpt-5.1', { helpers });
             expect(engine).toBeDefined();
         });
 
@@ -87,12 +87,12 @@ describe('APTLEngine', () => {
                 formatSection: (section) => section.content,
                 supportsFormat: () => true,
             };
-            const engine = new APTLEngine({ formatter });
+            const engine = new APTLEngine('gpt-5.1', { formatter });
             expect(engine).toBeDefined();
         });
 
         it('should accept multiple options together', () => {
-            const engine = new APTLEngine({
+            const engine = new APTLEngine('gpt-5.1', {
                 strict: true,
                 cache: false,
                 helpers: { test: () => 'test' },
@@ -103,49 +103,49 @@ describe('APTLEngine', () => {
 
     describe('render', () => {
         it('should have a render method', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(engine.render).toBeDefined();
             expect(typeof engine.render).toBe('function');
         });
 
         it('should render simple text without variables', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('Hello World');
             expect(result).toBe('Hello World');
         });
 
         it('should render empty string', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('');
             expect(result).toBe('');
         });
 
         it('should accept data parameter', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('test', { key: 'value' });
             expect(result).toBeDefined();
         });
 
         it('should work with empty data object', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('test', {});
             expect(result).toBeDefined();
         });
 
         it('should work without data parameter', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('test');
             expect(result).toBeDefined();
         });
 
         it('should return a string', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result = engine.render('test');
             expect(typeof result).toBe('string');
         });
 
         it('should handle multiple render calls', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const result1 = engine.render('first');
             const result2 = engine.render('second');
             expect(result1).toBe('first');
@@ -155,26 +155,26 @@ describe('APTLEngine', () => {
 
     describe('compile', () => {
         it('should have a compile method', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(engine.compile).toBeDefined();
             expect(typeof engine.compile).toBe('function');
         });
 
         it('should compile a template', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const compiled = engine.compile('test');
             expect(compiled).toBeDefined();
         });
 
         it('should return an object with render method', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const compiled = engine.compile('test');
             expect(compiled.render).toBeDefined();
             expect(typeof compiled.render).toBe('function');
         });
 
         it('should allow compiled template to be reused', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const compiled = engine.compile('test');
             const result1 = compiled.render({});
             const result2 = compiled.render({});
@@ -183,7 +183,7 @@ describe('APTLEngine', () => {
         });
 
         it('should compile empty template', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const compiled = engine.compile('');
             expect(compiled).toBeDefined();
             expect(compiled.render({})).toBe('');
@@ -192,13 +192,13 @@ describe('APTLEngine', () => {
 
     describe('renderFile', () => {
         it('should have a renderFile method', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(engine.renderFile).toBeDefined();
             expect(typeof engine.renderFile).toBe('function');
         });
 
         it('should throw error when no fileSystem is configured', async () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             await expect(engine.renderFile('test.aptl')).rejects.toThrow('FileSystem not configured');
         });
 
@@ -206,7 +206,7 @@ describe('APTLEngine', () => {
             const fs = new MockFileSystem({
                 'test.aptl': 'Hello World',
             });
-            const engine = new APTLEngine({ fileSystem: fs });
+            const engine = new APTLEngine('gpt-5.1', { fileSystem: fs });
             const result = await engine.renderFile('test.aptl');
             expect(result).toBe('Hello World');
         });
@@ -215,7 +215,7 @@ describe('APTLEngine', () => {
             const fs = new MockFileSystem({
                 'template.aptl': 'content',
             });
-            const engine = new APTLEngine({ fileSystem: fs });
+            const engine = new APTLEngine('gpt-5.1', { fileSystem: fs });
             // Just verify it doesn't throw with data parameter
             const result = await engine.renderFile('template.aptl', { key: 'value' });
             expect(result).toBeDefined();
@@ -224,7 +224,7 @@ describe('APTLEngine', () => {
 
         it('should throw error when file does not exist', async () => {
             const fs = new MockFileSystem({});
-            const engine = new APTLEngine({ fileSystem: fs });
+            const engine = new APTLEngine('gpt-5.1', { fileSystem: fs });
             await expect(engine.renderFile('missing.aptl')).rejects.toThrow('File not found');
         });
 
@@ -233,7 +233,7 @@ describe('APTLEngine', () => {
                 'file1.aptl': 'Content 1',
                 'file2.aptl': 'Content 2',
             });
-            const engine = new APTLEngine({ fileSystem: fs });
+            const engine = new APTLEngine('gpt-5.1', { fileSystem: fs });
 
             const result1 = await engine.renderFile('file1.aptl');
             const result2 = await engine.renderFile('file2.aptl');
@@ -245,19 +245,19 @@ describe('APTLEngine', () => {
 
     describe('registerHelper', () => {
         it('should have a registerHelper method', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(engine.registerHelper).toBeDefined();
             expect(typeof engine.registerHelper).toBe('function');
         });
 
         it('should accept a helper function', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const helper = () => 'test';
             expect(() => engine.registerHelper('test', helper)).not.toThrow();
         });
 
         it('should allow registering multiple helpers', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(() => {
                 engine.registerHelper('helper1', () => 'a');
                 engine.registerHelper('helper2', () => 'b');
@@ -266,7 +266,7 @@ describe('APTLEngine', () => {
         });
 
         it('should accept helpers with different signatures', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(() => {
                 engine.registerHelper('noArgs', () => 'test');
                 engine.registerHelper('oneArg', (x: any) => x);
@@ -277,13 +277,13 @@ describe('APTLEngine', () => {
 
     describe('registerFormatter', () => {
         it('should have a registerFormatter method', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(engine.registerFormatter).toBeDefined();
             expect(typeof engine.registerFormatter).toBe('function');
         });
 
         it('should accept a formatter', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const formatter: OutputFormatter = {
                 format: (sections) => sections.map(s => s.content).join(''),
                 formatSection: (section) => section.content,
@@ -293,7 +293,7 @@ describe('APTLEngine', () => {
         });
 
         it('should allow registering multiple formatters', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const formatter1: OutputFormatter = {
                 format: (sections) => sections.map(s => s.content).join(''),
                 formatSection: (section) => section.content,
@@ -313,13 +313,13 @@ describe('APTLEngine', () => {
 
     describe('setDefaultFormatter', () => {
         it('should have a setDefaultFormatter method', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(engine.setDefaultFormatter).toBeDefined();
             expect(typeof engine.setDefaultFormatter).toBe('function');
         });
 
         it('should accept a formatter', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const formatter: OutputFormatter = {
                 format: (sections) => sections.map(s => s.content).join(''),
                 formatSection: (section) => section.content,
@@ -331,13 +331,13 @@ describe('APTLEngine', () => {
 
     describe('registerDirective', () => {
         it('should have a registerDirective method', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(engine.registerDirective).toBeDefined();
             expect(typeof engine.registerDirective).toBe('function');
         });
 
         it('should accept a directive', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const directive: Directive = {
                 name: 'test',
                 handler: () => 'test',
@@ -346,7 +346,7 @@ describe('APTLEngine', () => {
         });
 
         it('should allow registering multiple directives', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const dir1: Directive = { name: 'test1', handler: () => 'a' };
             const dir2: Directive = { name: 'test2', handler: () => 'b' };
             const dir3: Directive = { name: 'test3', handler: () => 'c' };
@@ -358,7 +358,7 @@ describe('APTLEngine', () => {
         });
 
         it('should accept directives with different properties', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const minimal: Directive = {
                 name: 'minimal',
                 handler: () => '',
@@ -383,18 +383,18 @@ describe('APTLEngine', () => {
 
     describe('unregisterDirective', () => {
         it('should have an unregisterDirective method', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(engine.unregisterDirective).toBeDefined();
             expect(typeof engine.unregisterDirective).toBe('function');
         });
 
         it('should accept a directive name', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(() => engine.unregisterDirective('test')).not.toThrow();
         });
 
         it('should allow unregistering after registering', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const directive: Directive = {
                 name: 'test',
                 handler: () => 'test',
@@ -404,25 +404,25 @@ describe('APTLEngine', () => {
         });
 
         it('should not throw when unregistering non-existent directive', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(() => engine.unregisterDirective('nonexistent')).not.toThrow();
         });
     });
 
     describe('clearCache', () => {
         it('should have a clearCache method', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(engine.clearCache).toBeDefined();
             expect(typeof engine.clearCache).toBe('function');
         });
 
         it('should not throw when called', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(() => engine.clearCache()).not.toThrow();
         });
 
         it('should allow multiple calls', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             expect(() => {
                 engine.clearCache();
                 engine.clearCache();
@@ -431,7 +431,7 @@ describe('APTLEngine', () => {
         });
 
         it('should work after rendering', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             engine.render('test');
             expect(() => engine.clearCache()).not.toThrow();
         });
@@ -439,7 +439,7 @@ describe('APTLEngine', () => {
 
     describe('caching behavior', () => {
         it('should cache templates by default', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = 'test template';
 
             engine.render(template);
@@ -450,7 +450,7 @@ describe('APTLEngine', () => {
         });
 
         it('should respect cache option when disabled', () => {
-            const engine = new APTLEngine({ cache: false });
+            const engine = new APTLEngine('gpt-5.1', { cache: false });
             const template = 'test template';
 
             engine.render(template);
@@ -461,7 +461,7 @@ describe('APTLEngine', () => {
         });
 
         it('should clear cache when registering directive', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = 'test';
 
             engine.render(template);
@@ -478,7 +478,7 @@ describe('APTLEngine', () => {
         });
 
         it('should clear cache when unregistering directive', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const directive: Directive = {
                 name: 'test',
                 handler: () => 'test',
@@ -496,14 +496,14 @@ describe('APTLEngine', () => {
 
     describe('method chaining support', () => {
         it('should allow registering helper after construction', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             engine.registerHelper('test', () => 'test');
             const result = engine.render('text');
             expect(result).toBeDefined();
         });
 
         it('should allow registering directive after construction', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const directive: Directive = {
                 name: 'test',
                 handler: () => 'test',
@@ -514,7 +514,7 @@ describe('APTLEngine', () => {
         });
 
         it('should allow clearing cache after rendering', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             engine.render('test');
             engine.clearCache();
             const result = engine.render('test');
@@ -524,7 +524,7 @@ describe('APTLEngine', () => {
 
     describe('edge cases', () => {
         it('should handle rendering the same template multiple times', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = 'same template';
 
             const result1 = engine.render(template);
@@ -537,7 +537,7 @@ describe('APTLEngine', () => {
         });
 
         it('should handle compiling the same template multiple times', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = 'same template';
 
             const compiled1 = engine.compile(template);
@@ -548,7 +548,7 @@ describe('APTLEngine', () => {
         });
 
         it('should handle very long template strings', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const longTemplate = 'x'.repeat(10000);
 
             const result = engine.render(longTemplate);
@@ -556,7 +556,7 @@ describe('APTLEngine', () => {
         });
 
         it('should handle templates with newlines', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = 'line1\nline2\nline3';
 
             const result = engine.render(template);
@@ -564,7 +564,7 @@ describe('APTLEngine', () => {
         });
 
         it('should handle templates with special characters', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const template = 'test\ttab\rcarriage\nnewline';
 
             const result = engine.render(template);

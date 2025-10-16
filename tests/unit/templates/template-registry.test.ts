@@ -13,7 +13,7 @@ describe('TemplateRegistry', () => {
         });
 
         it('should create registry with custom engine', () => {
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const registry = new TemplateRegistry(engine);
             expect(registry).toBeInstanceOf(TemplateRegistry);
         });
@@ -52,7 +52,7 @@ describe('TemplateRegistry', () => {
 
         it('should register compiled template', () => {
             const registry = new TemplateRegistry();
-            const engine = new APTLEngine();
+            const engine = new APTLEngine('gpt-5.1');
             const compiled = engine.compile('@{name}');
 
             registry.register('test', compiled);

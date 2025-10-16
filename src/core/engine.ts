@@ -28,13 +28,17 @@ export class APTLEngine {
   private directiveRegistry: DirectiveRegistry;
   private cache: Map<string, CompiledTemplate>;
   private fileSystem?: FileSystem;
+  private model: string;
 
-  constructor(options: APTLOptions = {}) {
+  constructor(model: string, options: APTLOptions = {}) {
     this.options = {
       strict: false,
       cache: true,
       ...options,
     };
+
+    // Store model information
+    this.model = model;
 
     // Store file system if provided
     this.fileSystem = options.fileSystem;
@@ -92,7 +96,12 @@ export class APTLEngine {
       }
     }
 
-    return compiled.render(data);
+    // Inject model information into data if available
+    const renderData = this.model
+      ? { ...data, model: this.model }
+      : data;
+
+    return compiled.render(renderData);
   }
 
   /**

@@ -63,7 +63,7 @@ const data = {
   secondaryGoals: ['explain concepts', 'suggest improvements'],
 };
 
-const engine = new APTLEngine();
+const engine = new APTLEngine('gpt-5.1');
 console.log(engine.render(template, data));
 ```
 
@@ -159,7 +159,7 @@ Register and manage templates programmatically:
 
 ```typescript
 import { TemplateRegistry, APTLEngine } from 'aptl';
-const engine = new APTLEngine();
+const engine = new APTLEngine('gpt-5.1');
 const registry = new TemplateRegistry(engine);
 registry.register('welcome', '@section main Hello, @{user}!@end');
 const tpl = registry.get('welcome');
@@ -179,7 +179,7 @@ APTL provides specific error types for robust prompt development:
 ```typescript
 import { APTLEngine, APTLSyntaxError } from 'aptl';
 try {
-  new APTLEngine().render('@if', {});
+  new APTLEngine('gpt-5.1').render('@if', {});
 } catch (err) {
   if (err instanceof APTLSyntaxError) {
     console.error('Syntax error:', err.message);

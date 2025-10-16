@@ -48,7 +48,7 @@ Growth: No change
   });
 
   // 2. Create template registry
-  const registry = new TemplateRegistry(new APTLEngine(), { fileSystem });
+  const registry = new TemplateRegistry(new APTLEngine('gpt-5.1'), { fileSystem });
 
   // 3. Load templates from directories
   console.log('Loading templates...');

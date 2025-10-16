@@ -21,7 +21,7 @@ Best regards,
     });
 
     // Create engine with file system
-    const engine = new APTLEngine({ fileSystem: fs });
+    const engine = new APTLEngine('gpt-5.1', { fileSystem: fs });
 
     // Render templates from files
     const greeting = await engine.renderFile('/templates/greeting.aptl', {
@@ -45,7 +45,7 @@ async function exampleWithLocalFileSystem() {
         const { LocalFileSystem } = await import('../src/filesystem/local-filesystem');
 
         const fs = new LocalFileSystem();
-        const engine = new APTLEngine({ fileSystem: fs });
+        const engine = new APTLEngine('gpt-5.1', { fileSystem: fs });
 
         // Note: This would read actual files from disk
         // const result = await engine.renderFile('./templates/mytemplate.aptl', data);
@@ -63,7 +63,7 @@ async function exampleErrorHandling() {
         '/templates/example.aptl': 'Hello',
     });
 
-    const engine = new APTLEngine({ fileSystem: fs });
+    const engine = new APTLEngine('gpt-5.1', { fileSystem: fs });
 
     try {
         // Try to render non-existent file
@@ -73,7 +73,7 @@ async function exampleErrorHandling() {
     }
 
     // Engine without fileSystem
-    const engineNoFS = new APTLEngine();
+    const engineNoFS = new APTLEngine('gpt-5.1');
     try {
         await engineNoFS.renderFile('any.aptl');
     } catch (error) {
@@ -89,7 +89,7 @@ async function exampleCaching() {
         '/templates/counter.aptl': 'Count: {{ count }}',
     });
 
-    const engine = new APTLEngine({ fileSystem: fs, cache: true });
+    const engine = new APTLEngine('gpt-5.1', { fileSystem: fs, cache: true });
 
     // First render - template gets compiled and cached
     const result1 = await engine.renderFile('/templates/counter.aptl', {
