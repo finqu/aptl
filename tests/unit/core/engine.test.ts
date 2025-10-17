@@ -5,8 +5,23 @@
 
 import { APTLEngine } from '@/core/engine';
 import { OutputFormatter, HelperFunction } from '@/core/types';
-import { Directive } from '@/directives/types';
+import { BaseDirective, InlineDirective } from '@/directives';
+import { DirectiveContext } from '@/directives/types';
 import { FileSystem } from '@/filesystem';
+
+// Simple test directive class
+class TestDirective extends InlineDirective {
+  constructor(
+    public readonly name: string,
+    private returnValue: string = 'test',
+  ) {
+    super();
+  }
+
+  execute(context: DirectiveContext): string {
+    return this.returnValue;
+  }
+}
 
 // Mock FileSystem for testing
 class MockFileSystem implements FileSystem {
@@ -46,8 +61,8 @@ class MockFileSystem implements FileSystem {
     this.files.delete(path);
   }
 
-  async mkdir(): Promise<void> {}
-  async rmdir(): Promise<void> {}
+  async mkdir(): Promise<void> { }
+  async rmdir(): Promise<void> { }
 }
 
 describe('APTLEngine', () => {
@@ -342,18 +357,15 @@ describe('APTLEngine', () => {
 
     it('should accept a directive', () => {
       const engine = new APTLEngine('gpt-5.1');
-      const directive: Directive = {
-        name: 'test',
-        handler: () => 'test',
-      };
+      const directive = new TestDirective('test');
       expect(() => engine.registerDirective(directive)).not.toThrow();
     });
 
     it('should allow registering multiple directives', () => {
       const engine = new APTLEngine('gpt-5.1');
-      const dir1: Directive = { name: 'test1', handler: () => 'a' };
-      const dir2: Directive = { name: 'test2', handler: () => 'b' };
-      const dir3: Directive = { name: 'test3', handler: () => 'c' };
+      const dir1 = new TestDirective('test1', 'a');
+      const dir2 = new TestDirective('test2', 'b');
+      const dir3 = new TestDirective('test3', 'c');
       expect(() => {
         engine.registerDirective(dir1);
         engine.registerDirective(dir2);
@@ -363,24 +375,38 @@ describe('APTLEngine', () => {
 
     it('should accept directives with different properties', () => {
       const engine = new APTLEngine('gpt-5.1');
-      const minimal: Directive = {
-        name: 'minimal',
-        handler: () => '',
-      };
-      const withValidation: Directive = {
-        name: 'validated',
-        handler: () => '',
-        validate: () => {},
-      };
-      const withParser: Directive = {
-        name: 'parsed',
-        handler: () => '',
-        parseArguments: (args) => ({ args }),
-      };
+
+      class MinimalDirective extends InlineDirective {
+        readonly name = 'minimal';
+        execute(): string {
+          return '';
+        }
+      }
+
+      class ValidatedDirective extends InlineDirective {
+        readonly name = 'validated';
+        execute(): string {
+          return '';
+        }
+        validate(): void {
+          // validation logic
+        }
+      }
+
+      class ParsedDirective extends InlineDirective {
+        readonly name = 'parsed';
+        execute(): string {
+          return '';
+        }
+        parseArguments(args: string): any {
+          return { args };
+        }
+      }
+
       expect(() => {
-        engine.registerDirective(minimal);
-        engine.registerDirective(withValidation);
-        engine.registerDirective(withParser);
+        engine.registerDirective(new MinimalDirective());
+        engine.registerDirective(new ValidatedDirective());
+        engine.registerDirective(new ParsedDirective());
       }).not.toThrow();
     });
   });
@@ -399,10 +425,7 @@ describe('APTLEngine', () => {
 
     it('should allow unregistering after registering', () => {
       const engine = new APTLEngine('gpt-5.1');
-      const directive: Directive = {
-        name: 'test',
-        handler: () => 'test',
-      };
+      const directive = new TestDirective('test');
       engine.registerDirective(directive);
       expect(() => engine.unregisterDirective('test')).not.toThrow();
     });
@@ -470,10 +493,7 @@ describe('APTLEngine', () => {
 
       engine.render(template);
 
-      const directive: Directive = {
-        name: 'newdir',
-        handler: () => 'new',
-      };
+      const directive = new TestDirective('newdir', 'new');
       engine.registerDirective(directive);
 
       // Cache should be cleared
@@ -483,10 +503,7 @@ describe('APTLEngine', () => {
 
     it('should clear cache when unregistering directive', () => {
       const engine = new APTLEngine('gpt-5.1');
-      const directive: Directive = {
-        name: 'test',
-        handler: () => 'test',
-      };
+      const directive = new TestDirective('test');
 
       engine.registerDirective(directive);
       engine.render('template');
@@ -508,10 +525,7 @@ describe('APTLEngine', () => {
 
     it('should allow registering directive after construction', () => {
       const engine = new APTLEngine('gpt-5.1');
-      const directive: Directive = {
-        name: 'test',
-        handler: () => 'test',
-      };
+      const directive = new TestDirective('test');
       engine.registerDirective(directive);
       const result = engine.render('text');
       expect(result).toBeDefined();

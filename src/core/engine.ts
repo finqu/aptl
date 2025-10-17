@@ -17,8 +17,8 @@ import { DefaultFormatterRegistry } from '@/formatters/formatter-registry';
 import {
   DirectiveRegistry,
   createDefaultDirectiveRegistry,
+  BaseDirective,
 } from '@/directives';
-import { Directive } from '@/directives/types';
 import { FileSystem } from '@/filesystem';
 
 export class APTLEngine {
@@ -164,7 +164,7 @@ export class APTLEngine {
   /**
    * Register a custom directive
    */
-  registerDirective(directive: Directive): void {
+  registerDirective(directive: BaseDirective): void {
     this.directiveRegistry.register(directive);
 
     // Also register the directive name with the tokenizer

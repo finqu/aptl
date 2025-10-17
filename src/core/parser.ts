@@ -14,10 +14,7 @@ import {
   DirectiveNode,
 } from './types';
 import { APTLSyntaxError } from '@/utils/errors';
-import {
-  DirectiveRegistry,
-  isClassBasedDirective,
-} from '@/directives/directive-registry';
+import { DirectiveRegistry } from '@/directives/directive-registry';
 import { DirectiveParser, BaseDirective } from '@/directives/base-directive';
 
 export class Parser implements DirectiveParser {
@@ -178,7 +175,7 @@ export class Parser implements DirectiveParser {
     // Check if this directive has a body
     const hasBody = this.checkForDirectiveBody();
 
-    if (hasBody && directive && isClassBasedDirective(directive)) {
+    if (hasBody && directive) {
       // Class-based directive with hooks
       while (!this.isAtEnd()) {
         const nextToken = this.peek();
@@ -210,30 +207,6 @@ export class Parser implements DirectiveParser {
             if (handled) {
               continue; // The directive handled it, so skip the normal parsing
             }
-          }
-        }
-
-        const node = this.parseStatement();
-        if (node) {
-          children.push(node);
-        }
-      }
-    } else if (hasBody && directive && !isClassBasedDirective(directive)) {
-      // Legacy object-based directive - check for bodyTerminators
-      while (!this.isAtEnd()) {
-        const nextToken = this.peek();
-        if (nextToken.type === TokenType.END) {
-          break;
-        }
-
-        // Check legacy bodyTerminators field
-        if (
-          nextToken.type === TokenType.DIRECTIVE &&
-          directive.bodyTerminators
-        ) {
-          const nextDirectiveName = nextToken.value.toLowerCase();
-          if (directive.bodyTerminators.includes(nextDirectiveName)) {
-            break;
           }
         }
 

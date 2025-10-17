@@ -27,12 +27,6 @@ export interface DirectiveContext extends RenderContext {
 }
 
 /**
- * Directive handler function
- * Note: Currently only synchronous handlers are supported
- */
-export type DirectiveHandler = (context: DirectiveContext) => string;
-
-/**
  * Directive argument parser function
  * Takes raw argument string and returns parsed arguments object
  * Can also take an array of tokens if tokenization is needed
@@ -43,55 +37,6 @@ export type DirectiveArgumentParser = (
 ) => any;
 
 /**
- * Directive definition
+ * Type for directives - only class-based directives are supported
  */
-export interface Directive {
-  /**
-   * Directive name (e.g., 'extends', 'slot', 'if', 'each')
-   */
-  name: string;
-
-  /**
-   * Whether this directive must appear at the top of the template
-   */
-  requiresTopLevel?: boolean;
-
-  /**
-   * Whether this directive can only appear once per template
-   */
-  unique?: boolean;
-
-  /**
-   * Handler function for processing this directive
-   */
-  handler: DirectiveHandler;
-
-  /**
-   * Optional argument parser - if provided, will be used to parse rawArgs into parsedArgs
-   * This allows directives to define custom argument syntax
-   */
-  parseArguments?: DirectiveArgumentParser;
-
-  /**
-   * Validation function (optional)
-   */
-  validate?: (node: DirectiveNode) => void;
-
-  /**
-   * Whether this directive expects a body (children nodes)
-   * Defaults to true
-   */
-  hasBody?: boolean;
-
-  /**
-   * Directive names that should terminate body parsing (in addition to @end)
-   * Used for directives like elif/else that share an @end with their parent
-   * Example: elif should stop when it sees 'elif', 'else', or 'end'
-   */
-  bodyTerminators?: string[];
-}
-
-/**
- * Type for directives - can be either legacy object-based or new class-based
- */
-export type DirectiveType = Directive | BaseDirective;
+export type DirectiveType = BaseDirective;

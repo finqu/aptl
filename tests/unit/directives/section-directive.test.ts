@@ -3,13 +3,16 @@
  */
 
 import {
-  sectionDirective,
+  SectionDirective,
   parseModelAttribute,
   matchModel,
 } from '@/directives/section-directive';
 import { DirectiveContext } from '@/directives/types';
 import { DirectiveNode, NodeType, TextNode } from '@/core/types';
 import { APTLSyntaxError, APTLRuntimeError } from '@/utils/errors';
+
+// Create an instance for testing
+const sectionDirective = new SectionDirective();
 
 describe('Section Directive', () => {
   describe('parseModelAttribute', () => {
@@ -235,21 +238,21 @@ describe('Section Directive', () => {
 
     it('should render section without model attribute', () => {
       const context = createContext('gpt-5.1', 'intro');
-      const result = sectionDirective.handler(context);
+      const result = sectionDirective.execute(context);
       expect(result).toBe('Test content');
       expect(context.renderTemplate).toHaveBeenCalled();
     });
 
     it('should render section when model matches exactly', () => {
       const context = createContext('gpt-5.1', 'intro(model="gpt-5.1")');
-      const result = sectionDirective.handler(context);
+      const result = sectionDirective.execute(context);
       expect(result).toBe('Test content');
       expect(context.renderTemplate).toHaveBeenCalled();
     });
 
     it('should not render section when model does not match', () => {
       const context = createContext('claude-4', 'intro(model="gpt-5.1")');
-      const result = sectionDirective.handler(context);
+      const result = sectionDirective.execute(context);
       expect(result).toBe('');
       expect(context.renderTemplate).not.toHaveBeenCalled();
     });
@@ -259,7 +262,7 @@ describe('Section Directive', () => {
         'claude-4',
         'data(model="gpt-5.1/structured, md")',
       );
-      const result = sectionDirective.handler(context);
+      const result = sectionDirective.execute(context);
       expect(result).toBe('Test content');
       expect(context.renderTemplate).toHaveBeenCalled();
       expect(context.metadata.get('format')).toBe('md');
@@ -270,7 +273,7 @@ describe('Section Directive', () => {
         'gpt-5.1',
         'data(model="gpt-5.1/structured, md")',
       );
-      const result = sectionDirective.handler(context);
+      const result = sectionDirective.execute(context);
       expect(result).toBe('Test content');
       expect(context.renderTemplate).toHaveBeenCalled();
       expect(context.metadata.get('format')).toBe('structured');
@@ -281,7 +284,7 @@ describe('Section Directive', () => {
         'claude-4',
         'data(model="gpt-5.1/structured, claude-4/json, md")',
       );
-      const result = sectionDirective.handler(context);
+      const result = sectionDirective.execute(context);
       expect(result).toBe('Test content');
       expect(context.renderTemplate).toHaveBeenCalled();
       expect(context.metadata.get('format')).toBe('json');
@@ -290,15 +293,15 @@ describe('Section Directive', () => {
     it('should return empty string when no model in data (non-strict mode)', () => {
       const context = createContext('', 'intro(model="gpt-5.1")');
       context.data.model = undefined;
-      const result = sectionDirective.handler(context);
+      const result = sectionDirective.execute(context);
       expect(result).toBe('');
     });
 
     it('should throw if renderTemplate is not available', () => {
       const context = createContext('gpt-5.1', 'intro');
       context.renderTemplate = undefined;
-      expect(() => sectionDirective.handler(context)).toThrow(APTLRuntimeError);
-      expect(() => sectionDirective.handler(context)).toThrow(
+      expect(() => sectionDirective.execute(context)).toThrow(APTLRuntimeError);
+      expect(() => sectionDirective.execute(context)).toThrow(
         'requires renderTemplate',
       );
     });

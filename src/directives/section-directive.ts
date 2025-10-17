@@ -1,9 +1,10 @@
 /**
- * Section Directive
+ * Section Directive (Class-based)
  * Defines output sections with formatting and conditional rendering based on model
  */
 
-import { Directive, DirectiveContext } from './types';
+import { BlockDirective } from './base-directive';
+import { DirectiveContext } from './types';
 import { APTLSyntaxError, APTLRuntimeError } from '@/utils/errors';
 import { DirectiveNode } from '@/core/types';
 import { parseSectionArgs } from './argument-parsers';
@@ -97,7 +98,7 @@ export function matchModel(
 }
 
 /**
- * @section directive
+ * SectionDirective class
  * Defines a named section with optional formatting attributes and model-based conditional rendering
  *
  * Usage:
@@ -119,16 +120,22 @@ export function matchModel(
  *   Different format per model, with fallback
  *   @end
  */
-export const sectionDirective: Directive = {
-  name: 'section',
-  requiresTopLevel: false,
-  unique: false,
+export class SectionDirective extends BlockDirective {
+  readonly name = 'section';
+  readonly requiresTopLevel = false;
+  readonly unique = false;
 
-  parseArguments: (rawArgs: string) => {
+  /**
+   * Parse section arguments
+   */
+  parseArguments(rawArgs: string): any {
     return parseSectionArgs(rawArgs);
-  },
+  }
 
-  validate: (node: DirectiveNode) => {
+  /**
+   * Validate section directive
+   */
+  validate(node: DirectiveNode): void {
     // Section name should be in rawArgs or parsedArgs
     const hasName =
       (node.rawArgs && node.rawArgs.trim() !== '') ||
@@ -141,9 +148,12 @@ export const sectionDirective: Directive = {
         node.column,
       );
     }
-  },
+  }
 
-  handler: (context: DirectiveContext): string => {
+  /**
+   * Execute the section directive
+   */
+  execute(context: DirectiveContext): string {
     // Parse arguments if not already done
     if (!context.node.parsedArgs) {
       context.node.parsedArgs = parseSectionArgs(context.node.rawArgs);
@@ -185,5 +195,5 @@ export const sectionDirective: Directive = {
 
     // Call renderTemplate without passing data to use current context
     return context.renderTemplate('');
-  },
-};
+  }
+}
