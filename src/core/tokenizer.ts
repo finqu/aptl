@@ -440,7 +440,9 @@ export class Tokenizer {
 
           // Check if it's a registered directive (or 'end' which is always valid)
           const isEndKeyword = keyword.toLowerCase() === 'end';
-          const isRegisteredKeyword = this.registeredDirectives.has(keyword.toLowerCase());
+          const isRegisteredKeyword = this.registeredDirectives.has(
+            keyword.toLowerCase(),
+          );
 
           if (isEndKeyword || isRegisteredKeyword) {
             if (this.atStatementStart) {

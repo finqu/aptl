@@ -14,7 +14,10 @@ import {
   DirectiveNode,
 } from './types';
 import { APTLSyntaxError } from '@/utils/errors';
-import { DirectiveRegistry, isClassBasedDirective } from '@/directives/directive-registry';
+import {
+  DirectiveRegistry,
+  isClassBasedDirective,
+} from '@/directives/directive-registry';
 import { DirectiveParser, BaseDirective } from '@/directives/base-directive';
 
 export class Parser implements DirectiveParser {
@@ -190,13 +193,20 @@ export class Parser implements DirectiveParser {
           const nextDirectiveName = nextToken.value.toLowerCase();
 
           // Ask the directive if this child directive should terminate the body
-          if (directive.shouldTerminateBody && directive.shouldTerminateBody(nextDirectiveName)) {
+          if (
+            directive.shouldTerminateBody &&
+            directive.shouldTerminateBody(nextDirectiveName)
+          ) {
             break;
           }
 
           // If the directive handles child directives specially, let it do so
           if (directive.handleChildDirective) {
-            const handled = directive.handleChildDirective(nextDirectiveName, this, children);
+            const handled = directive.handleChildDirective(
+              nextDirectiveName,
+              this,
+              children,
+            );
             if (handled) {
               continue; // The directive handled it, so skip the normal parsing
             }
@@ -217,7 +227,10 @@ export class Parser implements DirectiveParser {
         }
 
         // Check legacy bodyTerminators field
-        if (nextToken.type === TokenType.DIRECTIVE && directive.bodyTerminators) {
+        if (
+          nextToken.type === TokenType.DIRECTIVE &&
+          directive.bodyTerminators
+        ) {
           const nextDirectiveName = nextToken.value.toLowerCase();
           if (directive.bodyTerminators.includes(nextDirectiveName)) {
             break;

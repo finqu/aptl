@@ -7,12 +7,7 @@
  * AST structure validation and delegates syntax validation to the tokenizer/parser.
  */
 
-import {
-  TemplateNode,
-  ASTNode,
-  NodeType,
-  VariableNode,
-} from '../core/types';
+import { TemplateNode, ASTNode, NodeType, VariableNode } from '../core/types';
 import { APTLValidationError, APTLSyntaxError } from '@/utils/errors';
 import { Tokenizer } from '@/core/tokenizer';
 import { Parser } from '@/core/parser';
@@ -129,8 +124,6 @@ export class TemplateValidator {
     }
   }
 
-
-
   /**
    * Validate variable node
    */
@@ -146,7 +139,9 @@ export class TemplateValidator {
     const path = node.path.trim();
 
     // Allow dotted paths and array access: user.items[0].name
-    if (!/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*|\[\d+\])*$/.test(path)) {
+    if (
+      !/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*|\[\d+\])*$/.test(path)
+    ) {
       errors.push(
         `Invalid variable path "${node.path}" at line ${node.line}. Must be a valid dotted path (e.g., user.name or items[0].name).`,
       );

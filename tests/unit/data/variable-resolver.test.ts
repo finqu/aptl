@@ -3,10 +3,7 @@
  * Tests for APTL variable resolution and path handling
  */
 
-import {
-  VariableResolver,
-  resolveVariables,
-} from '@/data/variable-resolver';
+import { VariableResolver, resolveVariables } from '@/data/variable-resolver';
 
 describe('VariableResolver', () => {
   let resolver: VariableResolver;

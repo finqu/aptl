@@ -27,19 +27,19 @@ import { sectionDirective } from './section-directive';
  * Create a default directive registry with all built-in directives
  */
 export function createDefaultDirectiveRegistry(): DirectiveRegistry {
-    const registry = new DirectiveRegistry();
+  const registry = new DirectiveRegistry();
 
-    // Template extension directives
-    registry.register(extendsDirective);
-    registry.register(slotDirective);
+  // Template extension directives
+  registry.register(extendsDirective);
+  registry.register(slotDirective);
 
-    // Control flow directives - use class-based directives
-    registry.register(new IfDirective());
-    // NOTE: elif and else are now handled by IfDirective/EachDirective, no separate registration needed
-    registry.register(new EachDirective());
+  // Control flow directives - use class-based directives
+  registry.register(new IfDirective());
+  // NOTE: elif and else are now handled by IfDirective/EachDirective, no separate registration needed
+  registry.register(new EachDirective());
 
-    // Section directive
-    registry.register(sectionDirective);
+  // Section directive
+  registry.register(sectionDirective);
 
-    return registry;
+  return registry;
 }

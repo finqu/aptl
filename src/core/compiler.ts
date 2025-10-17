@@ -289,7 +289,8 @@ export class Compiler {
       renderTemplate: (template: string, data?: Record<string, any>) => {
         // Check if specific children should be rendered (e.g., from if directive)
         const childrenToRender = metadata.get('childrenToRender');
-        const children = childrenToRender !== undefined ? childrenToRender : node.children;
+        const children =
+          childrenToRender !== undefined ? childrenToRender : node.children;
 
         // Use provided data or fall back to context data
         const renderContext = data ? { ...context, data } : context;

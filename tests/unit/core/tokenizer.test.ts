@@ -511,9 +511,7 @@ Regular text`;
     });
 
     it('should suggest escaping for unknown directives', () => {
-      expect(() => tokenizer.tokenize('@social handle\n')).toThrow(
-        /\\@social/,
-      );
+      expect(() => tokenizer.tokenize('@social handle\n')).toThrow(/\\@social/);
     });
   });
 

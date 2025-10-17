@@ -1,15 +1,104 @@
 /**
  * Section Directive
- * Defines output sections with formatting
+ * Defines output sections with formatting and conditional rendering based on model
  */
 
 import { Directive, DirectiveContext } from './types';
-import { APTLSyntaxError } from '@/utils/errors';
+import { APTLSyntaxError, APTLRuntimeError } from '@/utils/errors';
 import { DirectiveNode } from '@/core/types';
+import { parseSectionArgs } from './argument-parsers';
+
+/**
+ * Parse model attribute and extract model-specific formats
+ *
+ * Syntax:
+ * - model="gpt-5.1" <- renders only for gpt-5.1 model
+ * - model="gpt-5.1/structured" <- renders structured data only for gpt-5.1
+ * - model="gpt-5.1/structured, md" <- renders structured data for gpt-5.1, other md
+ * - model="gpt-5.1/structured, claude-4/json, md" <- renders structured data for gpt-5.1, claude json, other md
+ */
+export interface ModelConfig {
+  model: string;
+  format?: string;
+}
+
+export function parseModelAttribute(modelAttr: string): {
+  configs: ModelConfig[];
+  defaultFormat?: string;
+} {
+  const trimmed = modelAttr.trim();
+  if (!trimmed) {
+    return { configs: [] };
+  }
+
+  // Split by comma to get individual configurations
+  const parts = trimmed
+    .split(',')
+    .map((p) => p.trim())
+    .filter((p) => p);
+  const configs: ModelConfig[] = [];
+  let defaultFormat: string | undefined;
+
+  for (const part of parts) {
+    // Check if this is a model/format pair or just a format (default)
+    if (part.includes('/')) {
+      const [model, format] = part.split('/').map((s) => s.trim());
+      if (model && format) {
+        configs.push({ model, format });
+      }
+    } else {
+      // Check if it looks like a model name (no slash) or a format
+      // If it's the last item without a slash, treat as default format
+      // If it has dots or hyphens typical of model names, treat as model-only
+      if (
+        part === parts[parts.length - 1] &&
+        !part.includes('.') &&
+        !part.includes('-')
+      ) {
+        defaultFormat = part;
+      } else {
+        // Treat as model without specific format
+        configs.push({ model: part });
+      }
+    }
+  }
+
+  return { configs, defaultFormat };
+}
+
+/**
+ * Match the current model against model configurations
+ * Returns the format to use, or null if section should not render
+ */
+export function matchModel(
+  currentModel: string,
+  configs: ModelConfig[],
+  defaultFormat?: string,
+): string | null {
+  // First, try exact match
+  for (const config of configs) {
+    if (config.model === currentModel) {
+      return config.format || 'default';
+    }
+  }
+
+  // If no exact match and defaultFormat is specified, use it
+  if (defaultFormat) {
+    return defaultFormat;
+  }
+
+  // If no configs, render for all models
+  if (configs.length === 0) {
+    return 'default';
+  }
+
+  // No match and no default - don't render
+  return null;
+}
 
 /**
  * @section directive
- * Defines a named section with optional formatting attributes
+ * Defines a named section with optional formatting attributes and model-based conditional rendering
  *
  * Usage:
  *   @section intro
@@ -21,29 +110,80 @@ import { DirectiveNode } from '@/core/types';
  *   console.log('hello');
  *   ```
  *   @end
+ *
+ *   @section output(model="gpt-5.1")
+ *   Only shown for gpt-5.1
+ *   @end
+ *
+ *   @section data(model="gpt-5.1/structured, claude-4/json, md")
+ *   Different format per model, with fallback
+ *   @end
  */
 export const sectionDirective: Directive = {
-    name: 'section',
-    requiresTopLevel: false,
-    unique: false,
+  name: 'section',
+  requiresTopLevel: false,
+  unique: false,
 
-    validate: (node: DirectiveNode) => {
-        // Section name should be in rawArgs or parsedArgs
-        const hasName = (node.rawArgs && node.rawArgs.trim() !== '') ||
-            (node.parsedArgs && node.parsedArgs.name);
+  parseArguments: (rawArgs: string) => {
+    return parseSectionArgs(rawArgs);
+  },
 
-        if (!hasName) {
-            throw new APTLSyntaxError(
-                'Section directive requires a name',
-                node.line,
-                node.column,
-            );
-        }
-    },
+  validate: (node: DirectiveNode) => {
+    // Section name should be in rawArgs or parsedArgs
+    const hasName =
+      (node.rawArgs && node.rawArgs.trim() !== '') ||
+      (node.parsedArgs && node.parsedArgs.name);
 
-    handler: (context: DirectiveContext): string => {
-        // Section formatting will be handled by the compiler
-        // This is a placeholder that should not be called directly
+    if (!hasName) {
+      throw new APTLSyntaxError(
+        'Section directive requires a name',
+        node.line,
+        node.column,
+      );
+    }
+  },
+
+  handler: (context: DirectiveContext): string => {
+    // Parse arguments if not already done
+    if (!context.node.parsedArgs) {
+      context.node.parsedArgs = parseSectionArgs(context.node.rawArgs);
+    }
+
+    const { name, attributes } = context.node.parsedArgs;
+
+    // Check if model attribute exists
+    const modelAttr = attributes.model;
+
+    if (modelAttr) {
+      // Get current model from context data
+      const currentModel = context.data.model as string;
+
+      if (!currentModel) {
+        // Render nothing if no model is provided but model attribute is specified
         return '';
-    },
+      }
+
+      // Parse model attribute and match against current model
+      const { configs, defaultFormat } = parseModelAttribute(modelAttr);
+      const matchedFormat = matchModel(currentModel, configs, defaultFormat);
+
+      // If no match, don't render this section
+      if (matchedFormat === null) {
+        return '';
+      }
+
+      // Store the matched format in metadata for potential use by formatters
+      context.metadata.set('format', matchedFormat);
+    }
+
+    // Render the section's children
+    if (!context.renderTemplate) {
+      throw new APTLRuntimeError(
+        '@section directive requires renderTemplate function in context',
+      );
+    }
+
+    // Call renderTemplate without passing data to use current context
+    return context.renderTemplate('');
+  },
 };
