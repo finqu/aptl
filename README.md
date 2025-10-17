@@ -88,6 +88,16 @@ Group content and control output formatting:
 @section identity(role="system")
   You are @{agentName}.
 @end
+
+// Spaces between name and attributes are supported for readability
+@section "role" (overridable=true)
+  Content here
+@end
+
+// Parentheses are optional
+@section "role" overridable=true, format="json"
+  Content here
+@end
 ```
 
 ### Conditionals
@@ -196,6 +206,20 @@ try {
 3. **Comment templates** for maintainability
 4. **Test with diverse data** to ensure robust prompt behavior
 5. **Leverage output formatters** for LLM compatibility (Markdown, JSON, etc.)
+
+---
+
+## Documentation
+
+For comprehensive documentation, visit our [GitHub Pages site](https://finqu.github.io/aptl):
+
+- [Getting Started](https://finqu.github.io/aptl/getting-started)
+- [Syntax Reference](https://finqu.github.io/aptl/syntax-reference)
+- [Directives](https://finqu.github.io/aptl/directives)
+- [Advanced Features](https://finqu.github.io/aptl/advanced-features)
+- [Examples](https://finqu.github.io/aptl/examples)
+- [API Reference](https://finqu.github.io/aptl/api-reference)
+- [Best Practices](https://finqu.github.io/aptl/best-practices)
 
 ---
 

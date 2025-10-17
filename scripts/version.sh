@@ -214,7 +214,7 @@ fi
 
 # Create git commit
 print_info "Creating git commit..."
-git add package.json
+git add package.json package-lock.json
 git commit -m "chore: bump version to $NEW_VERSION"
 
 # Create git tag
