@@ -1,75 +1,17 @@
 /**
- * If/Elif/Else Directive
- * Conditional rendering based on expressions
+ * If Directive (Class-based)
+ * Conditional rendering with elif/else support
  */
 
-import { Directive, DirectiveContext } from './types';
+import { ConditionalDirective, DirectiveParser } from './base-directive';
+import { DirectiveContext } from './types';
 import { APTLSyntaxError, APTLRuntimeError } from '@/utils/errors';
-import { DirectiveNode, NodeType, ASTNode } from '@/core/types';
+import { DirectiveNode, NodeType, ASTNode, TokenType } from '@/core/types';
 import { parseConditional } from './argument-parsers';
 import { ConditionalEvaluator } from '@/conditionals/conditional-evaluator';
 
 /**
- * Parse if/elif arguments - validate and return parsed result
- */
-function parseIfArguments(rawArgs: string): any {
-  return parseConditional(rawArgs);
-}
-
-/**
- * Validate if directive structure
- * - Must have a condition
- * - Can have elif/else siblings
- * - Must end with @end
- */
-function validateIfDirective(node: DirectiveNode): void {
-  if (!node.rawArgs || node.rawArgs.trim() === '') {
-    throw new APTLSyntaxError(
-      'If directive requires a condition argument',
-      node.line,
-      node.column,
-    );
-  }
-
-  // Validate the conditional expression
-  try {
-    parseConditional(node.rawArgs);
-  } catch (error) {
-    throw new APTLSyntaxError(
-      `Invalid condition in @if directive: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      node.line,
-      node.column,
-    );
-  }
-}
-
-/**
- * Validate elif directive
- */
-function validateElifDirective(node: DirectiveNode): void {
-  if (!node.rawArgs || node.rawArgs.trim() === '') {
-    throw new APTLSyntaxError(
-      'Elif directive requires a condition argument',
-      node.line,
-      node.column,
-    );
-  }
-
-  // Validate the conditional expression
-  try {
-    parseConditional(node.rawArgs);
-  } catch (error) {
-    throw new APTLSyntaxError(
-      `Invalid condition in @elif directive: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      node.line,
-      node.column,
-    );
-  }
-}
-
-/**
- * Find elif and else branches in the if directive's children
- * Returns structured branches: { type: 'elif'|'else', node: DirectiveNode, condition?: string }
+ * Conditional branch interface
  */
 export interface ConditionalBranch {
   type: 'if' | 'elif' | 'else';
@@ -79,116 +21,271 @@ export interface ConditionalBranch {
 }
 
 /**
- * Extract conditional branches from if directive
- * Exported for testing purposes
+ * IfDirective class - handles @if, @elif, and @else
  */
-export function extractConditionalBranches(
-  ifNode: DirectiveNode,
-): ConditionalBranch[] {
-  const branches: ConditionalBranch[] = [];
+export class IfDirective extends ConditionalDirective {
+  readonly name = 'if';
+  readonly hasBody = true;
 
-  // First branch is the if itself
-  const ifChildren: ASTNode[] = [];
-  let currentChildren = ifChildren;
+  /**
+   * Return the conditional keywords that this directive handles
+   */
+  getConditionalKeywords(): string[] {
+    return ['elif', 'else'];
+  }
 
-  // Process children to find elif/else at the same nesting level
-  for (const child of ifNode.children) {
-    if (child.type === NodeType.DIRECTIVE) {
-      const directiveNode = child as DirectiveNode;
+  /**
+   * Validate if directive arguments
+   */
+  validate(node: DirectiveNode): void {
+    if (!node.rawArgs || node.rawArgs.trim() === '') {
+      throw new APTLSyntaxError(
+        'If directive requires a condition argument',
+        node.line,
+        node.column,
+      );
+    }
 
-      if (directiveNode.name === 'elif') {
-        // Save current if/elif branch
-        if (branches.length === 0) {
-          // First branch is if
-          branches.push({
-            type: 'if',
-            condition: ifNode.rawArgs,
-            children: ifChildren,
-            node: ifNode,
-          });
-        }
-
-        // Add elif branch with its own children
-        branches.push({
-          type: 'elif',
-          condition: directiveNode.rawArgs,
-          children: directiveNode.children,
-          node: directiveNode,
-        });
-        // Create new array for next branch (in case there's an else after this)
-        currentChildren = [];
-      } else if (directiveNode.name === 'else') {
-        // Save current branch
-        if (branches.length === 0) {
-          branches.push({
-            type: 'if',
-            condition: ifNode.rawArgs,
-            children: ifChildren,
-            node: ifNode,
-          });
-        }
-
-        // Add else branch with its own children
-        branches.push({
-          type: 'else',
-          children: directiveNode.children,
-          node: directiveNode,
-        });
-        // No more branches should come after else
-        currentChildren = [];
-      } else {
-        // Regular nested directive
-        currentChildren.push(child);
-      }
-    } else {
-      // Text or variable node
-      currentChildren.push(child);
+    // Validate the conditional expression
+    try {
+      parseConditional(node.rawArgs);
+    } catch (error) {
+      throw new APTLSyntaxError(
+        `Invalid condition in @if directive: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        node.line,
+        node.column,
+      );
     }
   }
 
-  // If no elif/else was found, return just the if branch
-  if (branches.length === 0) {
-    branches.push({
-      type: 'if',
-      condition: ifNode.rawArgs,
-      children: ifChildren,
-      node: ifNode,
-    });
+  /**
+   * Parse arguments (condition)
+   */
+  parseArguments(rawArgs: string): any {
+    return parseConditional(rawArgs);
   }
 
-  return branches;
-}
+  /**
+   * Handle elif/else child directives during parsing
+   * This is called by the parser when it encounters elif/else inside an if body
+   */
+  handleChildDirective(
+    directiveName: string,
+    parser: DirectiveParser,
+    children: ASTNode[],
+  ): boolean {
+    const conditionalKeywords = this.getConditionalKeywords();
 
-/**
- * @if directive
- * Conditionally renders content based on an expression
- *
- * Usage:
- *   @if user.isActive
- *   User is active
- *   @end
- *
- *   @if user.age >= 18
- *   Adult content
- *   @elif user.age >= 13
- *   Teen content
- *   @else
- *   Child content
- *   @end
- */
-export const ifDirective: Directive = {
-  name: 'if',
-  requiresTopLevel: false,
-  unique: false,
+    // Handle elif
+    if (directiveName === 'elif') {
+      // Manually parse elif with awareness of other conditional keywords
+      const elifNode = this.parseConditionalBranch(
+        parser,
+        'elif',
+        conditionalKeywords,
+      );
+      children.push(elifNode);
+      return true;
+    }
 
-  validate: validateIfDirective,
-  parseArguments: parseIfArguments,
+    // Handle else
+    if (directiveName === 'else') {
+      // Manually parse else with awareness of end
+      const elseNode = this.parseConditionalBranch(parser, 'else', []);
+      children.push(elseNode);
+      return true;
+    }
 
-  handler: (context: DirectiveContext): string => {
+    return false;
+  }
+
+  /**
+   * Parse a conditional branch (elif/else) manually
+   * This ensures the branch stops at the next conditional keyword or @end
+   */
+  private parseConditionalBranch(
+    parser: DirectiveParser,
+    branchType: string,
+    stopKeywords: string[],
+  ): DirectiveNode {
+    const startToken = parser.advance(); // consume @elif or @else token
+
+    // Read raw arguments
+    const rawArgs = this.readUntilNewline(parser);
+
+    // Validate arguments
+    if (branchType === 'elif') {
+      if (!rawArgs || rawArgs.trim() === '') {
+        throw new APTLSyntaxError(
+          'Elif directive requires a condition argument',
+          startToken.line,
+          startToken.column,
+        );
+      }
+      try {
+        parseConditional(rawArgs);
+      } catch (error) {
+        throw new APTLSyntaxError(
+          `Invalid condition in @elif directive: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          startToken.line,
+          startToken.column,
+        );
+      }
+    } else if (branchType === 'else') {
+      if (rawArgs && rawArgs.trim() !== '') {
+        throw new APTLSyntaxError(
+          '@else directive does not accept arguments',
+          startToken.line,
+          startToken.column,
+        );
+      }
+    }
+
+    // Parse the branch body until we hit a stop keyword or @end
+    const branchChildren: ASTNode[] = [];
+    while (!parser.isAtEnd()) {
+      const nextToken = parser.peek();
+
+      // Stop at @end
+      if (nextToken.type === TokenType.END) {
+        break;
+      }
+
+      // Stop at next conditional keyword (for elif, stop at else; for else, just stop at end)
+      if (nextToken.type === TokenType.DIRECTIVE) {
+        const nextDirectiveName = nextToken.value.toLowerCase();
+        if (
+          stopKeywords.includes(nextDirectiveName) ||
+          nextDirectiveName === 'end'
+        ) {
+          break;
+        }
+      }
+
+      const node = parser.parseStatement();
+      if (node) {
+        branchChildren.push(node);
+      }
+    }
+
+    return {
+      type: NodeType.DIRECTIVE,
+      name: branchType,
+      rawArgs,
+      children: branchChildren,
+      line: startToken.line,
+      column: startToken.column,
+    };
+  }
+
+  /**
+   * Read tokens until newline
+   */
+  private readUntilNewline(parser: DirectiveParser): string {
+    let text = '';
+    while (!parser.isAtEnd() && parser.peek().type !== TokenType.NEWLINE) {
+      const token = parser.peek();
+      if (token.type === TokenType.STRING) {
+        text += `"${token.value}"`;
+      } else {
+        text += token.value;
+      }
+      parser.advance();
+    }
+    if (parser.peek().type === TokenType.NEWLINE) {
+      parser.advance();
+    }
+    return text.trim();
+  }
+
+  /**
+   * Extract conditional branches from if directive
+   */
+  private extractConditionalBranches(
+    ifNode: DirectiveNode,
+  ): ConditionalBranch[] {
+    const branches: ConditionalBranch[] = [];
+
+    // First branch is the if itself
+    const ifChildren: ASTNode[] = [];
+    let currentChildren = ifChildren;
+
+    // Process children to find elif/else at the same nesting level
+    for (const child of ifNode.children) {
+      if (child.type === NodeType.DIRECTIVE) {
+        const directiveNode = child as DirectiveNode;
+
+        if (directiveNode.name === 'elif') {
+          // Save current if/elif branch
+          if (branches.length === 0) {
+            // First branch is if
+            branches.push({
+              type: 'if',
+              condition: ifNode.rawArgs,
+              children: ifChildren,
+              node: ifNode,
+            });
+          }
+
+          // Add elif branch with its own children
+          branches.push({
+            type: 'elif',
+            condition: directiveNode.rawArgs,
+            children: directiveNode.children,
+            node: directiveNode,
+          });
+          // Create new array for next branch (in case there's an else after this)
+          currentChildren = [];
+        } else if (directiveNode.name === 'else') {
+          // Save current branch
+          if (branches.length === 0) {
+            branches.push({
+              type: 'if',
+              condition: ifNode.rawArgs,
+              children: ifChildren,
+              node: ifNode,
+            });
+          }
+
+          // Add else branch with its own children
+          branches.push({
+            type: 'else',
+            children: directiveNode.children,
+            node: directiveNode,
+          });
+          // No more branches should come after else
+          currentChildren = [];
+        } else {
+          // Regular nested directive
+          currentChildren.push(child);
+        }
+      } else {
+        // Text or variable node
+        currentChildren.push(child);
+      }
+    }
+
+    // If no elif/else was found, return just the if branch
+    if (branches.length === 0) {
+      branches.push({
+        type: 'if',
+        condition: ifNode.rawArgs,
+        children: ifChildren,
+        node: ifNode,
+      });
+    }
+
+    return branches;
+  }
+
+  /**
+   * Execute the if directive
+   */
+  execute(context: DirectiveContext): string {
     const evaluator = new ConditionalEvaluator();
 
     // Extract all conditional branches (if/elif/else)
-    const branches = extractConditionalBranches(context.node);
+    const branches = this.extractConditionalBranches(context.node);
 
     // Ensure renderTemplate is available
     if (!context.renderTemplate) {
@@ -201,11 +298,8 @@ export const ifDirective: Directive = {
     for (const branch of branches) {
       if (branch.type === 'else') {
         // Else branch - always render if we reach it
-        // Pass the children to renderTemplate which will render them
-        // For now, we need to store them in metadata so the compiler can render them
         context.metadata.set('childrenToRender', branch.children);
-        // Trigger rendering through the compiler
-        return context.renderTemplate('', {});
+        return context.renderTemplate('', context.data);
       }
 
       // Evaluate if or elif condition
@@ -216,8 +310,7 @@ export const ifDirective: Directive = {
           if (result) {
             // Condition is true - render this branch
             context.metadata.set('childrenToRender', branch.children);
-            // Trigger rendering through the compiler
-            return context.renderTemplate('', {});
+            return context.renderTemplate('', context.data);
           }
         } catch (error) {
           // Check strict mode from context options if available
@@ -236,57 +329,5 @@ export const ifDirective: Directive = {
 
     // No condition was true - render nothing
     return '';
-  },
-};
-
-/**
- * @elif directive (handled as part of @if)
- */
-export const elifDirective: Directive = {
-  name: 'elif',
-  requiresTopLevel: false,
-  unique: false,
-  hasBody: true,
-  bodyTerminators: ['elif', 'else', 'end'],
-
-  validate: validateElifDirective,
-  parseArguments: parseIfArguments,
-
-  handler: (context: DirectiveContext): string => {
-    // Elif is handled by the if directive
-    // This should not be called independently
-    throw new APTLRuntimeError(
-      '@elif directive must be used within an @if block',
-    );
-  },
-};
-
-/**
- * @else directive (handled as part of @if)
- */
-export const elseDirective: Directive = {
-  name: 'else',
-  requiresTopLevel: false,
-  unique: false,
-  hasBody: true,
-  bodyTerminators: ['end'],
-
-  validate: (node: DirectiveNode) => {
-    // Else should not have arguments
-    if (node.rawArgs && node.rawArgs.trim() !== '') {
-      throw new APTLSyntaxError(
-        '@else directive does not accept arguments',
-        node.line,
-        node.column,
-      );
-    }
-  },
-
-  handler: (context: DirectiveContext): string => {
-    // Else is handled by the if directive
-    // This should not be called independently
-    throw new APTLRuntimeError(
-      '@else directive must be used within an @if block',
-    );
-  },
-};
+  }
+}

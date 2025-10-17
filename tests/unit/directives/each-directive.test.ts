@@ -2,7 +2,7 @@
  * Tests for @each directive with @else support
  */
 
-import { EachDirective } from '@/directives/each-directive-class';
+import { EachDirective } from '@/directives/each-directive';
 import { DirectiveContext } from '@/directives/types';
 import { DirectiveNode, NodeType, TextNode, VariableNode } from '@/core/types';
 import { APTLSyntaxError, APTLRuntimeError } from '@/utils/errors';
