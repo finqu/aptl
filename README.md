@@ -209,6 +209,20 @@ try {
 
 ---
 
+## Documentation
+
+For comprehensive documentation, visit our [GitHub Pages site](https://finqu.github.io/aptl):
+
+- [Getting Started](https://finqu.github.io/aptl/getting-started)
+- [Syntax Reference](https://finqu.github.io/aptl/syntax-reference)
+- [Directives](https://finqu.github.io/aptl/directives)
+- [Advanced Features](https://finqu.github.io/aptl/advanced-features)
+- [Examples](https://finqu.github.io/aptl/examples)
+- [API Reference](https://finqu.github.io/aptl/api-reference)
+- [Best Practices](https://finqu.github.io/aptl/best-practices)
+
+---
+
 ## License
 
 [MIT](./LICENSE) © 2025 Finqu

@@ -43,3 +43,8 @@ jest-coverage/
 .pnpm-debug.log
 .pnpm-store/
 shrinkwrap.yaml
+
+# Jekyll (GitHub Pages)
+_site/
+.jekyll-cache/
+.jekyll-metadata
