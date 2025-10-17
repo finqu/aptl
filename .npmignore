@@ -1,0 +1,65 @@
+# Source files
+src/
+tests/
+examples/
+scripts/
+
+# Configuration files
+tsconfig.json
+tsconfig.test.json
+tsconfig.build.json
+tsconfig.esm.json
+jest.config.js
+rolldown.config.js
+.prettierrc
+.eslintrc*
+.editorconfig
+
+# Documentation (keep README and LICENSE)
+APTL-BNF.md
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+jest-coverage/
+.nyc_output/
+
+# Dependencies
+node_modules/
+
+# Misc
+.env
+.env.*
+*.local.js
+*.local.ts
+
+# Build artifacts (we'll keep dist/)
+*.tsbuildinfo
+
+# Package managers
+pnpm-lock.yaml
+yarn.lock
+package-lock.json

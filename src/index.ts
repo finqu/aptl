@@ -18,7 +18,7 @@ export * from './formatters';
 // Template management
 export {
   TemplateRegistry,
-  TemplateRegistryConfig,
+  type TemplateRegistryConfig,
 } from './templates/template-registry';
 export { TemplateValidator } from './templates/template-validator';
 
