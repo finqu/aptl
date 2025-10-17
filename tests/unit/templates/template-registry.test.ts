@@ -700,7 +700,6 @@ describe('TemplateRegistry', () => {
         registry.loadDirectory('dir2'),
       ]);
 
-      console.log(registry.list());
       expect(registry.list()).toHaveLength(4);
       expect(registry.has('dir1/a')).toBe(true);
       expect(registry.has('dir1/b')).toBe(true);
