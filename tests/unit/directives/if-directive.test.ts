@@ -8,9 +8,8 @@ import { DirectiveNode, NodeType, TextNode, VariableNode } from '@/core/types';
 import { APTLSyntaxError, APTLRuntimeError } from '@/utils/errors';
 
 describe('If Directive', () => {
-  const directive = new IfDirective();
-
   describe('parseArguments', () => {
+    const directive = new IfDirective();
     it('should parse simple condition', () => {
       const result = directive.parseArguments('isActive');
       expect(result).toEqual({
@@ -71,6 +70,7 @@ describe('If Directive', () => {
   });
 
   describe('validate', () => {
+    const directive = new IfDirective();
     it('should validate correct if directive', () => {
       const node: DirectiveNode = {
         type: NodeType.DIRECTIVE,
@@ -131,6 +131,7 @@ describe('If Directive', () => {
   });
 
   describe('execute', () => {
+    const directive = new IfDirective();
     function createMockContext(
       node: DirectiveNode,
       data: Record<string, any> = {},
@@ -926,6 +927,7 @@ describe('If Directive', () => {
   });
 
   describe('getConditionalKeywords', () => {
+    const directive = new IfDirective();
     it('should return elif and else as conditional keywords', () => {
       const keywords = directive.getConditionalKeywords();
       expect(keywords).toEqual(['elif', 'else']);
@@ -933,12 +935,14 @@ describe('If Directive', () => {
   });
 
   describe('hasBody property', () => {
+    const directive = new IfDirective();
     it('should have hasBody set to true', () => {
       expect(directive.hasBody).toBe(true);
     });
   });
 
   describe('name property', () => {
+    const directive = new IfDirective();
     it('should have name set to "if"', () => {
       expect(directive.name).toBe('if');
     });
