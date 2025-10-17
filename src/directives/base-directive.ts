@@ -58,6 +58,13 @@ export abstract class BaseDirective {
   readonly unique: boolean = false;
 
   /**
+   * Whether this directive takes full control of template rendering
+   * When true, no other nodes in the template will be rendered after this directive executes
+   * Used by directives like @extends that completely replace the template output
+   */
+  readonly takesControl: boolean = false;
+
+  /**
    * Whether this directive has a body (children nodes)
    */
   abstract readonly hasBody: boolean;

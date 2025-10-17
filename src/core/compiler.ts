@@ -117,7 +117,7 @@ export class Compiler {
             scope: [data],
           };
 
-          let result = this.renderNode(ast, context);
+          let result = this.renderNode(ast, context, ast);
 
           // Post-process the result
           if (!this.options.preserveWhitespace) {
@@ -163,16 +163,24 @@ export class Compiler {
       .replace(/\n+$/, '\n'); // Single trailing newline
   }
 
-  private renderNode(node: ASTNode, context: RenderContext): string {
+  private renderNode(
+    node: ASTNode,
+    context: RenderContext,
+    templateNode?: TemplateNode,
+  ): string {
     switch (node.type) {
       case NodeType.TEMPLATE:
-        return this.renderTemplate(node as TemplateNode, context);
+        return this.renderTemplate(node as TemplateNode, context, templateNode);
       case NodeType.VARIABLE:
         return this.renderVariable(node as VariableNode, context);
       case NodeType.TEXT:
         return this.renderText(node as TextNode, context);
       case NodeType.DIRECTIVE:
-        return this.renderDirective(node as DirectiveNode, context);
+        return this.renderDirective(
+          node as DirectiveNode,
+          context,
+          templateNode,
+        );
       case NodeType.COMMENT:
         return ''; // Comments are stripped
       default:
@@ -180,10 +188,30 @@ export class Compiler {
     }
   }
 
-  private renderTemplate(node: TemplateNode, context: RenderContext): string {
-    return node.children
-      .map((child) => this.renderNode(child, context))
-      .join('');
+  private renderTemplate(
+    node: TemplateNode,
+    context: RenderContext,
+    templateNode?: TemplateNode,
+  ): string {
+    let result = '';
+
+    for (const child of node.children) {
+      const childResult = this.renderNode(child, context, templateNode || node);
+      result += childResult;
+
+      // Check if this was a directive that takes control of rendering
+      if (child.type === NodeType.DIRECTIVE && this.directiveRegistry) {
+        const directive = this.directiveRegistry.get(
+          (child as DirectiveNode).name,
+        );
+        if (directive?.takesControl) {
+          // Stop processing other nodes - this directive has taken over
+          break;
+        }
+      }
+    }
+
+    return result;
   }
 
   private renderVariable(node: VariableNode, context: RenderContext): string {
@@ -302,7 +330,11 @@ export class Compiler {
     return node.value;
   }
 
-  private renderDirective(node: DirectiveNode, context: RenderContext): string {
+  private renderDirective(
+    node: DirectiveNode,
+    context: RenderContext,
+    templateNode?: TemplateNode,
+  ): string {
     if (!this.directiveRegistry) {
       throw new APTLRuntimeError(
         `Directive '@${node.name}' found but no directive registry is configured`,
@@ -330,6 +362,7 @@ export class Compiler {
     const directiveContext: DirectiveContext = {
       ...context,
       node,
+      templateNode,
       metadata,
       renderTemplate: (template: string, data?: Record<string, any>) => {
         // Check if specific children should be rendered (e.g., from if directive)
@@ -342,8 +375,17 @@ export class Compiler {
 
         // Render the children
         return children
-          .map((child: any) => this.renderNode(child, renderContext))
+          .map((child: any) =>
+            this.renderNode(child, renderContext, templateNode),
+          )
           .join('');
+      },
+      renderNode: (astNode: ASTNode, data?: Record<string, any>) => {
+        // Use provided data or fall back to context data
+        const renderContext = data ? { ...context, data } : context;
+
+        // Render the specific node
+        return this.renderNode(astNode, renderContext, templateNode);
       },
     };
 

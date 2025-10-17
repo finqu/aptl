@@ -129,12 +129,19 @@ export function parseSectionArgs(rawArgs: string): {
   const tokenizer = new Tokenizer();
   const tokens = tokenizer.tokenize(trimmed);
 
-  // First token should be the section name (TEXT)
+  // First token should be the section name (TEXT or STRING)
   if (tokens.length === 0 || tokens[0].type === TokenType.EOF) {
     return { name: '', attributes: {} };
   }
 
-  if (tokens[0].type !== TokenType.TEXT) {
+  let name: string;
+  if (tokens[0].type === TokenType.STRING) {
+    // Handle quoted section names like "role"
+    name = tokens[0].value.trim();
+  } else if (tokens[0].type === TokenType.TEXT) {
+    // Handle unquoted section names
+    name = tokens[0].value.trim();
+  } else {
     throw new APTLSyntaxError(
       `Expected section name, got ${tokens[0].type}`,
       tokens[0].line,
@@ -142,16 +149,45 @@ export function parseSectionArgs(rawArgs: string): {
     );
   }
 
-  const name = tokens[0].value.trim();
+  // Find the next non-whitespace token after the section name
+  let nextTokenIndex = 1;
+  while (nextTokenIndex < tokens.length) {
+    const token = tokens[nextTokenIndex];
+    // Skip whitespace-only TEXT tokens and NEWLINE tokens
+    if (
+      token.type === TokenType.NEWLINE ||
+      (token.type === TokenType.TEXT && token.value.trim() === '')
+    ) {
+      nextTokenIndex++;
+    } else {
+      break;
+    }
+  }
 
-  // Check if there are attributes (next token is LPAREN)
-  if (tokens.length > 1 && tokens[1].type === TokenType.LPAREN) {
-    // Find the matching RPAREN and extract everything in between
+  // No more tokens after name
+  if (
+    nextTokenIndex >= tokens.length ||
+    tokens[nextTokenIndex].type === TokenType.EOF
+  ) {
+    return {
+      name,
+      attributes: {},
+    };
+  }
+
+  // Check if there are attributes
+  // They can be:
+  // 1. Wrapped in parentheses: (key="value")
+  // 2. Without parentheses: key="value"
+  const hasParentheses = tokens[nextTokenIndex].type === TokenType.LPAREN;
+
+  let attrStart = nextTokenIndex;
+  let attrEnd = tokens.length - 1;
+
+  if (hasParentheses) {
+    // Find the matching RPAREN
     let parenDepth = 0;
-    let attrStart = 1;
-    let attrEnd = 1;
-
-    for (let i = 1; i < tokens.length; i++) {
+    for (let i = nextTokenIndex; i < tokens.length; i++) {
       if (tokens[i].type === TokenType.LPAREN) {
         parenDepth++;
       } else if (tokens[i].type === TokenType.RPAREN) {
@@ -162,31 +198,28 @@ export function parseSectionArgs(rawArgs: string): {
         }
       }
     }
-
-    // Reconstruct the attribute string from tokens
-    let attrString = '';
-    for (let i = attrStart; i <= attrEnd; i++) {
-      if (tokens[i].type === TokenType.STRING) {
-        attrString += `"${tokens[i].value}"`;
-      } else if (tokens[i].type !== TokenType.EOF) {
-        attrString += tokens[i].value;
-      }
+  } else {
+    // Find the last non-EOF token
+    while (attrEnd >= 0 && tokens[attrEnd].type === TokenType.EOF) {
+      attrEnd--;
     }
-
-    return {
-      name,
-      attributes: parseAttributes(attrString),
-    };
   }
 
-  // Just a name, no attributes
+  // Reconstruct the attribute string from tokens
+  let attrString = '';
+  for (let i = attrStart; i <= attrEnd; i++) {
+    if (tokens[i].type === TokenType.STRING) {
+      attrString += `"${tokens[i].value}"`;
+    } else if (tokens[i].type !== TokenType.EOF) {
+      attrString += tokens[i].value;
+    }
+  }
+
   return {
     name,
-    attributes: {},
+    attributes: parseAttributes(attrString),
   };
-}
-
-/**
+} /**
  * Parse conditional expression
  * Supports: variables, comparisons, logical operators (and, or, not),
  * parentheses for grouping, and 'in' operator

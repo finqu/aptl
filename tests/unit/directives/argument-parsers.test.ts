@@ -198,6 +198,57 @@ describe('Argument Parsers - The String Surgeons', () => {
       // If first token is not TEXT (e.g., starts with parenthesis)
       expect(() => parseSectionArgs('(invalid)')).toThrow(APTLSyntaxError);
     });
+
+    it('should handle space between section name and attributes', () => {
+      const result = parseSectionArgs('header (format="json")');
+      expect(result).toEqual({
+        name: 'header',
+        attributes: {
+          format: 'json',
+        },
+      });
+    });
+
+    it('should handle quoted section name with space before attributes', () => {
+      const result = parseSectionArgs('"role" (overridable=true)');
+      expect(result).toEqual({
+        name: 'role',
+        attributes: {
+          overridable: 'true',
+        },
+      });
+    });
+
+    it('should handle multiple spaces between name and attributes', () => {
+      const result = parseSectionArgs('section   (key="value")');
+      expect(result).toEqual({
+        name: 'section',
+        attributes: {
+          key: 'value',
+        },
+      });
+    });
+
+    it('should handle newline between name and attributes', () => {
+      const result = parseSectionArgs('section\n(key="value")');
+      expect(result).toEqual({
+        name: 'section',
+        attributes: {
+          key: 'value',
+        },
+      });
+    });
+
+    it('should handle attributes without parentheses', () => {
+      const result = parseSectionArgs('"role" overridable=true, format="json"');
+      expect(result).toEqual({
+        name: 'role',
+        attributes: {
+          overridable: 'true',
+          format: 'json',
+        },
+      });
+    });
   });
 
   describe('parseIteration - The Loop Logic Parser', () => {

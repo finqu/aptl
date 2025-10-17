@@ -88,6 +88,16 @@ Group content and control output formatting:
 @section identity(role="system")
   You are @{agentName}.
 @end
+
+// Spaces between name and attributes are supported for readability
+@section "role" (overridable=true)
+  Content here
+@end
+
+// Parentheses are optional
+@section "role" overridable=true, format="json"
+  Content here
+@end
 ```
 
 ### Conditionals

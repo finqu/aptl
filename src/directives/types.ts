@@ -15,6 +15,11 @@ export interface DirectiveContext extends RenderContext {
   node: DirectiveNode;
 
   /**
+   * The parent template node (for directives that need access to siblings)
+   */
+  templateNode?: import('@/core/types').TemplateNode;
+
+  /**
    * Custom metadata for directive-specific data
    * Each directive can store and retrieve its own data here
    */
@@ -24,6 +29,14 @@ export interface DirectiveContext extends RenderContext {
    * Compile and render a template string
    */
   renderTemplate?: (template: string, data?: Record<string, any>) => string;
+
+  /**
+   * Render a specific AST node
+   */
+  renderNode?: (
+    node: import('@/core/types').ASTNode,
+    data?: Record<string, any>,
+  ) => string;
 }
 
 /**

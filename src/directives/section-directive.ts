@@ -161,7 +161,7 @@ export class SectionDirective extends BlockDirective {
 
     const { name, attributes } = context.node.parsedArgs;
 
-    // Check if model attribute exists
+    // Check if model attribute exists FIRST (before rendering)
     const modelAttr = attributes.model;
 
     if (modelAttr) {
@@ -186,14 +186,63 @@ export class SectionDirective extends BlockDirective {
       context.metadata.set('format', matchedFormat);
     }
 
-    // Render the section's children
+    // Check for section overrides from @extends directive
+    const sectionOverrides = context.data.__sectionOverrides__ as
+      | Record<
+          string,
+          {
+            content: string;
+            overridable?: boolean;
+            override?: boolean;
+            prepend?: boolean;
+            append?: boolean;
+          }
+        >
+      | undefined;
+
+    let sectionContent: string;
+
     if (!context.renderTemplate) {
       throw new APTLRuntimeError(
         '@section directive requires renderTemplate function in context',
       );
     }
 
-    // Call renderTemplate without passing data to use current context
-    return context.renderTemplate('');
+    // Render the original section content
+    const originalContent = context.renderTemplate('');
+
+    // Apply section override logic if present
+    if (sectionOverrides && sectionOverrides[name]) {
+      const override = sectionOverrides[name];
+      const isOverridable =
+        attributes.overridable === 'true' || attributes.overridable === true;
+
+      if (override.prepend) {
+        // Prepend child content to parent content
+        sectionContent = override.content + '\n' + originalContent;
+      } else if (override.append) {
+        // Append child content to parent content
+        sectionContent = originalContent + '\n' + override.content;
+      } else {
+        // Default behavior: override/replace
+        // Check if section is overridable when child tries to override
+        if (override.override || (!override.prepend && !override.append)) {
+          if (!isOverridable) {
+            throw new APTLRuntimeError(
+              `Cannot override section "${name}" - parent section is not marked as overridable`,
+            );
+          }
+          sectionContent = override.content;
+        } else {
+          // No modifier and not overridable - keep original
+          sectionContent = originalContent;
+        }
+      }
+    } else {
+      // No override - use original content
+      sectionContent = originalContent;
+    }
+
+    return sectionContent;
   }
 }

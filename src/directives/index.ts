@@ -12,6 +12,7 @@ export { EachDirective } from './each-directive';
 export { SectionDirective } from './section-directive';
 export { IncludeDirective } from './include-directive';
 export { ExamplesDirective } from './examples-directive';
+export { ExtendsDirective } from './extends-directive';
 
 // Re-export for convenience
 import { DirectiveRegistry } from './directive-registry';
@@ -20,6 +21,7 @@ import { EachDirective } from './each-directive';
 import { SectionDirective } from './section-directive';
 import { IncludeDirective } from './include-directive';
 import { ExamplesDirective } from './examples-directive';
+import { ExtendsDirective } from './extends-directive';
 import { TemplateRegistry } from '@/templates/template-registry';
 import { Compiler } from '@/core/compiler';
 import { Parser } from '@/core/parser';
@@ -41,6 +43,7 @@ export function createDefaultDirectiveRegistry(
   registry.register(new SectionDirective());
   registry.register(new IncludeDirective(templateRegistry));
   registry.register(new ExamplesDirective());
+  registry.register(new ExtendsDirective(templateRegistry));
 
   return registry;
 }
