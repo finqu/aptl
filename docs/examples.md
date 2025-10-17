@@ -449,7 +449,7 @@ Practical APTL templates for common AI prompt engineering use cases.
 ### Using with LangChain
 
 ```typescript
-import { APTLEngine } from 'aptl';
+import { APTLEngine } from '@finqu/aptl';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { SystemMessage } from 'langchain/schema';
 
@@ -467,7 +467,7 @@ const response = await chat.call([
 ### Using with OpenAI SDK
 
 ```typescript
-import { APTLEngine } from 'aptl';
+import { APTLEngine } from '@finqu/aptl';
 import OpenAI from 'openai';
 
 const engine = new APTLEngine('gpt-4');

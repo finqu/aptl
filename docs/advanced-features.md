@@ -208,7 +208,7 @@ Content
 ### Setting Default Formatter
 
 ```typescript
-import { APTLEngine, MarkdownFormatter } from 'aptl';
+import { APTLEngine, MarkdownFormatter } from '@finqu/aptl';
 
 const engine = new APTLEngine('gpt-5.1', {
   defaultFormatter: new MarkdownFormatter()
@@ -220,7 +220,7 @@ const engine = new APTLEngine('gpt-5.1', {
 Create custom output formatters:
 
 ```typescript
-import { OutputFormatter } from 'aptl';
+import { OutputFormatter } from '@finqu/aptl';
 
 class CustomFormatter implements OutputFormatter {
   formatSection(name: string, content: string, attributes: Record<string, any>): string {
@@ -242,7 +242,7 @@ Manage and organize multiple templates.
 ### Basic Usage
 
 ```typescript
-import { APTLEngine, TemplateRegistry, LocalFileSystem } from 'aptl';
+import { APTLEngine, TemplateRegistry, LocalFileSystem } from '@finqu/aptl';
 
 const engine = new APTLEngine('gpt-5.1');
 const fileSystem = new LocalFileSystem();
@@ -306,7 +306,7 @@ await registry.refresh();
 For testing or demos, use the in-memory file system:
 
 ```typescript
-import { ObjectFileSystem } from 'aptl';
+import { ObjectFileSystem } from '@finqu/aptl';
 
 const fileSystem = new ObjectFileSystem({
   'template1.aptl': '@section main\nContent\n@end',
@@ -327,7 +327,7 @@ Advanced variable resolution features.
 The variable resolver supports complex paths:
 
 ```typescript
-import { VariableResolver } from 'aptl';
+import { VariableResolver } from '@finqu/aptl';
 
 const resolver = new VariableResolver();
 const data = {
@@ -400,7 +400,7 @@ APTL provides specific error types for different failure scenarios.
 Thrown when template syntax is invalid:
 
 ```typescript
-import { APTLSyntaxError } from 'aptl';
+import { APTLSyntaxError } from '@finqu/aptl';
 
 try {
   await engine.render('@if', {});
@@ -417,7 +417,7 @@ try {
 Thrown during template execution:
 
 ```typescript
-import { APTLRuntimeError } from 'aptl';
+import { APTLRuntimeError } from '@finqu/aptl';
 
 try {
   await engine.render(template, data);
@@ -434,7 +434,7 @@ try {
 Thrown when template validation fails:
 
 ```typescript
-import { APTLValidationError } from 'aptl';
+import { APTLValidationError } from '@finqu/aptl';
 
 try {
   await engine.render(template, data);
@@ -480,7 +480,7 @@ Extend APTL with custom directives.
 ### Creating a Simple Inline Directive
 
 ```typescript
-import { InlineDirective, DirectiveContext } from 'aptl';
+import { InlineDirective, DirectiveContext } from '@finqu/aptl';
 
 class TimestampDirective extends InlineDirective {
   get name(): string {
@@ -501,7 +501,7 @@ Current time: @timestamp
 ### Creating a Block Directive
 
 ```typescript
-import { BlockDirective, DirectiveContext } from 'aptl';
+import { BlockDirective, DirectiveContext } from '@finqu/aptl';
 
 class UppercaseDirective extends BlockDirective {
   get name(): string {
@@ -525,7 +525,7 @@ Usage:
 ### Registering Custom Directives
 
 ```typescript
-import { APTLEngine } from 'aptl';
+import { APTLEngine } from '@finqu/aptl';
 
 const engine = new APTLEngine('gpt-5.1');
 const directive = new TimestampDirective();

@@ -454,7 +454,7 @@ await template.render({ name: 'User@123<>"' });
 ### Validate Templates
 
 ```typescript
-import { VariableResolver } from 'aptl';
+import { VariableResolver } from '@finqu/aptl';
 
 const resolver = new VariableResolver();
 const variables = resolver.extractVariables(template);

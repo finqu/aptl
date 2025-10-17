@@ -31,7 +31,7 @@ npm install @finqu/aptl
 ### Basic Example
 
 ```typescript
-import { APTLEngine } from 'aptl';
+import { APTLEngine } from '@finqu/aptl';
 
 const template = `
 @section identity(role="system")

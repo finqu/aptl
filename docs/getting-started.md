@@ -31,7 +31,7 @@ pnpm add @finqu/aptl
 Let's create a simple AI system prompt template:
 
 ```typescript
-import { APTLEngine } from 'aptl';
+import { APTLEngine } from '@finqu/aptl';
 
 // Create an engine instance
 const engine = new APTLEngine('gpt-5.1');
@@ -130,7 +130,7 @@ Iterate over arrays:
 You can load templates from files:
 
 ```typescript
-import { APTLEngine, TemplateRegistry, LocalFileSystem } from 'aptl';
+import { APTLEngine, TemplateRegistry, LocalFileSystem } from '@finqu/aptl';
 
 const engine = new APTLEngine('gpt-5.1');
 const fileSystem = new LocalFileSystem();
@@ -204,7 +204,7 @@ Now that you have the basics, explore more features:
 If you encounter syntax errors, APTL provides helpful error messages with line and column numbers:
 
 ```typescript
-import { APTLSyntaxError } from 'aptl';
+import { APTLSyntaxError } from '@finqu/aptl';
 
 try {
   await engine.render(template, data);

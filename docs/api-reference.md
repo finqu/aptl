@@ -565,7 +565,7 @@ interface CompiledTemplate {
 ### Creating Custom Directive
 
 ```typescript
-import { BlockDirective, DirectiveContext } from 'aptl';
+import { BlockDirective, DirectiveContext } from '@finqu/aptl';
 
 class RepeatDirective extends BlockDirective {
   get name() {
@@ -591,7 +591,7 @@ engine.tokenizer.registerDirective('repeat');
 ### Creating Custom Formatter
 
 ```typescript
-import { OutputFormatter } from 'aptl';
+import { OutputFormatter } from '@finqu/aptl';
 
 class CustomFormatter implements OutputFormatter {
   formatSection(name: string, content: string): string {
