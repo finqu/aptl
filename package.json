@@ -1,6 +1,6 @@
 {
   "name": "aptl",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "description": "A template engine for rendering human-readable templates with simple conditionals and easy data injection.",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
