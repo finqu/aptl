@@ -3,7 +3,7 @@
  * Central registry for managing template directives
  */
 
-import { DirectiveContext, DirectiveType } from './types';
+import { DirectiveContext } from './types';
 import { BaseDirective } from './base-directive';
 import { APTLRuntimeError } from '@/utils/errors';
 import { DirectiveNode } from '@/core/types';

@@ -20,6 +20,7 @@ import {
   BaseDirective,
 } from '@/directives';
 import { FileSystem } from '@/filesystem';
+import { TemplateRegistry } from '@/templates/template-registry';
 
 export class APTLEngine {
   private tokenizer: Tokenizer;
@@ -32,6 +33,7 @@ export class APTLEngine {
   private cache: Map<string, CompiledTemplate>;
   private fileSystem?: FileSystem;
   private model: string;
+  private templateRegistry: TemplateRegistry;
 
   constructor(model: string, options: APTLOptions = {}) {
     this.options = {
@@ -46,8 +48,31 @@ export class APTLEngine {
     // Store file system if provided
     this.fileSystem = options.fileSystem;
 
+    this.tokenizer = new Tokenizer();
+    this.parser = new Parser();
+    this.helpers = options.helpers || {};
+    this.formatterRegistry = new DefaultFormatterRegistry();
+
+    this.compiler = new Compiler(this.tokenizer, this.parser, {
+      strict: this.options.strict,
+      helpers: this.helpers,
+      formatterRegistry: this.formatterRegistry,
+    });
+
+    this.templateRegistry =
+      this.options.templateRegistry ||
+      new TemplateRegistry(this.compiler, {
+        fileSystem: this.fileSystem,
+        extensions: options.extensions,
+        cache: this.options.cache,
+      });
     // Initialize directive registry with default directives (extends, slot, if, each, section)
-    this.directiveRegistry = createDefaultDirectiveRegistry();
+    this.directiveRegistry = createDefaultDirectiveRegistry(
+      this.tokenizer,
+      this.parser,
+      this.compiler,
+      this.templateRegistry,
+    );
 
     // Get list of all directive keywords for tokenizer (including elif/else from conditional directives)
     // Exclude 'end' which is handled specially
@@ -55,44 +80,36 @@ export class APTLEngine {
       .getAllKeywords()
       .filter((name: string) => name !== 'end');
 
-    this.tokenizer = new Tokenizer();
-
     // Register all directive keywords with the tokenizer
     for (const name of directiveNames) {
       this.tokenizer.registerDirective(name);
     }
-
-    this.parser = new Parser(this.directiveRegistry);
-    this.helpers = options.helpers || {};
-
-    // Initialize formatter registry
-    this.formatterRegistry = new DefaultFormatterRegistry();
 
     // If a custom formatter is provided, register it as default
     if (options.formatter) {
       this.formatterRegistry.setDefaultFormatter(options.formatter);
     }
 
-    this.compiler = new Compiler({
-      strict: this.options.strict,
-      helpers: this.helpers,
-      formatterRegistry: this.formatterRegistry,
-      directiveRegistry: this.directiveRegistry,
-    });
+    this.compiler.initialize(this.directiveRegistry);
+    this.parser.initialize(this.directiveRegistry);
 
     this.cache = new Map();
   }
 
   /**
    * Render a template string with the provided data
+   * Calls parse() on directives allowing them to load external resources
    */
-  render(template: string, data: Record<string, any> = {}): string {
+  async render(
+    template: string,
+    data: Record<string, any> = {},
+  ): Promise<string> {
     // Check cache
     const cacheKey = this.getCacheKey(template);
     let compiled = this.cache.get(cacheKey);
 
     if (!compiled) {
-      compiled = this.compile(template);
+      compiled = await this.compiler.compile(template);
 
       if (this.options.cache) {
         this.cache.set(cacheKey, compiled);
@@ -129,15 +146,9 @@ export class APTLEngine {
   /**
    * Compile a template string into an executable template
    */
-  compile(template: string): CompiledTemplate {
-    // Tokenize
-    const tokens = this.tokenizer.tokenize(template);
-
-    // Parse into AST
-    const ast = this.parser.parse(tokens);
-
+  async compile(template: string): Promise<CompiledTemplate> {
     // Compile into executable template
-    return this.compiler.compile(ast);
+    return this.compiler.compile(template);
   }
 
   /**

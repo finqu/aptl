@@ -84,6 +84,22 @@ export abstract class BaseDirective {
   }
 
   /**
+   * Parse and prepare the directive (optional override)
+   * Called during compilation phase to validate and prepare the directive
+   * This is async to allow loading external resources like templates
+   *
+   * Use this to:
+   * - Load and validate referenced templates
+   * - Precompile complex expressions
+   * - Validate and resolve references
+   * - Cache expensive computations
+   *
+   * @param node - The directive node to parse
+   * @throws Error if parsing/preparation fails
+   */
+  async parse?(node: DirectiveNode): Promise<void>;
+
+  /**
    * Called during parsing to determine when to stop body parsing
    * Override this to customize termination logic
    */

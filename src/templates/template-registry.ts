@@ -11,6 +11,7 @@ import {
 import { APTLEngine } from '../core/engine';
 import { FileSystem } from '../filesystem/filesystem';
 import { ObjectFileSystem } from '../filesystem/object-filesystem';
+import { Compiler } from 'src/core/compiler';
 
 export interface TemplateRegistryConfig extends TemplateRegistryOptions {
   fileSystem?: FileSystem;
@@ -18,14 +19,14 @@ export interface TemplateRegistryConfig extends TemplateRegistryOptions {
 
 export class TemplateRegistry {
   private templates: Map<string, CompiledTemplate>;
-  private engine: APTLEngine;
+  private compiler: Compiler;
   private options: TemplateRegistryConfig;
   private fileSystem: FileSystem;
   private loadedDirectories: Map<string, LoadOptions>;
 
-  constructor(engine?: APTLEngine, options: TemplateRegistryConfig = {}) {
+  constructor(compiler: Compiler, options: TemplateRegistryConfig = {}) {
     this.templates = new Map();
-    this.engine = engine || new APTLEngine('gpt-5.1');
+    this.compiler = compiler;
     this.options = {
       cache: true,
       extensions: ['.aptl'],
@@ -84,7 +85,7 @@ export class TemplateRegistry {
     const content = await this.fileSystem.readFile(filePath);
     const templateName = this.getTemplateName(filePath);
 
-    this.register(templateName, content);
+    await this.register(templateName, content);
   }
 
   /**
@@ -105,9 +106,12 @@ export class TemplateRegistry {
     // Normalize path separators
     name = name.replace(/\\/g, '/');
 
-    // Remove leading slash/directory
-    const parts = name.split('/');
-    return parts[parts.length - 1];
+    // Remove leading slash if present
+    if (name.startsWith('/')) {
+      name = name.substring(1);
+    }
+
+    return name;
   }
 
   /**
@@ -124,9 +128,19 @@ export class TemplateRegistry {
   /**
    * Register a template
    */
-  register(name: string, template: string | CompiledTemplate): void {
+  async register(
+    name: string,
+    template: string | CompiledTemplate,
+    gracefully: boolean = false,
+  ): Promise<void> {
     if (typeof template === 'string') {
-      this.templates.set(name, this.engine.compile(template));
+      try {
+        this.templates.set(name, await this.compiler.compile(template));
+      } catch (error) {
+        if (!gracefully) {
+          throw error;
+        }
+      }
     } else {
       this.templates.set(name, template);
     }

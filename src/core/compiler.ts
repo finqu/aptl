@@ -12,9 +12,7 @@ import {
   CompiledTemplate,
   RenderContext,
   HelperFunction,
-  APTLOptions,
   FormatterRegistry,
-  Section,
   DirectiveNode,
 } from './types';
 import { APTLRuntimeError } from '@/utils/errors';
@@ -23,13 +21,14 @@ import { ConditionalEvaluator } from '@/conditionals/conditional-evaluator';
 import { DefaultFormatterRegistry } from '@/formatters/formatter-registry';
 import { DirectiveRegistry } from '@/directives/directive-registry';
 import { DirectiveContext } from '@/directives/types';
+import { Tokenizer } from './tokenizer';
+import { Parser } from './parser';
 
 export interface CompilerOptions {
   strict?: boolean;
   helpers?: Record<string, HelperFunction>;
   preserveWhitespace?: boolean;
   formatterRegistry?: FormatterRegistry;
-  directiveRegistry?: DirectiveRegistry;
 }
 
 export class Compiler {
@@ -39,7 +38,11 @@ export class Compiler {
   private formatterRegistry: FormatterRegistry;
   private directiveRegistry?: DirectiveRegistry;
 
-  constructor(options: CompilerOptions = {}) {
+  constructor(
+    private readonly tokenizer: Tokenizer,
+    private readonly parser: Parser,
+    options: CompilerOptions = {},
+  ) {
     this.options = {
       strict: false,
       helpers: {},
@@ -50,8 +53,6 @@ export class Compiler {
     this.formatterRegistry =
       options.formatterRegistry || new DefaultFormatterRegistry();
 
-    this.directiveRegistry = options.directiveRegistry;
-
     this.variableResolver = new VariableResolver({
       allowUndefined: !this.options.strict,
       defaultValue: this.options.strict ? undefined : '',
@@ -59,10 +60,54 @@ export class Compiler {
     this.conditionalEvaluator = new ConditionalEvaluator();
   }
 
+  initialize(directiveRegistry: DirectiveRegistry): void {
+    this.directiveRegistry = directiveRegistry;
+  }
+
+  /**
+   * Compile a string into an executable template
+   * This calls the parse method on directives to allow them to
+   * load external resources and validate before execution
+   */
+  async compile(template: string): Promise<CompiledTemplate> {
+    // Tokenize
+    const tokens = this.tokenizer.tokenize(template);
+
+    // Parse into AST
+    const ast = this.parser.parse(tokens);
+
+    // Parse all directives in the AST
+    await this.parseDirectives(ast);
+
+    return this.compileAST(ast);
+  }
+
+  /**
+   * Recursively parse all directives in the AST
+   */
+  private async parseDirectives(node: ASTNode): Promise<void> {
+    if (node.type === NodeType.DIRECTIVE) {
+      const directiveNode = node as DirectiveNode;
+      if (this.directiveRegistry) {
+        const directive = this.directiveRegistry.get(directiveNode.name);
+        if (directive?.parse) {
+          await directive.parse(directiveNode);
+        }
+      }
+    }
+
+    // Recursively parse children
+    if ('children' in node && Array.isArray(node.children)) {
+      for (const child of node.children) {
+        await this.parseDirectives(child);
+      }
+    }
+  }
+
   /**
    * Compile an AST into an executable template
    */
-  compile(ast: TemplateNode): CompiledTemplate {
+  compileAST(ast: TemplateNode): CompiledTemplate {
     return {
       render: (data: Record<string, any>) => {
         try {

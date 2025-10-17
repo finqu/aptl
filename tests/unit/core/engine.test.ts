@@ -61,34 +61,34 @@ class MockFileSystem implements FileSystem {
     this.files.delete(path);
   }
 
-  async mkdir(): Promise<void> { }
-  async rmdir(): Promise<void> { }
+  async mkdir(): Promise<void> {}
+  async rmdir(): Promise<void> {}
 }
 
 describe('APTLEngine', () => {
   describe('constructor', () => {
-    it('should create an engine with default options', () => {
+    it('should create an engine with default options', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(engine).toBeDefined();
       expect(engine).toBeInstanceOf(APTLEngine);
     });
 
-    it('should accept empty options object', () => {
+    it('should accept empty options object', async () => {
       const engine = new APTLEngine('gpt-5.1', {});
       expect(engine).toBeDefined();
     });
 
-    it('should accept strict option', () => {
+    it('should accept strict option', async () => {
       const engine = new APTLEngine('gpt-5.1', { strict: true });
       expect(engine).toBeDefined();
     });
 
-    it('should accept cache option', () => {
+    it('should accept cache option', async () => {
       const engine = new APTLEngine('gpt-5.1', { cache: false });
       expect(engine).toBeDefined();
     });
 
-    it('should accept helpers option', () => {
+    it('should accept helpers option', async () => {
       const helpers = {
         test: () => 'test',
       };
@@ -96,7 +96,7 @@ describe('APTLEngine', () => {
       expect(engine).toBeDefined();
     });
 
-    it('should accept formatter option', () => {
+    it('should accept formatter option', async () => {
       const formatter: OutputFormatter = {
         format: (sections) => sections.map((s) => s.content).join(''),
         formatSection: (section) => section.content,
@@ -106,7 +106,7 @@ describe('APTLEngine', () => {
       expect(engine).toBeDefined();
     });
 
-    it('should accept multiple options together', () => {
+    it('should accept multiple options together', async () => {
       const engine = new APTLEngine('gpt-5.1', {
         strict: true,
         cache: false,
@@ -117,99 +117,99 @@ describe('APTLEngine', () => {
   });
 
   describe('render', () => {
-    it('should have a render method', () => {
+    it('should have a render method', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(engine.render).toBeDefined();
       expect(typeof engine.render).toBe('function');
     });
 
-    it('should render simple text without variables', () => {
+    it('should render simple text without variables', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      const result = engine.render('Hello World');
+      const result = await engine.render('Hello World');
       expect(result).toBe('Hello World');
     });
 
-    it('should render empty string', () => {
+    it('should render empty string', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      const result = engine.render('');
+      const result = await engine.render('');
       expect(result).toBe('');
     });
 
-    it('should accept data parameter', () => {
+    it('should accept data parameter', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      const result = engine.render('test', { key: 'value' });
+      const result = await engine.render('test', { key: 'value' });
       expect(result).toBeDefined();
     });
 
-    it('should work with empty data object', () => {
+    it('should work with empty data object', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      const result = engine.render('test', {});
+      const result = await engine.render('test', {});
       expect(result).toBeDefined();
     });
 
-    it('should work without data parameter', () => {
+    it('should work without data parameter', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      const result = engine.render('test');
+      const result = await engine.render('test');
       expect(result).toBeDefined();
     });
 
-    it('should return a string', () => {
+    it('should return a string', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      const result = engine.render('test');
+      const result = await engine.render('test');
       expect(typeof result).toBe('string');
     });
 
-    it('should handle multiple render calls', () => {
+    it('should handle multiple render calls', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      const result1 = engine.render('first');
-      const result2 = engine.render('second');
+      const result1 = await engine.render('first');
+      const result2 = await engine.render('second');
       expect(result1).toBe('first');
       expect(result2).toBe('second');
     });
   });
 
   describe('compile', () => {
-    it('should have a compile method', () => {
+    it('should have a compile method', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(engine.compile).toBeDefined();
       expect(typeof engine.compile).toBe('function');
     });
 
-    it('should compile a template', () => {
+    it('should compile a template', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const compiled = engine.compile('test');
       expect(compiled).toBeDefined();
     });
 
-    it('should return an object with render method', () => {
+    it('should return an object with render method', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      const compiled = engine.compile('test');
+      const compiled = await engine.compile('test');
       expect(compiled.render).toBeDefined();
       expect(typeof compiled.render).toBe('function');
     });
 
-    it('should allow compiled template to be reused', () => {
+    it('should allow compiled template to be reused', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      const compiled = engine.compile('test');
+      const compiled = await engine.compile('test');
       const result1 = compiled.render({});
       const result2 = compiled.render({});
       expect(result1).toBeDefined();
       expect(result2).toBeDefined();
     });
 
-    it('should compile empty template', () => {
+    it('should compile empty template', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      const compiled = engine.compile('');
+      const compiled = await engine.compile('');
       expect(compiled).toBeDefined();
       expect(compiled.render({})).toBe('');
     });
   });
 
   describe('renderFile', () => {
-    it('should have a renderFile method', () => {
+    it('should have a renderFile method', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(engine.renderFile).toBeDefined();
-      expect(typeof engine.renderFile).toBe('function');
+      expect(typeof (await engine.renderFile)).toBe('function');
     });
 
     it('should throw error when no fileSystem is configured', async () => {
@@ -263,19 +263,19 @@ describe('APTLEngine', () => {
   });
 
   describe('registerHelper', () => {
-    it('should have a registerHelper method', () => {
+    it('should have a registerHelper method', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(engine.registerHelper).toBeDefined();
       expect(typeof engine.registerHelper).toBe('function');
     });
 
-    it('should accept a helper function', () => {
+    it('should accept a helper function', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const helper = () => 'test';
       expect(() => engine.registerHelper('test', helper)).not.toThrow();
     });
 
-    it('should allow registering multiple helpers', () => {
+    it('should allow registering multiple helpers', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(() => {
         engine.registerHelper('helper1', () => 'a');
@@ -284,7 +284,7 @@ describe('APTLEngine', () => {
       }).not.toThrow();
     });
 
-    it('should accept helpers with different signatures', () => {
+    it('should accept helpers with different signatures', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(() => {
         engine.registerHelper('noArgs', () => 'test');
@@ -295,13 +295,13 @@ describe('APTLEngine', () => {
   });
 
   describe('registerFormatter', () => {
-    it('should have a registerFormatter method', () => {
+    it('should have a registerFormatter method', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(engine.registerFormatter).toBeDefined();
       expect(typeof engine.registerFormatter).toBe('function');
     });
 
-    it('should accept a formatter', () => {
+    it('should accept a formatter', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const formatter: OutputFormatter = {
         format: (sections) => sections.map((s) => s.content).join(''),
@@ -311,7 +311,7 @@ describe('APTLEngine', () => {
       expect(() => engine.registerFormatter('test', formatter)).not.toThrow();
     });
 
-    it('should allow registering multiple formatters', () => {
+    it('should allow registering multiple formatters', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const formatter1: OutputFormatter = {
         format: (sections) => sections.map((s) => s.content).join(''),
@@ -331,13 +331,13 @@ describe('APTLEngine', () => {
   });
 
   describe('setDefaultFormatter', () => {
-    it('should have a setDefaultFormatter method', () => {
+    it('should have a setDefaultFormatter method', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(engine.setDefaultFormatter).toBeDefined();
       expect(typeof engine.setDefaultFormatter).toBe('function');
     });
 
-    it('should accept a formatter', () => {
+    it('should accept a formatter', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const formatter: OutputFormatter = {
         format: (sections) => sections.map((s) => s.content).join(''),
@@ -349,19 +349,19 @@ describe('APTLEngine', () => {
   });
 
   describe('registerDirective', () => {
-    it('should have a registerDirective method', () => {
+    it('should have a registerDirective method', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(engine.registerDirective).toBeDefined();
       expect(typeof engine.registerDirective).toBe('function');
     });
 
-    it('should accept a directive', () => {
+    it('should accept a directive', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const directive = new TestDirective('test');
       expect(() => engine.registerDirective(directive)).not.toThrow();
     });
 
-    it('should allow registering multiple directives', () => {
+    it('should allow registering multiple directives', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const dir1 = new TestDirective('test1', 'a');
       const dir2 = new TestDirective('test2', 'b');
@@ -373,7 +373,7 @@ describe('APTLEngine', () => {
       }).not.toThrow();
     });
 
-    it('should accept directives with different properties', () => {
+    it('should accept directives with different properties', async () => {
       const engine = new APTLEngine('gpt-5.1');
 
       class MinimalDirective extends InlineDirective {
@@ -412,43 +412,43 @@ describe('APTLEngine', () => {
   });
 
   describe('unregisterDirective', () => {
-    it('should have an unregisterDirective method', () => {
+    it('should have an unregisterDirective method', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(engine.unregisterDirective).toBeDefined();
       expect(typeof engine.unregisterDirective).toBe('function');
     });
 
-    it('should accept a directive name', () => {
+    it('should accept a directive name', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(() => engine.unregisterDirective('test')).not.toThrow();
     });
 
-    it('should allow unregistering after registering', () => {
+    it('should allow unregistering after registering', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const directive = new TestDirective('test');
       engine.registerDirective(directive);
       expect(() => engine.unregisterDirective('test')).not.toThrow();
     });
 
-    it('should not throw when unregistering non-existent directive', () => {
+    it('should not throw when unregistering non-existent directive', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(() => engine.unregisterDirective('nonexistent')).not.toThrow();
     });
   });
 
   describe('clearCache', () => {
-    it('should have a clearCache method', () => {
+    it('should have a clearCache method', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(engine.clearCache).toBeDefined();
       expect(typeof engine.clearCache).toBe('function');
     });
 
-    it('should not throw when called', () => {
+    it('should not throw when called', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(() => engine.clearCache()).not.toThrow();
     });
 
-    it('should allow multiple calls', () => {
+    it('should allow multiple calls', async () => {
       const engine = new APTLEngine('gpt-5.1');
       expect(() => {
         engine.clearCache();
@@ -457,135 +457,135 @@ describe('APTLEngine', () => {
       }).not.toThrow();
     });
 
-    it('should work after rendering', () => {
+    it('should work after rendering', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      engine.render('test');
+      await engine.render('test');
       expect(() => engine.clearCache()).not.toThrow();
     });
   });
 
   describe('caching behavior', () => {
-    it('should cache templates by default', () => {
+    it('should cache templates by default', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const template = 'test template';
 
-      engine.render(template);
+      await engine.render(template);
       // Cache should be used on second render
-      const result = engine.render(template);
+      const result = await engine.render(template);
 
       expect(result).toBe('test template');
     });
 
-    it('should respect cache option when disabled', () => {
+    it('should respect cache option when disabled', async () => {
       const engine = new APTLEngine('gpt-5.1', { cache: false });
       const template = 'test template';
 
-      engine.render(template);
+      await engine.render(template);
       // Should recompile on second render
-      const result = engine.render(template);
+      const result = await engine.render(template);
 
       expect(result).toBe('test template');
     });
 
-    it('should clear cache when registering directive', () => {
+    it('should clear cache when registering directive', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const template = 'test';
 
-      engine.render(template);
+      await engine.render(template);
 
       const directive = new TestDirective('newdir', 'new');
       engine.registerDirective(directive);
 
       // Cache should be cleared
-      const result = engine.render(template);
+      const result = await engine.render(template);
       expect(result).toBe('test');
     });
 
-    it('should clear cache when unregistering directive', () => {
+    it('should clear cache when unregistering directive', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const directive = new TestDirective('test');
 
       engine.registerDirective(directive);
-      engine.render('template');
+      await engine.render('template');
       engine.unregisterDirective('test');
 
       // Cache should be cleared
-      const result = engine.render('template');
+      const result = await engine.render('template');
       expect(result).toBe('template');
     });
   });
 
   describe('method chaining support', () => {
-    it('should allow registering helper after construction', () => {
+    it('should allow registering helper after construction', async () => {
       const engine = new APTLEngine('gpt-5.1');
       engine.registerHelper('test', () => 'test');
-      const result = engine.render('text');
+      const result = await engine.render('text');
       expect(result).toBeDefined();
     });
 
-    it('should allow registering directive after construction', () => {
+    it('should allow registering directive after construction', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const directive = new TestDirective('test');
       engine.registerDirective(directive);
-      const result = engine.render('text');
+      const result = await engine.render('text');
       expect(result).toBeDefined();
     });
 
-    it('should allow clearing cache after rendering', () => {
+    it('should allow clearing cache after rendering', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      engine.render('test');
+      await engine.render('test');
       engine.clearCache();
-      const result = engine.render('test');
+      const result = await engine.render('test');
       expect(result).toBe('test');
     });
   });
 
   describe('edge cases', () => {
-    it('should handle rendering the same template multiple times', () => {
+    it('should handle rendering the same template multiple times', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const template = 'same template';
 
-      const result1 = engine.render(template);
-      const result2 = engine.render(template);
-      const result3 = engine.render(template);
+      const result1 = await engine.render(template);
+      const result2 = await engine.render(template);
+      const result3 = await engine.render(template);
 
       expect(result1).toBe(template);
       expect(result2).toBe(template);
       expect(result3).toBe(template);
     });
 
-    it('should handle compiling the same template multiple times', () => {
+    it('should handle compiling the same template multiple times', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const template = 'same template';
 
-      const compiled1 = engine.compile(template);
-      const compiled2 = engine.compile(template);
+      const compiled1 = await engine.compile(template);
+      const compiled2 = await engine.compile(template);
 
       expect(compiled1.render({})).toBe(template);
       expect(compiled2.render({})).toBe(template);
     });
 
-    it('should handle very long template strings', () => {
+    it('should handle very long template strings', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const longTemplate = 'x'.repeat(10000);
 
-      const result = engine.render(longTemplate);
+      const result = await engine.render(longTemplate);
       expect(result.length).toBe(10000);
     });
 
-    it('should handle templates with newlines', () => {
+    it('should handle templates with newlines', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const template = 'line1\nline2\nline3';
 
-      const result = engine.render(template);
+      const result = await engine.render(template);
       expect(result).toContain('\n');
     });
 
-    it('should handle templates with special characters', () => {
+    it('should handle templates with special characters', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const template = 'test\ttab\rcarriage\nnewline';
 
-      const result = engine.render(template);
+      const result = await engine.render(template);
       expect(result).toBeDefined();
     });
   });

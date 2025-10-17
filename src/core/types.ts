@@ -3,7 +3,7 @@
  */
 
 import type { FileSystem } from '@/filesystem';
-
+import type { TemplateRegistry } from '@/templates/template-registry';
 // ============================================================================
 // Token Types
 // ============================================================================
@@ -158,6 +158,8 @@ export interface APTLOptions {
   formatter?: OutputFormatter;
   helpers?: Record<string, HelperFunction>;
   fileSystem?: FileSystem;
+  extensions?: string[];
+  templateRegistry?: TemplateRegistry;
 }
 
 export interface TemplateRegistryOptions {

@@ -26,6 +26,10 @@ export class Parser implements DirectiveParser {
     this.directiveRegistry = directiveRegistry;
   }
 
+  initialize(directiveRegistry: DirectiveRegistry): void {
+    this.directiveRegistry = directiveRegistry;
+  }
+
   /**
    * Parse tokens into an AST
    */
@@ -173,7 +177,9 @@ export class Parser implements DirectiveParser {
     const children: ASTNode[] = [];
 
     // Check if this directive has a body
-    const hasBody = this.checkForDirectiveBody();
+    // First check if the directive explicitly says it has no body
+    const hasBody =
+      directive && !directive.hasBody ? false : this.checkForDirectiveBody();
 
     if (hasBody && directive) {
       // Class-based directive with hooks

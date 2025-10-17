@@ -1,25 +1,32 @@
 import { TemplateRegistry } from '@/templates/template-registry';
 import { APTLEngine } from '@/core/engine';
 import { ObjectFileSystem } from '@/filesystem/object-filesystem';
-import { FileSystem } from '@/filesystem';
-import { CompiledTemplate } from '@/core/types';
+import { Parser } from '@/core/parser';
+import { Tokenizer } from '@/core/tokenizer';
+import { Compiler } from '@/core/compiler';
 
 describe('TemplateRegistry', () => {
+  let compiler: Compiler;
+
+  beforeEach(() => {
+    compiler = new Compiler(new Tokenizer(), new Parser());
+  });
+
   describe('Construction', () => {
     it('should create registry with default engine', () => {
-      const registry = new TemplateRegistry();
+      const registry = new TemplateRegistry(compiler);
       expect(registry).toBeInstanceOf(TemplateRegistry);
       expect(registry.list()).toEqual([]);
     });
 
     it('should create registry with custom engine', () => {
       const engine = new APTLEngine('gpt-5.1');
-      const registry = new TemplateRegistry(engine);
+      const registry = new TemplateRegistry(compiler);
       expect(registry).toBeInstanceOf(TemplateRegistry);
     });
 
     it('should create registry with options', () => {
-      const registry = new TemplateRegistry(undefined, {
+      const registry = new TemplateRegistry(compiler, {
         cache: true,
         extensions: ['.aptl', '.tpl'],
       });
@@ -27,14 +34,14 @@ describe('TemplateRegistry', () => {
     });
 
     it('should use ObjectFileSystem by default', () => {
-      const registry = new TemplateRegistry();
+      const registry = new TemplateRegistry(compiler);
       const fs = registry.getFileSystem();
       expect(fs).toBeInstanceOf(ObjectFileSystem);
     });
 
     it('should accept custom file system', () => {
       const customFs = new ObjectFileSystem({ 'test.aptl': '@{name}' });
-      const registry = new TemplateRegistry(undefined, {
+      const registry = new TemplateRegistry(compiler, {
         fileSystem: customFs,
       });
       expect(registry.getFileSystem()).toBe(customFs);
@@ -42,39 +49,39 @@ describe('TemplateRegistry', () => {
   });
 
   describe('Template Registration', () => {
-    it('should register template from string', () => {
-      const registry = new TemplateRegistry();
-      registry.register('test', '@{name}');
+    it('should register template from string', async () => {
+      const registry = new TemplateRegistry(compiler);
+      await registry.register('test', '@{name}');
 
       expect(registry.has('test')).toBe(true);
       expect(registry.list()).toContain('test');
     });
 
-    it('should register compiled template', () => {
-      const registry = new TemplateRegistry();
+    it('should register compiled template', async () => {
+      const registry = new TemplateRegistry(compiler);
       const engine = new APTLEngine('gpt-5.1');
-      const compiled = engine.compile('@{name}');
+      const compiled = await engine.compile('@{name}');
 
       registry.register('test', compiled);
 
       expect(registry.has('test')).toBe(true);
     });
 
-    it('should overwrite existing template', () => {
-      const registry = new TemplateRegistry();
-      registry.register('test', '@{old}');
-      registry.register('test', '@{new}');
+    it('should overwrite existing template', async () => {
+      const registry = new TemplateRegistry(compiler);
+      await registry.register('test', '@{old}');
+      await registry.register('test', '@{new}');
 
       const template = registry.get('test');
       const result = template.render({ new: 'value' });
       expect(result).toBe('value');
     });
 
-    it('should register multiple templates', () => {
-      const registry = new TemplateRegistry();
-      registry.register('template1', '@{name}');
-      registry.register('template2', '@{title}');
-      registry.register('template3', '@{content}');
+    it('should register multiple templates', async () => {
+      const registry = new TemplateRegistry(compiler);
+      await registry.register('template1', '@{name}');
+      await registry.register('template2', '@{title}');
+      await registry.register('template3', '@{content}');
 
       expect(registry.list()).toHaveLength(3);
       expect(registry.list()).toEqual(
@@ -84,9 +91,9 @@ describe('TemplateRegistry', () => {
   });
 
   describe('Template Retrieval', () => {
-    it('should get registered template', () => {
-      const registry = new TemplateRegistry();
-      registry.register('greeting', 'Hello @{name}!');
+    it('should get registered template', async () => {
+      const registry = new TemplateRegistry(compiler);
+      await registry.register('greeting', 'Hello @{name}!');
 
       const template = registry.get('greeting');
       expect(template).toBeDefined();
@@ -94,15 +101,15 @@ describe('TemplateRegistry', () => {
     });
 
     it('should throw error for non-existent template', () => {
-      const registry = new TemplateRegistry();
+      const registry = new TemplateRegistry(compiler);
       expect(() => registry.get('missing')).toThrow(
         'Template not found: missing',
       );
     });
 
-    it('should check template existence', () => {
-      const registry = new TemplateRegistry();
-      registry.register('exists', '@{test}');
+    it('should check template existence', async () => {
+      const registry = new TemplateRegistry(compiler);
+      await registry.register('exists', '@{test}');
 
       expect(registry.has('exists')).toBe(true);
       expect(registry.has('missing')).toBe(false);
@@ -110,9 +117,9 @@ describe('TemplateRegistry', () => {
   });
 
   describe('Template Unregistration', () => {
-    it('should unregister template', () => {
-      const registry = new TemplateRegistry();
-      registry.register('temp', '@{test}');
+    it('should unregister template', async () => {
+      const registry = new TemplateRegistry(compiler);
+      await registry.register('temp', '@{test}');
 
       expect(registry.has('temp')).toBe(true);
       const result = registry.unregister('temp');
@@ -121,15 +128,15 @@ describe('TemplateRegistry', () => {
     });
 
     it('should return false when unregistering non-existent template', () => {
-      const registry = new TemplateRegistry();
+      const registry = new TemplateRegistry(compiler);
       const result = registry.unregister('missing');
       expect(result).toBe(false);
     });
 
-    it('should not affect other templates', () => {
-      const registry = new TemplateRegistry();
-      registry.register('keep', '@{keep}');
-      registry.register('remove', '@{remove}');
+    it('should not affect other templates', async () => {
+      const registry = new TemplateRegistry(compiler);
+      await registry.register('keep', '@{keep}');
+      await registry.register('remove', '@{remove}');
 
       registry.unregister('remove');
 
@@ -140,26 +147,26 @@ describe('TemplateRegistry', () => {
   });
 
   describe('List Templates', () => {
-    it('should list all template names', () => {
-      const registry = new TemplateRegistry();
-      registry.register('a', '@{a}');
-      registry.register('b', '@{b}');
-      registry.register('c', '@{c}');
+    it('should list all template names', async () => {
+      const registry = new TemplateRegistry(compiler);
+      await registry.register('a', '@{a}');
+      await registry.register('b', '@{b}');
+      await registry.register('c', '@{c}');
 
       const names = registry.list();
       expect(names).toHaveLength(3);
       expect(names).toEqual(expect.arrayContaining(['a', 'b', 'c']));
     });
 
-    it('should return empty array when no templates', () => {
-      const registry = new TemplateRegistry();
+    it('should return empty array when no templates', async () => {
+      const registry = new TemplateRegistry(compiler);
       expect(registry.list()).toEqual([]);
     });
   });
 
   describe('Clear Registry', () => {
     it('should clear all templates', () => {
-      const registry = new TemplateRegistry();
+      const registry = new TemplateRegistry(compiler);
       registry.register('t1', '@{t1}');
       registry.register('t2', '@{t2}');
 
@@ -174,7 +181,7 @@ describe('TemplateRegistry', () => {
       const fs = new ObjectFileSystem({
         'templates/test.aptl': '@{test}',
       });
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
       await registry.loadDirectory('templates');
       expect(registry.getLoadedDirectories()).toContain('templates');
@@ -191,12 +198,12 @@ describe('TemplateRegistry', () => {
         const fs = new ObjectFileSystem({
           'templates/greeting.aptl': 'Hello @{name}!',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadFile('templates/greeting.aptl');
 
-        expect(registry.has('greeting')).toBe(true);
-        const template = registry.get('greeting');
+        expect(registry.has('templates/greeting')).toBe(true);
+        const template = registry.get('templates/greeting');
         expect(template.render({ name: 'World' })).toBe('Hello World!');
       });
 
@@ -204,18 +211,18 @@ describe('TemplateRegistry', () => {
         const fs = new ObjectFileSystem({
           'path/to/templates/mytemplate.aptl': '@{content}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadFile('path/to/templates/mytemplate.aptl');
 
-        expect(registry.has('mytemplate')).toBe(true);
+        expect(registry.has('path/to/templates/mytemplate')).toBe(true);
       });
 
       it('should handle templates in root directory', async () => {
         const fs = new ObjectFileSystem({
           'template.aptl': '@{value}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadFile('template.aptl');
 
@@ -226,7 +233,7 @@ describe('TemplateRegistry', () => {
         const fs = new ObjectFileSystem({
           'template.tpl': '@{custom}',
         });
-        const registry = new TemplateRegistry(undefined, {
+        const registry = new TemplateRegistry(compiler, {
           fileSystem: fs,
           extensions: ['.tpl'],
         });
@@ -244,14 +251,14 @@ describe('TemplateRegistry', () => {
           'templates/footer.aptl': '@{copyright}',
           'templates/content.aptl': '@{body}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadDirectory('templates');
 
         expect(registry.list()).toHaveLength(3);
-        expect(registry.has('header')).toBe(true);
-        expect(registry.has('footer')).toBe(true);
-        expect(registry.has('content')).toBe(true);
+        expect(registry.has('templates/header')).toBe(true);
+        expect(registry.has('templates/footer')).toBe(true);
+        expect(registry.has('templates/content')).toBe(true);
       });
 
       it('should load templates recursively by default', async () => {
@@ -261,15 +268,15 @@ describe('TemplateRegistry', () => {
           'templates/components/footer.aptl': '@{footer}',
           'templates/components/nav/main.aptl': '@{nav}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadDirectory('templates');
 
         expect(registry.list()).toHaveLength(4);
-        expect(registry.has('base')).toBe(true);
-        expect(registry.has('header')).toBe(true);
-        expect(registry.has('footer')).toBe(true);
-        expect(registry.has('main')).toBe(true);
+        expect(registry.has('templates/base')).toBe(true);
+        expect(registry.has('templates/components/header')).toBe(true);
+        expect(registry.has('templates/components/footer')).toBe(true);
+        expect(registry.has('templates/components/nav/main')).toBe(true);
       });
 
       it('should not recurse when recursive is false', async () => {
@@ -277,12 +284,12 @@ describe('TemplateRegistry', () => {
           'templates/root.aptl': '@{root}',
           'templates/subdir/nested.aptl': '@{nested}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadDirectory('templates', { recursive: false });
 
-        expect(registry.has('root')).toBe(true);
-        expect(registry.has('nested')).toBe(false);
+        expect(registry.has('templates/root')).toBe(true);
+        expect(registry.has('templates/subdir/nested')).toBe(false);
       });
 
       it('should filter by pattern', async () => {
@@ -291,16 +298,16 @@ describe('TemplateRegistry', () => {
           'templates/component-footer.aptl': '@{footer}',
           'templates/page-home.aptl': '@{home}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadDirectory('templates', {
           pattern: /component-/,
         });
 
         expect(registry.list()).toHaveLength(2);
-        expect(registry.has('component-header')).toBe(true);
-        expect(registry.has('component-footer')).toBe(true);
-        expect(registry.has('page-home')).toBe(false);
+        expect(registry.has('templates/component-header')).toBe(true);
+        expect(registry.has('templates/component-footer')).toBe(true);
+        expect(registry.has('templates/page-home')).toBe(false);
       });
 
       it('should only load files with matching extensions', async () => {
@@ -309,12 +316,12 @@ describe('TemplateRegistry', () => {
           'templates/readme.md': '# README',
           'templates/config.json': '{}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadDirectory('templates');
 
         expect(registry.list()).toHaveLength(1);
-        expect(registry.has('valid')).toBe(true);
+        expect(registry.has('templates/valid')).toBe(true);
       });
 
       it('should handle multiple custom extensions', async () => {
@@ -323,7 +330,7 @@ describe('TemplateRegistry', () => {
           'templates/file2.tpl': '@{file2}',
           'templates/file3.txt': '@{file3}',
         });
-        const registry = new TemplateRegistry(undefined, {
+        const registry = new TemplateRegistry(compiler, {
           fileSystem: fs,
           extensions: ['.aptl', '.tpl'],
         });
@@ -331,9 +338,9 @@ describe('TemplateRegistry', () => {
         await registry.loadDirectory('templates');
 
         expect(registry.list()).toHaveLength(2);
-        expect(registry.has('file1')).toBe(true);
-        expect(registry.has('file2')).toBe(true);
-        expect(registry.has('file3')).toBe(false);
+        expect(registry.has('templates/file1')).toBe(true);
+        expect(registry.has('templates/file2')).toBe(true);
+        expect(registry.has('templates/file3')).toBe(false);
       });
 
       it('should track loaded directories', async () => {
@@ -341,7 +348,7 @@ describe('TemplateRegistry', () => {
           'dir1/test1.aptl': '@{test1}',
           'dir2/test2.aptl': '@{test2}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadDirectory('dir1');
         await registry.loadDirectory('dir2');
@@ -355,7 +362,7 @@ describe('TemplateRegistry', () => {
       it('should handle empty directories', async () => {
         const fs = new ObjectFileSystem();
         await fs.mkdir('empty');
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadDirectory('empty');
 
@@ -368,10 +375,10 @@ describe('TemplateRegistry', () => {
         const fs = new ObjectFileSystem({
           'templates/test.aptl': '@{old}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadDirectory('templates');
-        let template = registry.get('test');
+        let template = registry.get('templates/test');
         expect(template.render({ old: 'old value' })).toBe('old value');
 
         // Modify file in filesystem
@@ -379,7 +386,7 @@ describe('TemplateRegistry', () => {
 
         await registry.refresh();
 
-        template = registry.get('test');
+        template = registry.get('templates/test');
         expect(template.render({ new: 'new value' })).toBe('new value');
       });
 
@@ -388,7 +395,7 @@ describe('TemplateRegistry', () => {
           'dir1/test1.aptl': '@{old1}',
           'dir2/test2.aptl': '@{old2}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadDirectory('dir1');
         await registry.loadDirectory('dir2');
@@ -399,8 +406,12 @@ describe('TemplateRegistry', () => {
 
         await registry.refresh();
 
-        expect(registry.get('test1').render({ new1: 'val1' })).toBe('val1');
-        expect(registry.get('test2').render({ new2: 'val2' })).toBe('val2');
+        expect(registry.get('dir1/test1').render({ new1: 'val1' })).toBe(
+          'val1',
+        );
+        expect(registry.get('dir2/test2').render({ new2: 'val2' })).toBe(
+          'val2',
+        );
       });
 
       it('should clear old templates before reloading', async () => {
@@ -408,26 +419,26 @@ describe('TemplateRegistry', () => {
           'templates/keep.aptl': '@{keep}',
           'templates/remove.aptl': '@{remove}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadDirectory('templates');
-        expect(registry.has('keep')).toBe(true);
-        expect(registry.has('remove')).toBe(true);
+        expect(registry.has('templates/keep')).toBe(true);
+        expect(registry.has('templates/remove')).toBe(true);
 
         // Remove one file from filesystem
         await fs.unlink('templates/remove.aptl');
 
         await registry.refresh();
 
-        expect(registry.has('keep')).toBe(true);
-        expect(registry.has('remove')).toBe(false);
+        expect(registry.has('templates/keep')).toBe(true);
+        expect(registry.has('templates/remove')).toBe(false);
       });
 
       it('should handle new files added to directory', async () => {
         const fs = new ObjectFileSystem({
           'templates/existing.aptl': '@{existing}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadDirectory('templates');
         expect(registry.list()).toHaveLength(1);
@@ -438,8 +449,8 @@ describe('TemplateRegistry', () => {
         await registry.refresh();
 
         expect(registry.list()).toHaveLength(2);
-        expect(registry.has('existing')).toBe(true);
-        expect(registry.has('newfile')).toBe(true);
+        expect(registry.has('templates/existing')).toBe(true);
+        expect(registry.has('templates/newfile')).toBe(true);
       });
 
       it('should preserve directory load options on refresh', async () => {
@@ -448,7 +459,7 @@ describe('TemplateRegistry', () => {
           'templates/component-b.aptl': '@{b}',
           'templates/page-home.aptl': '@{home}',
         });
-        const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+        const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
         await registry.loadDirectory('templates', { pattern: /component-/ });
         expect(registry.list()).toHaveLength(2);
@@ -459,14 +470,14 @@ describe('TemplateRegistry', () => {
         await registry.refresh();
 
         expect(registry.list()).toHaveLength(3);
-        expect(registry.has('component-a')).toBe(true);
-        expect(registry.has('component-b')).toBe(true);
-        expect(registry.has('component-c')).toBe(true);
-        expect(registry.has('page-home')).toBe(false); // Still filtered
+        expect(registry.has('templates/component-a')).toBe(true);
+        expect(registry.has('templates/component-b')).toBe(true);
+        expect(registry.has('templates/component-c')).toBe(true);
+        expect(registry.has('templates/page-home')).toBe(false); // Still filtered
       });
 
       it('should throw error when trying to refresh by name', async () => {
-        const registry = new TemplateRegistry();
+        const registry = new TemplateRegistry(compiler);
         await expect(registry.refresh('test')).rejects.toThrow(
           'Refreshing individual templates by name is not supported',
         );
@@ -477,13 +488,13 @@ describe('TemplateRegistry', () => {
   describe('FileSystem Management', () => {
     it('should return current file system', () => {
       const fs = new ObjectFileSystem();
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
       expect(registry.getFileSystem()).toBe(fs);
     });
 
     it('should set new file system', () => {
-      const registry = new TemplateRegistry();
+      const registry = new TemplateRegistry(compiler);
       const newFs = new ObjectFileSystem({ 'test.aptl': '@{test}' });
 
       registry.setFileSystem(newFs);
@@ -493,7 +504,7 @@ describe('TemplateRegistry', () => {
 
     it('should clear templates when setting new file system', async () => {
       const fs1 = new ObjectFileSystem({ 'test1.aptl': '@{test1}' });
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs1 });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs1 });
 
       await registry.loadFile('test1.aptl');
       expect(registry.has('test1')).toBe(true);
@@ -507,7 +518,7 @@ describe('TemplateRegistry', () => {
 
     it('should clear loaded directories when setting new file system', async () => {
       const fs1 = new ObjectFileSystem({ 'dir/test.aptl': '@{test}' });
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs1 });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs1 });
 
       await registry.loadDirectory('dir');
       expect(registry.getLoadedDirectories()).toContain('dir');
@@ -522,7 +533,7 @@ describe('TemplateRegistry', () => {
   describe('Template Name Extraction', () => {
     it('should extract name from simple path', async () => {
       const fs = new ObjectFileSystem({ 'template.aptl': '@{test}' });
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
       await registry.loadFile('template.aptl');
       expect(registry.has('template')).toBe(true);
@@ -532,18 +543,18 @@ describe('TemplateRegistry', () => {
       const fs = new ObjectFileSystem({
         'dir/subdir/mytemplate.aptl': '@{test}',
       });
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
       await registry.loadFile('dir/subdir/mytemplate.aptl');
-      expect(registry.has('mytemplate')).toBe(true);
+      expect(registry.has('dir/subdir/mytemplate')).toBe(true);
     });
 
     it('should handle paths with backslashes', async () => {
       const fs = new ObjectFileSystem({ 'dir\\template.aptl': '@{test}' });
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
       await registry.loadFile('dir\\template.aptl');
-      expect(registry.has('template')).toBe(true);
+      expect(registry.has('dir/template')).toBe(true);
     });
 
     it('should remove extension from name', async () => {
@@ -551,7 +562,7 @@ describe('TemplateRegistry', () => {
         'template.aptl': '@{test1}',
         'other.tpl': '@{test2}',
       });
-      const registry = new TemplateRegistry(undefined, {
+      const registry = new TemplateRegistry(compiler, {
         fileSystem: fs,
         extensions: ['.aptl', '.tpl'],
       });
@@ -576,16 +587,16 @@ describe('TemplateRegistry', () => {
         'emails/components/footer.aptl': '© @{year} @{companyName}',
       });
 
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs });
       await registry.loadDirectory('emails');
 
       expect(registry.list()).toHaveLength(5);
 
       // Use templates
-      const welcome = registry.get('welcome');
+      const welcome = registry.get('emails/welcome');
       expect(welcome.render({ username: 'John' })).toBe('Welcome John!');
 
-      const notification = registry.get('notification');
+      const notification = registry.get('emails/notification');
       expect(notification.render({ count: 5 })).toBe('You have 5 new messages');
     });
 
@@ -598,15 +609,15 @@ describe('TemplateRegistry', () => {
         'pages/home.aptl': '@{content}',
       });
 
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
       // Load only button components
       await registry.loadDirectory('components', { pattern: /btn-/ });
 
       expect(registry.list()).toHaveLength(2);
-      expect(registry.has('btn-primary')).toBe(true);
-      expect(registry.has('btn-secondary')).toBe(true);
-      expect(registry.has('input-text')).toBe(false);
+      expect(registry.has('components/btn-primary')).toBe(true);
+      expect(registry.has('components/btn-secondary')).toBe(true);
+      expect(registry.has('components/input-text')).toBe(false);
     });
 
     it('should support template hot-reload workflow', async () => {
@@ -614,11 +625,11 @@ describe('TemplateRegistry', () => {
         'templates/greeting.aptl': 'Hello @{name}',
       });
 
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs });
       await registry.loadDirectory('templates');
 
       // Initial render
-      let result = registry.get('greeting').render({ name: 'Alice' });
+      let result = registry.get('templates/greeting').render({ name: 'Alice' });
       expect(result).toBe('Hello Alice');
 
       // Developer edits template
@@ -628,7 +639,7 @@ describe('TemplateRegistry', () => {
       await registry.refresh();
 
       // New render with updated template
-      result = registry.get('greeting').render({ name: 'Alice' });
+      result = registry.get('templates/greeting').render({ name: 'Alice' });
       expect(result).toBe('Hi there, Alice!');
     });
 
@@ -639,7 +650,7 @@ describe('TemplateRegistry', () => {
         'templates/partial.html': '@{partial}',
       });
 
-      const registry = new TemplateRegistry(undefined, {
+      const registry = new TemplateRegistry(compiler, {
         fileSystem: fs,
         extensions: ['.aptl', '.tpl', '.html'],
       });
@@ -647,20 +658,20 @@ describe('TemplateRegistry', () => {
       await registry.loadDirectory('templates');
 
       expect(registry.list()).toHaveLength(3);
-      expect(registry.has('page')).toBe(true);
-      expect(registry.has('component')).toBe(true);
-      expect(registry.has('partial')).toBe(true);
+      expect(registry.has('templates/page')).toBe(true);
+      expect(registry.has('templates/component')).toBe(true);
+      expect(registry.has('templates/partial')).toBe(true);
     });
 
-    it('should support dynamic template registration', () => {
-      const registry = new TemplateRegistry();
+    it('should support dynamic template registration', async () => {
+      const registry = new TemplateRegistry(compiler);
 
       // Pre-register some templates
-      registry.register('default', 'Default: @{value}');
+      await registry.register('default', 'Default: @{value}');
 
       // Dynamically add more at runtime
-      registry.register('custom', 'Custom: @{value}');
-      registry.register('special', 'Special: @{value}');
+      await registry.register('custom', 'Custom: @{value}');
+      await registry.register('special', 'Special: @{value}');
 
       expect(registry.list()).toHaveLength(3);
 
@@ -681,7 +692,7 @@ describe('TemplateRegistry', () => {
         'dir2/d.aptl': '@{d}',
       });
 
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
       // Load directories concurrently
       await Promise.all([
@@ -689,11 +700,12 @@ describe('TemplateRegistry', () => {
         registry.loadDirectory('dir2'),
       ]);
 
+      console.log(registry.list());
       expect(registry.list()).toHaveLength(4);
-      expect(registry.has('a')).toBe(true);
-      expect(registry.has('b')).toBe(true);
-      expect(registry.has('c')).toBe(true);
-      expect(registry.has('d')).toBe(true);
+      expect(registry.has('dir1/a')).toBe(true);
+      expect(registry.has('dir1/b')).toBe(true);
+      expect(registry.has('dir2/c')).toBe(true);
+      expect(registry.has('dir2/d')).toBe(true);
     });
   });
 
@@ -704,13 +716,13 @@ describe('TemplateRegistry', () => {
         'dir2/template.aptl': '@{version2}',
       });
 
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs });
 
       await registry.loadDirectory('dir1');
       await registry.loadDirectory('dir2');
 
       // Later directory overwrites earlier one
-      const template = registry.get('template');
+      const template = registry.get('dir2/template');
       expect(template.render({ version2: 'v2' })).toBe('v2');
     });
 
@@ -719,7 +731,7 @@ describe('TemplateRegistry', () => {
         'templates/noext': '@{test}',
       });
 
-      const registry = new TemplateRegistry(undefined, {
+      const registry = new TemplateRegistry(compiler, {
         fileSystem: fs,
         extensions: [],
       });
@@ -735,10 +747,10 @@ describe('TemplateRegistry', () => {
         'a/b/c/d/e/f/deep.aptl': '@{deep}',
       });
 
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs });
       await registry.loadDirectory('a');
 
-      expect(registry.has('deep')).toBe(true);
+      expect(registry.has('a/b/c/d/e/f/deep')).toBe(true);
     });
 
     it('should handle special characters in filenames', async () => {
@@ -748,22 +760,22 @@ describe('TemplateRegistry', () => {
         'templates/file.with.dots.aptl': '@{dots}',
       });
 
-      const registry = new TemplateRegistry(undefined, { fileSystem: fs });
+      const registry = new TemplateRegistry(compiler, { fileSystem: fs });
       await registry.loadDirectory('templates');
 
-      expect(registry.has('file-with-dash')).toBe(true);
-      expect(registry.has('file_with_underscore')).toBe(true);
-      expect(registry.has('file.with.dots')).toBe(true);
+      expect(registry.has('templates/file-with-dash')).toBe(true);
+      expect(registry.has('templates/file_with_underscore')).toBe(true);
+      expect(registry.has('templates/file.with.dots')).toBe(true);
     });
 
     it('should handle templates that compile with errors gracefully', () => {
-      const registry = new TemplateRegistry();
+      const registry = new TemplateRegistry(compiler);
 
       // This should still register even if template has issues
       // The engine will handle errors during render
-      registry.register('problematic', '@if{unclosed');
+      registry.register('problematic', '@if{unclosed', true);
 
-      expect(registry.has('problematic')).toBe(true);
+      expect(registry.has('problematic')).toBe(false);
     });
   });
 });
