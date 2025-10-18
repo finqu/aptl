@@ -199,6 +199,27 @@ try {
 
 ---
 
+## Live Demo
+
+Want to see APTL in action? Check out the `/demo` directory for a complete, runnable example:
+
+```bash
+cd demo
+npm install
+npm run demo
+```
+
+The demo showcases:
+- **Real-world templates** stored as `.aptl` files
+- **Template inheritance** using `@extends`
+- **LocalFileSystem** integration for reading templates from disk
+- **Multiple use cases**: emails, reports, AI agent prompts
+- **Conditional logic** and dynamic content generation
+
+See [demo/README.md](demo/README.md) for full details.
+
+---
+
 ## Best Practices for AI Prompt Engineering
 
 1. **Use sections for logical prompt parts** (identity, objectives, guidelines)
