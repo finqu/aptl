@@ -21,9 +21,10 @@ export function parseAttributes(rawArgs: string): Record<string, string> {
     return attributes;
   }
 
-  // Tokenize the arguments
+  // Tokenize the arguments using the directive argument mode
+  // In this mode, quotes are treated as string delimiters
   const tokenizer = new Tokenizer();
-  const tokens = tokenizer.tokenize(trimmed);
+  const tokens = tokenizer.tokenizeDirectiveArguments(trimmed);
 
   let i = 0;
 
@@ -125,9 +126,9 @@ export function parseSectionArgs(rawArgs: string): {
     return { name: '', attributes: {} };
   }
 
-  // Tokenize the arguments
+  // Tokenize the arguments using directive argument mode
   const tokenizer = new Tokenizer();
-  const tokens = tokenizer.tokenize(trimmed);
+  const tokens = tokenizer.tokenizeDirectiveArguments(trimmed);
 
   // First token should be the section name (TEXT or STRING)
   if (tokens.length === 0 || tokens[0].type === TokenType.EOF) {
@@ -206,12 +207,17 @@ export function parseSectionArgs(rawArgs: string): {
   }
 
   // Reconstruct the attribute string from tokens
+  // For STRING tokens, keep them as-is (the value is already unquoted)
+  // For other tokens, use their raw value
   let attrString = '';
   for (let i = attrStart; i <= attrEnd; i++) {
-    if (tokens[i].type === TokenType.STRING) {
-      attrString += `"${tokens[i].value}"`;
-    } else if (tokens[i].type !== TokenType.EOF) {
-      attrString += tokens[i].value;
+    const token = tokens[i];
+    if (token.type === TokenType.STRING) {
+      // STRING tokens need quotes re-added for parseAttributes
+      // because parseAttributes will tokenize again
+      attrString += `"${token.value}"`;
+    } else if (token.type !== TokenType.EOF) {
+      attrString += token.value;
     }
   }
 
@@ -400,9 +406,9 @@ export function parseNamedParams(rawArgs: string): {
     return { positional, named };
   }
 
-  // Tokenize the arguments
+  // Tokenize the arguments using directive argument mode
   const tokenizer = new Tokenizer();
-  const tokens = tokenizer.tokenize(trimmed);
+  const tokens = tokenizer.tokenizeDirectiveArguments(trimmed);
 
   let i = 0;
 

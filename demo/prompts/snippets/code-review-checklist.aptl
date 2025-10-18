@@ -1,0 +1,14 @@
+// Code review checklist snippet
+// Include in coding assistant prompts
+
+When reviewing code, check for:
+✓ **Correctness**: Does the code work as intended?
+✓ **Readability**: Is the code clear and well-documented?
+✓ **Performance**: Are there any efficiency concerns?
+✓ **Security**: Are there potential vulnerabilities?
+✓ **Error Handling**: Are edge cases and errors handled?
+✓ **Testing**: Is the code testable and tested?
+✓ **Best Practices**: Does it follow language/framework conventions?
+@if(includeStyleGuide)
+✓ **Style**: Does it adhere to the project's style guide?
+@end

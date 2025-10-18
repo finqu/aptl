@@ -116,9 +116,9 @@ Line 3`;
 
     it('should render empty string values', async () => {
       const engine = new APTLEngine('gpt-5.1');
-      // Strings are literals - variables inside strings are NOT interpolated
+      // In template text, quotes are regular characters and variables ARE interpolated
       const result = await engine.render('Value: "@{value}"', { value: '' });
-      expect(result).toBe('Value: "@{value}"');
+      expect(result).toBe('Value: ""');
     });
 
     it('should handle variables in multiline templates', async () => {

@@ -282,43 +282,58 @@ describe('Tokenizer - The @ Whisperer', () => {
   });
 
   describe('Strings - The Quoted Ones', () => {
-    it('should tokenize double-quoted strings', () => {
+    it('should tokenize double-quoted strings in template text as TEXT', () => {
       const tokens = tokenizer.tokenize('"hello world"');
-      expect(tokens[0].type).toBe(TokenType.STRING);
-      expect(tokens[0].value).toBe('hello world');
+      expect(tokens[0].type).toBe(TokenType.TEXT);
+      expect(tokens[0].value).toBe('"hello world"');
     });
 
-    it('should tokenize single-quoted strings', () => {
+    it('should tokenize single-quoted strings in template text as TEXT', () => {
       const tokens = tokenizer.tokenize("'hello world'");
-      expect(tokens[0].type).toBe(TokenType.STRING);
-      expect(tokens[0].value).toBe('hello world');
+      expect(tokens[0].type).toBe(TokenType.TEXT);
+      expect(tokens[0].value).toBe("'hello world'");
     });
 
-    it('should handle escape sequences in strings', () => {
-      const tokens = tokenizer.tokenize('"line1\\nline2\\ttab"');
-      expect(tokens[0].value).toBe('line1\nline2\ttab');
-    });
-
-    it('should handle escaped quotes', () => {
-      const tokens = tokenizer.tokenize('"say \\"hi\\""');
+    it('should handle escaped quotes in text', () => {
+      const tokens = tokenizer.tokenize('say \\"hi\\"');
+      expect(tokens[0].type).toBe(TokenType.TEXT);
       expect(tokens[0].value).toBe('say "hi"');
     });
 
-    it('should throw on unterminated strings', () => {
-      expect(() => tokenizer.tokenize('"unclosed')).toThrow(APTLSyntaxError);
-      expect(() => tokenizer.tokenize('"unclosed')).toThrow(
+    it('should tokenize strings in directive argument context as STRING', () => {
+      // When using tokenizeDirectiveArguments, quotes are string delimiters
+      const tokens = tokenizer.tokenizeDirectiveArguments('"hello world"');
+      expect(tokens[0].type).toBe(TokenType.STRING);
+      expect(tokens[0].value).toBe('hello world');
+    });
+
+    it('should handle escape sequences in directive argument strings', () => {
+      const tokens = tokenizer.tokenizeDirectiveArguments('"line1\\nline2\\ttab"');
+      expect(tokens[0].type).toBe(TokenType.STRING);
+      expect(tokens[0].value).toBe('line1\nline2\ttab');
+    });
+
+    it('should handle escaped quotes in directive arguments', () => {
+      const tokens = tokenizer.tokenizeDirectiveArguments('"say \\"hi\\""');
+      expect(tokens[0].type).toBe(TokenType.STRING);
+      expect(tokens[0].value).toBe('say "hi"');
+    });
+
+    it('should throw on unterminated strings in directive arguments', () => {
+      expect(() => tokenizer.tokenizeDirectiveArguments('"unclosed')).toThrow(APTLSyntaxError);
+      expect(() => tokenizer.tokenizeDirectiveArguments('"unclosed')).toThrow(
         /Unterminated string/,
       );
     });
 
-    it('should handle multiline strings', () => {
-      const tokens = tokenizer.tokenize('"line1\nline2"');
+    it('should handle multiline strings in directive arguments', () => {
+      const tokens = tokenizer.tokenizeDirectiveArguments('"line1\nline2"');
       expect(tokens[0].type).toBe(TokenType.STRING);
       expect(tokens[0].value).toContain('\n');
     });
 
-    it('should handle empty strings', () => {
-      const tokens = tokenizer.tokenize('""');
+    it('should handle empty strings in directive arguments', () => {
+      const tokens = tokenizer.tokenizeDirectiveArguments('""');
       expect(tokens[0].type).toBe(TokenType.STRING);
       expect(tokens[0].value).toBe('');
     });

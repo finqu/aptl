@@ -48,6 +48,7 @@ export class Tokenizer {
       const token = this.nextToken();
       if (token) {
         tokens.push(token);
+        
         this.lastTokenType = token.type;
 
         // Update statement start tracking
@@ -65,6 +66,35 @@ export class Tokenizer {
           // But whitespace-only TEXT tokens (indentation) preserve the statement start state
           this.atStatementStart = false;
         }
+      }
+    }
+
+    // Add final EOF token
+    tokens.push(this.createToken(TokenType.EOF, ''));
+
+    return tokens;
+  }
+
+  /**
+   * Tokenize directive arguments where quotes should be parsed as string literals
+   * This is used by argument parsers to properly handle quoted strings in directive arguments
+   */
+  tokenizeDirectiveArguments(source: string): Token[] {
+    this.source = source;
+    this.position = 0;
+    this.line = 1;
+    this.column = 1;
+    this.indentStack = [0];
+    this.lastTokenType = null;
+    this.atStatementStart = false; // Arguments are not at statement start
+
+    const tokens: Token[] = [];
+
+    while (!this.isAtEnd()) {
+      const token = this.nextTokenForArguments();
+      if (token) {
+        tokens.push(token);
+        this.lastTokenType = token.type;
       }
     }
 
@@ -150,14 +180,40 @@ export class Tokenizer {
       return this.handlePunctuation();
     }
 
-    // Handle string literals - content inside quotes is NOT interpolated
-    // Strings are literals: "@{var}" stays as "@{var}", not interpolated
+    // Handle everything else as text (including whitespace and keywords)
+    // Quotes are just regular text characters unless parsed in specific contexts
+    return this.handleText();
+  }
+
+  /**
+   * Token parsing specifically for directive arguments where quotes are string delimiters
+   */
+  private nextTokenForArguments(): Token | null {
+    // Handle newlines
+    if (this.peek() === '\n' || this.peek() === '\r') {
+      return this.handleNewline();
+    }
+
+    // Handle string literals - in argument context, quotes are string delimiters
     if (this.peek() === '"' || this.peek() === "'") {
       return this.handleString();
     }
 
-    // Handle everything else as text (including whitespace and keywords)
-    return this.handleText();
+    // Handle single character punctuation
+    if (this.peek() === '=') {
+      return this.handlePunctuation();
+    }
+
+    if (this.peek() === '(' || this.peek() === ')') {
+      return this.handlePunctuation();
+    }
+
+    if (this.peek() === ',') {
+      return this.handlePunctuation();
+    }
+
+    // Handle everything else as text
+    return this.handleTextForArguments();
   }
 
   private handleNewline(): Token {
@@ -478,9 +534,7 @@ export class Tokenizer {
           (this.peekNext() === '/' || this.peekNext() === '*')) ||
         char === '(' ||
         char === ')' ||
-        char === ',' ||
-        char === '"' ||
-        char === "'"
+        char === ','
       ) {
         break;
       }
@@ -517,6 +571,45 @@ export class Tokenizer {
 
     // Now check if this text token contains special keywords and split if needed
     return this.processTextForKeywords(value, startColumn);
+  }
+
+  /**
+   * Handle text tokens in argument context - simpler than template text
+   * Stop at quotes, punctuation, and newlines
+   */
+  private handleTextForArguments(): Token {
+    const startColumn = this.column;
+    let value = '';
+
+    while (!this.isAtEnd()) {
+      const char = this.peek();
+
+      // Stop at quotes (they are string delimiters in argument context)
+      if (char === '"' || char === "'") {
+        break;
+      }
+
+      // Stop at newlines
+      if (char === '\n' || char === '\r') {
+        break;
+      }
+
+      // Stop at punctuation
+      if (char === '(' || char === ')' || char === ',' || char === '=') {
+        break;
+      }
+
+      value += char;
+      this.advance();
+    }
+
+    // If we didn't consume any characters, consume at least one to avoid infinite loops
+    if (value === '' && !this.isAtEnd()) {
+      value = this.peek();
+      this.advance();
+    }
+
+    return this.createToken(TokenType.TEXT, value, startColumn);
   }
 
   private processTextForKeywords(text: string, startColumn: number): Token {

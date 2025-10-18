@@ -1,37 +1,48 @@
-# APTL Demo - Real-world Examples
+# APTL Demo - Real-world AI System Prompts
 
-This directory contains a real-world, runnable demo of the APTL (AI Prompt Template Language) engine. It demonstrates how to use APTL in a Node.js application with actual template files stored on the file system.
+This directory contains a real-world, runnable demo of the APTL (AI Prompt Template Language) engine. It demonstrates how to use APTL to create sophisticated, maintainable AI system prompts for various agent use cases.
 
 ## Overview
 
 This demo showcases:
 
 - **Local File System Integration**: Templates stored as `.aptl` files in a real directory structure
-- **Template Inheritance**: Using `@extends` to create specialized templates from base templates
-- **Template Registry**: Managing multiple templates efficiently
-- **Real-world Use Cases**: Practical examples including emails, reports, and AI agent prompts
-- **Conditional Logic**: Dynamic content based on data conditions
-- **Formatters**: Different output formats (plain text, markdown)
+- **Template Inheritance**: Using `@extends` to create specialized agent prompts from base templates
+- **Snippet Inclusion**: Using `@include` for reusable prompt components
+- **Template Registry**: Managing multiple templates and snippets efficiently
+- **Real-world Use Cases**: Production-ready AI agent prompts for coding, data analysis, customer support, and more
+- **Conditional Logic**: Dynamic content based on context and requirements
+- **Modular Architecture**: Base templates, snippets, and specialized agent prompts
 
 ## Directory Structure
 
 ```
 demo/
-├── README.md           # This file
-├── package.json        # Demo dependencies and scripts
-├── tsconfig.json       # TypeScript configuration
-├── demo.ts            # Main demo script
-└── templates/         # Template files
-    ├── base.aptl                # Base template for AI agents
-    ├── coding-assistant.aptl    # Extends base.aptl
-    ├── email.aptl              # Email template with conditions
-    └── report.aptl             # Analytics report template
+├── README.md              # This file
+├── package.json           # Demo dependencies and scripts
+├── demo.js                # Main demo script
+├── templates/             # Legacy templates (deprecated)
+└── prompts/              # AI System Prompts
+    ├── README.md         # Detailed documentation
+    ├── base/             # Base templates
+    │   └── agent-base.aptl
+    ├── snippets/         # Reusable components
+    │   ├── ethical-guidelines.aptl
+    │   ├── code-review-checklist.aptl
+    │   ├── thinking-process.aptl
+    │   └── output-format.aptl
+    └── templates/        # Complete agent prompts
+        ├── coding-assistant.aptl
+        ├── data-analyst.aptl
+        ├── technical-writer.aptl
+        ├── customer-support.aptl
+        └── research-assistant.aptl
 ```
 
 ## Prerequisites
 
 - Node.js 16.x or higher
-- npm or pnpm package manager
+- pnpm package manager
 
 ## Installation
 
@@ -42,7 +53,7 @@ demo/
 
 2. Install dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
 
    This will install the `@finqu/aptl` package from the parent directory.
@@ -52,152 +63,171 @@ demo/
 Run the demo from the demo directory:
 
 ```bash
-npm run demo
+pnpm demo
 ```
 
 This runs the JavaScript file directly.
 
 ## What the Demo Does
 
-The demo script (`demo.ts`) demonstrates five key scenarios:
+The demo script (`demo.js`) demonstrates real-world AI system prompt generation:
 
-### 1. Welcome Email Template
-Renders a welcome email for a premium user with personalized features list.
+### 1. Coding Assistant Prompt
+Renders a complete system prompt for a software development AI agent with:
+- Multi-language support (TypeScript, Python, Rust)
+- Code review standards (via snippet inclusion)
+- Security-focused guidance
+- Example interactions for debugging, code review, and optimization
 
-### 2. Notification Email Template
-Renders a notification email with multiple activity items.
+### 2. Data Analysis Assistant Prompt
+Generates a system prompt for a data analysis AI agent with:
+- Statistical methodology framework
+- Visualization guidance
+- Data ethics considerations
+- A/B testing and exploratory analysis examples
 
-### 3. Analytics Report Template
-Generates a comprehensive analytics report with:
-- Executive summary
-- Key metrics with comparisons
-- Insights and recommendations
-- Markdown formatting
+### 3. Technical Writer Assistant Prompt
+Creates a system prompt for a documentation AI agent with:
+- Writing principles (clarity, structure, completeness)
+- Document type templates (API docs, READs, tutorials)
+- Audience-aware customization
+- Style guide integration
 
-### 4. Template Inheritance
-Shows how `coding-assistant.aptl` extends `base.aptl` to create a specialized AI agent prompt with:
-- Overridden sections
-- New sections
-- Conditional content
-- Security constraints
+### 4. Customer Support Agent Prompt
+Produces a system prompt for a technical support AI agent with:
+- Troubleshooting framework
+- Empathetic communication patterns
+- Escalation criteria
+- Common issue database
 
-### 5. Direct File Rendering
-Demonstrates rendering templates directly without using the registry.
+### 5. Research Assistant Prompt
+Generates a system prompt for a research AI agent with:
+- Research methodology
+- Source evaluation criteria
+- Citation formatting
+- Critical analysis frameworks
 
-## Template Files
+## Key Features Demonstrated
 
-### base.aptl
-A foundation template for AI agents with:
-- Identity section
-- Capabilities list
-- Guidelines with verbosity levels
+### Template Inheritance (`@extends`)
+All agent templates extend `base/agent-base.aptl`:
+```aptl
+@extends "base/agent-base.aptl"
 
-### coding-assistant.aptl
-Extends `base.aptl` to create a specialized coding assistant with:
-- Coding-specific capabilities
-- Example interactions
-- Security constraints
-- Code snippet examples
+@section identity(override="true")
+// Custom identity for this specific agent
+@end
+```
 
-### email.aptl
-Multi-purpose email template supporting:
-- Welcome emails
-- Notification emails
-- Password reset emails
-- Premium vs. free user content
+### Snippet Inclusion (`@include`)
+Reusable components included where needed:
+```aptl
+@section guidelines
+@include "snippets/ethical-guidelines.aptl"
+@include "snippets/thinking-process.aptl"
+@end
+```
 
-### report.aptl
-Analytics report template with:
-- Markdown formatting
-- Executive summary
-- Key metrics tracking
-- Insights and recommendations
+### Conditional Logic
+Adapts prompts based on context:
+```aptl
+@if(securityLevel == "high")
+⚠️ Always check for security vulnerabilities
+@end
+```
+
+### Dynamic Lists
+Generates content from data:
+```aptl
+@each capability in capabilities
+  • @{capability}
+@end
+```
 
 ## Customization
 
 ### Modify Templates
 
-Edit any `.aptl` file in the `templates/` directory and re-run the demo to see changes immediately.
+Edit any `.aptl` file in the `prompts/` directory and re-run the demo to see changes immediately.
 
-**Note:** Avoid using apostrophes (`'`) in template text as they are treated as string delimiters. Use "do not" instead of "don't", or escape them if needed.
-
-Example - edit `base.aptl`:
+Example - customize the coding assistant (`prompts/templates/coding-assistant.aptl`):
 ```aptl
-@section identity
-You are an AI assistant designed to help users with @{domain|"general tasks"}.
-
-// Add a new line:
-You are powered by the latest AI technology.
+@section security_focus(new="true")
+@if(securityLevel == "high")
+Security priority guidelines:
+⚠️ Always check for:
+- SQL injection vulnerabilities
+- XSS attacks
+- Authentication bypass
+// Add your own security checks here
+@end
 @end
 ```
 
-### Add New Templates
+### Create New Snippets
 
-1. Create a new `.aptl` file in `templates/`
-2. Add rendering logic in `demo.ts`
+1. Create a new `.aptl` file in `prompts/snippets/`
+2. Include it in your templates using `@include`
 
-Example - create `templates/greeting.aptl`:
+Example - create `prompts/snippets/testing-guidelines.aptl`:
 ```aptl
-Hello, @{name}!
+Testing best practices:
+- Write tests before code (TDD)
+- Aim for high coverage on critical paths
+- Test edge cases and error conditions
+- Use descriptive test names
+```
 
-@if timeOfDay == "morning"
-Good morning! Have a great day ahead.
-@elif timeOfDay == "evening"
-Good evening! Hope you had a productive day.
-@else
-Welcome!
+Then include it:
+```aptl
+@section testing(new="true")
+@include "snippets/testing-guidelines.aptl"
 @end
 ```
 
-Then use it in `demo.ts`:
-```typescript
-const greeting = registry.get('greeting');
-const result = greeting.render({
-  name: 'Alice',
-  timeOfDay: 'morning'
-});
-console.log(result);
-```
+### Build Custom Agents
 
-### Modify Data
+Create your own agent template by extending the base:
 
-Change the data objects in `demo.ts` to see how templates adapt:
+```aptl
+// prompts/templates/my-custom-agent.aptl
+@extends "base/agent-base.aptl"
 
-```typescript
-// Change user to free tier
-user: {
-  name: 'Bob Smith',
-  isPremium: false  // Changed from true
-}
+@section identity(override="true")
+You are @{agentName}, a specialized assistant for @{domain}.
+@end
+
+@section core_capabilities(override="true")
+Your capabilities:
+@each capability in capabilities
+  • @{capability}
+@end
+@end
 ```
 
 ## APTL Features Demonstrated
 
-### Directives
+### Core Directives
 
-- `@extends` - Template inheritance
-- `@section` - Content sections with formatting
-- `@if/@elif/@else` - Conditional rendering
-- `@each` - Loop through arrays
-- `@{variable}` - Variable interpolation with defaults
+- `@extends` - Template inheritance from base templates
+- `@include` - Include reusable snippet files
+- `@section` - Define overridable content sections
+- `@if/@elif/@else` - Conditional rendering based on context
+- `@each` - Iterate through arrays for dynamic lists
+- `@{variable|"default"}` - Variable interpolation with fallback defaults
 
-### Formatters
+### Advanced Patterns
 
-- `format="plain"` - Plain text output (default)
-- `format="markdown"` - Markdown formatted output
+- **Multi-level inheritance**: Templates can extend templates that extend other templates
+- **Section merging**: `override`, `prepend`, `append`, `new`, `overridable` attributes
+- **Nested conditionals**: Complex logic trees for sophisticated behavior
+- **Cross-file composition**: Snippets included in base templates, inherited by specific agents
 
-### Template Registry
+### Template Organization
 
-- `loadDirectory()` - Load all templates from a directory
-- `get()` - Retrieve a template by name
-- `render()` - Render a template with data
-- `list()` - List all loaded templates
-
-### File System
-
-- `LocalFileSystem` - Read templates from actual files
-- Automatic directory scanning
-- Path resolution
+- `base/` - Foundation templates with overridable sections
+- `snippets/` - Small, focused, reusable components
+- `templates/` - Complete, production-ready agent prompts
 
 ## Troubleshooting
 
@@ -218,20 +248,20 @@ ls -la templates/
 
 ## Learn More
 
-- [APTL Documentation](../README.md)
-- [APTL Grammar](../APTL-BNF.md)
-- [Main Repository](https://github.com/finqu/aptl)
+- [Prompt Templates Documentation](./prompts/README.md) - Detailed guide to the prompt templates
+- [APTL Documentation](../README.md) - Main APTL documentation
+- [APTL Grammar](../APTL-BNF.md) - Formal grammar specification
+- [Main Repository](https://github.com/finqu/aptl) - Source code and issues
 
 ## Clean Up
 
 To remove generated files and dependencies:
 ```bash
-npm run clean
+pnpm clean
 ```
 
 This removes:
 - `node_modules/` directory
-- `dist/` directory (compiled JavaScript)
 
 ## License
 

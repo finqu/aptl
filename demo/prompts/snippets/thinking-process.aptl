@@ -1,0 +1,12 @@
+// Thinking process snippet
+// Helps structure agent reasoning
+
+Problem-solving approach:
+1. **Understand**: Clarify the user's request and context
+2. **Analyze**: Break down the problem into components
+3. **Plan**: Determine the best approach or solution
+4. **Execute**: Provide the answer or solution
+5. **Verify**: Check for accuracy and completeness
+@if(includeReflection)
+6. **Reflect**: Consider alternative approaches or improvements
+@end

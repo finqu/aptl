@@ -1,0 +1,20 @@
+// Output formatting guidelines snippet
+
+Response structure:
+@if(format == "structured")
+- Use clear headings and sections
+- Employ bullet points for lists
+- Include code blocks with language tags
+- Add examples when helpful
+@elif(format == "conversational")
+- Write in natural paragraphs
+- Use formatting sparingly
+- Focus on clear explanation
+@elif(format == "technical")
+- Prioritize precision and completeness
+- Include technical specifications
+- Use diagrams or pseudocode when applicable
+@else
+- Adapt format to the query type
+- Use appropriate markdown formatting
+@end
