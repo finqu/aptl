@@ -246,7 +246,7 @@ Now solve: @{problem}
 @end
 `.trim();
 
-      const engine = new APTLEngine('gpt-4');
+      const engine = new APTLEngine('gpt-4', { preserveWhitespace: true });
       const result = await engine.render(template, {});
 
       expect(result).toContain('Input: ');

@@ -24,7 +24,7 @@ Line 3`;
     });
 
     it('should preserve whitespace in text', async () => {
-      const engine = new APTLEngine('gpt-5.1');
+      const engine = new APTLEngine('gpt-5.1', { preserveWhitespace: true });
       const result = await engine.render('Hello   World\t\tTest');
       expect(result).toBe('Hello   World\t\tTest');
     });
@@ -91,7 +91,10 @@ Line 3`;
     });
 
     it('should handle undefined variables in non-strict mode', async () => {
-      const engine = new APTLEngine('gpt-5.1', { strict: false });
+      const engine = new APTLEngine('gpt-5.1', {
+        strict: false,
+        preserveWhitespace: true,
+      });
       const result = await engine.render('Hello @{missing}', {});
       expect(result).toBe('Hello ');
     });
@@ -777,7 +780,7 @@ Email: @{user.email}
     });
 
     it('should handle template with only whitespace', async () => {
-      const engine = new APTLEngine('gpt-5.1');
+      const engine = new APTLEngine('gpt-5.1', { preserveWhitespace: true });
       const result = await engine.render('   \n  \t  \n   ');
       expect(result).toBe('   \n  \t  \n   ');
     });
@@ -1035,7 +1038,7 @@ No @{category} products available
 
     describe('Nested @each', () => {
       it('should handle nested iteration', async () => {
-        const engine = new APTLEngine('gpt-5.1');
+        const engine = new APTLEngine('gpt-5.1', { preserveWhitespace: true });
         const template = `@each(category in categories)
 @{category.name}:
 @each(item in category.items)
@@ -1056,7 +1059,7 @@ No @{category} products available
       });
 
       it('should handle nested each with else branches', async () => {
-        const engine = new APTLEngine('gpt-5.1');
+        const engine = new APTLEngine('gpt-5.1', { preserveWhitespace: true });
         const template = `@each(category in categories)
 @{category.name}:
 @each(item in category.items)
@@ -1101,7 +1104,7 @@ Outer @{loop.index}: @{outer.name}
 
     describe('@each with @if', () => {
       it('should support conditionals inside loops', async () => {
-        const engine = new APTLEngine('gpt-5.1');
+        const engine = new APTLEngine('gpt-5.1', { preserveWhitespace: true });
         const template = `@each(user in users)
 @{user.name}
 @if user.isAdmin
@@ -1251,7 +1254,7 @@ Your cart is empty
       });
 
       it('should render a nested menu structure', async () => {
-        const engine = new APTLEngine('gpt-5.1');
+        const engine = new APTLEngine('gpt-5.1', { preserveWhitespace: true });
         const template = `@each(section in menu)
 @{section.title}
 @each(item in section.items)

@@ -46,7 +46,7 @@ export class Compiler {
     this.options = {
       strict: false,
       helpers: {},
-      preserveWhitespace: true,
+      preserveWhitespace: false,
       ...options,
     };
 

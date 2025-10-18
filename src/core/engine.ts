@@ -57,6 +57,7 @@ export class APTLEngine {
       strict: this.options.strict,
       helpers: this.helpers,
       formatterRegistry: this.formatterRegistry,
+      preserveWhitespace: this.options.preserveWhitespace || false,
     });
 
     this.templateRegistry =

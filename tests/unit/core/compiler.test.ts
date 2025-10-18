@@ -18,7 +18,9 @@ describe('Compiler', () => {
   beforeEach(() => {
     parser = new Parser();
     tokenizer = new Tokenizer();
-    compiler = new Compiler(tokenizer, parser);
+    compiler = new Compiler(tokenizer, parser, {
+      preserveWhitespace: true,
+    });
   });
 
   // Helper function to compile and render a template

@@ -160,6 +160,7 @@ export interface APTLOptions {
   fileSystem?: FileSystem;
   extensions?: string[];
   templateRegistry?: TemplateRegistry;
+  preserveWhitespace?: boolean;
 }
 
 export interface TemplateRegistryOptions {

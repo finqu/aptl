@@ -1,7 +1,7 @@
 // Thinking process snippet
 // Helps structure agent reasoning
 
-Problem-solving approach:
+Problem-solving approach for @{agentName|"the AI assistant"}:
 1. **Understand**: Clarify the user's request and context
 2. **Analyze**: Break down the problem into components
 3. **Plan**: Determine the best approach or solution
