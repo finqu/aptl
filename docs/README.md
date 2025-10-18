@@ -29,8 +29,11 @@ gem install bundler jekyll
 # Navigate to the docs directory
 cd docs
 
+# Install dependencies
+bundle install
+
 # Serve the site locally
-jekyll serve
+bundle exec jekyll serve
 
 # Open http://localhost:4000/aptl in your browser
 ```
@@ -48,7 +51,7 @@ When updating documentation:
 ## Jekyll Configuration
 
 The site uses:
-- **Theme**: Cayman (GitHub Pages default)
+- **Theme**: Cayman (via remote_theme for GitHub Pages)
 - **Markdown**: Kramdown with GitHub Flavored Markdown
 - **Syntax Highlighting**: Rouge
 
