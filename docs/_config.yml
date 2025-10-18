@@ -2,7 +2,7 @@ title: APTL Documentation
 description: AI Prompt Template Language - A modern template engine for authoring AI system prompts
 remote_theme: pages-themes/cayman@v0.2.0
 url: https://finqu.github.io
-baseurl: /aptl
+baseurl: /
 markdown: kramdown
 kramdown:
   input: GFM
