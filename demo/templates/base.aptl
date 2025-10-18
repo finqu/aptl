@@ -1,11 +1,11 @@
 // Base template for AI agent prompts
 // Can be extended by specific agent templates
 
-@section identity
+@section identity(overridable="true")
 You are an AI assistant designed to help users with @{domain|"general tasks"}.
 @end
 
-@section capabilities
+@section capabilities(overridable="true")
 Your key capabilities include:
 @each capability in capabilities
   • @{capability}
