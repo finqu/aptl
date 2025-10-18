@@ -308,7 +308,9 @@ describe('Tokenizer - The @ Whisperer', () => {
     });
 
     it('should handle escape sequences in directive argument strings', () => {
-      const tokens = tokenizer.tokenizeDirectiveArguments('"line1\\nline2\\ttab"');
+      const tokens = tokenizer.tokenizeDirectiveArguments(
+        '"line1\\nline2\\ttab"',
+      );
       expect(tokens[0].type).toBe(TokenType.STRING);
       expect(tokens[0].value).toBe('line1\nline2\ttab');
     });
@@ -320,7 +322,9 @@ describe('Tokenizer - The @ Whisperer', () => {
     });
 
     it('should throw on unterminated strings in directive arguments', () => {
-      expect(() => tokenizer.tokenizeDirectiveArguments('"unclosed')).toThrow(APTLSyntaxError);
+      expect(() => tokenizer.tokenizeDirectiveArguments('"unclosed')).toThrow(
+        APTLSyntaxError,
+      );
       expect(() => tokenizer.tokenizeDirectiveArguments('"unclosed')).toThrow(
         /Unterminated string/,
       );

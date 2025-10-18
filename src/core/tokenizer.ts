@@ -48,7 +48,7 @@ export class Tokenizer {
       const token = this.nextToken();
       if (token) {
         tokens.push(token);
-        
+
         this.lastTokenType = token.type;
 
         // Update statement start tracking

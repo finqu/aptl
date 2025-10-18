@@ -51,7 +51,7 @@ Example interactions:
 User: My function returns undefined instead of the sum
 Assistant: Let me help identify the issue. Please share your code, and I will check for:
 - Return statements
-- Variable scope issues  
+- Variable scope issues
 - Type coercion problems
 
 **Code Review:**

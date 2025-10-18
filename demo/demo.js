@@ -2,7 +2,7 @@
 
 /**
  * APTL Demo - Real-world AI System Prompt Examples
- * 
+ *
  * This demo shows how to use APTL to create sophisticated AI agent system prompts
  * with template inheritance, snippet inclusion, and conditional logic.
  */
@@ -26,7 +26,9 @@ function printHeader(title) {
 
 async function main() {
   console.log('🚀 APTL Demo - AI System Prompt Generation');
-  console.log('This demo generates production-ready system prompts for AI agents\n');
+  console.log(
+    'This demo generates production-ready system prompts for AI agents\n',
+  );
 
   // Initialize the file system pointing to the prompts directory
   const promptsDir = join(__dirname, 'prompts');
@@ -41,26 +43,48 @@ async function main() {
   // Load all templates from the prompts directory structure
   printHeader('Loading Prompt Templates');
   console.log(`📁 Loading from: ${promptsDir}`);
-  
+
   await registry.loadDirectory('base');
   await registry.loadDirectory('snippets');
   await registry.loadDirectory('templates');
-  
+
   const templateList = registry.list();
   console.log(`✅ Loaded ${templateList.length} templates and snippets:`);
-  console.log('   Base templates:', registry.list().filter(n => n.includes('agent-base')));
-  console.log('   Snippets:', registry.list().filter(n => 
-    n.includes('ethical') || n.includes('code-review') || 
-    n.includes('thinking') || n.includes('output')));
-  console.log('   Agent templates:', registry.list().filter(n => 
-    n.includes('coding') || n.includes('data') || 
-    n.includes('technical') || n.includes('customer') || n.includes('research')));
+  console.log(
+    '   Base templates:',
+    registry.list().filter((n) => n.includes('agent-base')),
+  );
+  console.log(
+    '   Snippets:',
+    registry
+      .list()
+      .filter(
+        (n) =>
+          n.includes('ethical') ||
+          n.includes('code-review') ||
+          n.includes('thinking') ||
+          n.includes('output'),
+      ),
+  );
+  console.log(
+    '   Agent templates:',
+    registry
+      .list()
+      .filter(
+        (n) =>
+          n.includes('coding') ||
+          n.includes('data') ||
+          n.includes('technical') ||
+          n.includes('customer') ||
+          n.includes('research'),
+      ),
+  );
 
   // Demo 1: Coding Assistant
   printHeader('Demo 1: Coding Assistant System Prompt');
   // Demo 1: Coding Assistant
   printHeader('Demo 1: Coding Assistant System Prompt');
-  
+
   const codingAssistantData = {
     agentName: 'CodeAssist Pro',
     primaryPurpose: 'assist developers with coding tasks',
@@ -70,7 +94,7 @@ async function main() {
       'Bug detection and debugging',
       'Architecture design guidance',
       'Performance optimization',
-      'Security vulnerability analysis'
+      'Security vulnerability analysis',
     ],
     tone: 'technical',
     knowledgeCutoff: 'October 2024',
@@ -80,7 +104,7 @@ async function main() {
     includeFrameworks: true,
     includeOptimization: true,
     includeContentPolicy: true,
-    includeStyleGuide: true
+    includeStyleGuide: true,
   };
 
   const codingAssistant = registry.get('templates/coding-assistant');
@@ -89,17 +113,21 @@ async function main() {
 
   // Demo 2: Data Analysis Assistant
   printHeader('Demo 2: Data Analysis Assistant System Prompt');
-  
+
   const dataAnalystData = {
     agentName: 'DataAnalyst AI',
     primaryPurpose: 'help users analyze data and extract insights',
-    expertise: ['Statistical Analysis', 'Data Visualization', 'Predictive Modeling'],
+    expertise: [
+      'Statistical Analysis',
+      'Data Visualization',
+      'Predictive Modeling',
+    ],
     capabilities: [
       'Exploratory data analysis',
       'Statistical hypothesis testing',
       'Data cleaning and preprocessing',
       'Visualization recommendations',
-      'A/B test analysis'
+      'A/B test analysis',
     ],
     tone: 'professional',
     knowledgeCutoff: 'October 2024',
@@ -107,7 +135,7 @@ async function main() {
     statisticalLevel: 'advanced',
     includeVisualization: true,
     includeEthics: true,
-    includeContentPolicy: true
+    includeContentPolicy: true,
   };
 
   const dataAnalyst = registry.get('templates/data-analyst');
@@ -116,7 +144,7 @@ async function main() {
 
   // Demo 3: Technical Writer Assistant
   printHeader('Demo 3: Technical Writer Assistant System Prompt');
-  
+
   const technicalWriterData = {
     agentName: 'DocWriter',
     primaryPurpose: 'create clear and comprehensive technical documentation',
@@ -126,7 +154,7 @@ async function main() {
       'Tutorial creation',
       'README authoring',
       'Architecture decision records',
-      'Release notes'
+      'Release notes',
     ],
     tone: 'professional',
     knowledgeCutoff: 'October 2024',
@@ -134,7 +162,7 @@ async function main() {
     style: 'Google',
     specialized: 'API and SDK documentation',
     includeContentPolicy: true,
-    format: 'structured'
+    format: 'structured',
   };
 
   const technicalWriter = registry.get('templates/technical-writer');
@@ -143,17 +171,21 @@ async function main() {
 
   // Demo 4: Customer Support Assistant
   printHeader('Demo 4: Customer Support Assistant System Prompt');
-  
+
   const customerSupportData = {
     agentName: 'SupportBot',
     primaryPurpose: 'provide excellent technical support',
-    expertise: ['Troubleshooting', 'Product Knowledge', 'Customer Communication'],
+    expertise: [
+      'Troubleshooting',
+      'Product Knowledge',
+      'Customer Communication',
+    ],
     capabilities: [
       'Troubleshoot technical issues',
       'Guide users through features',
       'Provide workarounds',
       'Escalate complex problems',
-      'Document feedback'
+      'Document feedback',
     ],
     tone: 'conversational',
     knowledgeCutoff: 'October 2024',
@@ -167,22 +199,25 @@ async function main() {
       {
         title: 'Login Issues',
         description: 'Users cannot access their account',
-        solution: 'Clear browser cookies and cache. If issue persists, initiate password reset.',
-        preventionTip: 'Enable two-factor authentication for enhanced security'
+        solution:
+          'Clear browser cookies and cache. If issue persists, initiate password reset.',
+        preventionTip: 'Enable two-factor authentication for enhanced security',
       },
       {
         title: 'File Upload Failures',
         description: 'Files fail to upload or show error 500',
-        solution: 'Check file size (max 100MB) and format. Try different browser. Clear cache.',
-        preventionTip: 'Compress large files before uploading'
+        solution:
+          'Check file size (max 100MB) and format. Try different browser. Clear cache.',
+        preventionTip: 'Compress large files before uploading',
       },
       {
         title: 'API Rate Limiting',
         description: 'API requests return 429 Too Many Requests',
-        solution: 'Current limit is 1000 requests/hour. Implement exponential backoff. Upgrade plan if needed.',
-        preventionTip: 'Cache responses and batch requests when possible'
-      }
-    ]
+        solution:
+          'Current limit is 1000 requests/hour. Implement exponential backoff. Upgrade plan if needed.',
+        preventionTip: 'Cache responses and batch requests when possible',
+      },
+    ],
   };
 
   const customerSupport = registry.get('templates/customer-support');
@@ -191,17 +226,21 @@ async function main() {
 
   // Demo 5: Research Assistant
   printHeader('Demo 5: Research Assistant System Prompt');
-  
+
   const researchAssistantData = {
     agentName: 'ResearchAI',
     primaryPurpose: 'help users conduct thorough research and analysis',
-    expertise: ['Information Synthesis', 'Critical Thinking', 'Source Evaluation'],
+    expertise: [
+      'Information Synthesis',
+      'Critical Thinking',
+      'Source Evaluation',
+    ],
     capabilities: [
       'Literature review',
       'Fact-checking',
       'Argument analysis',
       'Hypothesis generation',
-      'Citation management'
+      'Citation management',
     ],
     tone: 'professional',
     knowledgeCutoff: 'October 2024',
@@ -210,7 +249,7 @@ async function main() {
     includeCitations: true,
     synthesisStyle: 'analytical',
     includeContentPolicy: true,
-    includeReflection: true
+    includeReflection: true,
   };
 
   const researchAssistant = registry.get('templates/research-assistant');
@@ -221,12 +260,24 @@ async function main() {
   printHeader('Demo Complete');
   console.log('✅ All AI system prompts generated successfully!\n');
   console.log('Key features demonstrated:');
-  console.log('  • Template inheritance (@extends) - All agents extend agent-base.aptl');
-  console.log('  • Snippet inclusion (@include) - Reusable components like ethical-guidelines');
-  console.log('  • Conditional logic (@if/@elif/@else) - Context-aware prompt generation');
-  console.log('  • Dynamic lists (@each) - Capabilities and features from data');
-  console.log('  • Variable interpolation - @{variable|"default"} with fallbacks');
-  console.log('  • Section overriding - Customize specific sections while keeping base structure\n');
+  console.log(
+    '  • Template inheritance (@extends) - All agents extend agent-base.aptl',
+  );
+  console.log(
+    '  • Snippet inclusion (@include) - Reusable components like ethical-guidelines',
+  );
+  console.log(
+    '  • Conditional logic (@if/@elif/@else) - Context-aware prompt generation',
+  );
+  console.log(
+    '  • Dynamic lists (@each) - Capabilities and features from data',
+  );
+  console.log(
+    '  • Variable interpolation - @{variable|"default"} with fallbacks',
+  );
+  console.log(
+    '  • Section overriding - Customize specific sections while keeping base structure\n',
+  );
   console.log('Next steps:');
   console.log('  1. Explore the templates in prompts/templates/');
   console.log('  2. Check out reusable snippets in prompts/snippets/');
