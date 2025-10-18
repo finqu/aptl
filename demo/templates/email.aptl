@@ -1,0 +1,63 @@
+// Email template with multiple sections
+
+@section subject
+@if(emailType == "welcome")
+Welcome to @{appName}! 🎉
+@elif(emailType == "notification")
+New Activity in @{appName}
+@elif(emailType == "reset")
+Password Reset Request for @{appName}
+@else
+Message from @{appName}
+@end
+@end
+
+@section body(format="plain")
+Dear @{user.name},
+
+@if(emailType == "welcome")
+Thank you for joining @{appName}! We are excited to have you on board.
+
+@if(user.isPremium)
+As a premium member, you have access to exclusive features:
+@each feature in premiumFeatures
+  ✓ @{feature}
+@end
+
+Your premium membership is active until @{user.premiumUntil}.
+@else
+You are currently on our free plan. Upgrade to premium to unlock:
+@each feature in premiumFeatures
+  ★ @{feature}
+@end
+@end
+
+@elif(emailType == "notification")
+You have new activity in your account:
+
+@each notification in notifications
+  • @{notification.message} (@{notification.time})
+@end
+
+@elif(emailType == "reset")
+We received a request to reset your password.
+
+If you made this request, click the link below:
+@{resetLink}
+
+If you did not request this, please ignore this email.
+This link will expire in @{expiryHours|"24"} hours.
+
+@else
+@{customMessage}
+@end
+
+Best regards,
+The @{appName} Team
+
+---
+@{appName} | @{appUrl}
+@if(unsubscribeLink)
+Unsubscribe: @{unsubscribeLink}
+@end
+@end

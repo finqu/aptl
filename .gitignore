@@ -48,3 +48,8 @@ shrinkwrap.yaml
 _site/
 .jekyll-cache/
 .jekyll-metadata
+
+# Demo directory
+demo/node_modules/
+demo/dist/
+demo/package-lock.json

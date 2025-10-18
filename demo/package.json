@@ -1,0 +1,14 @@
+{
+  "name": "aptl-demo",
+  "version": "1.0.0",
+  "description": "Real-world demo of APTL template engine with local file system",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "demo": "node demo.js",
+    "clean": "rm -rf node_modules"
+  },
+  "dependencies": {
+    "@finqu/aptl": "file:.."
+  }
+}

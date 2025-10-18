@@ -17,6 +17,10 @@
         "default": "./dist/cjs/index.cjs"
       }
     },
+    "./local-filesystem": {
+      "types": "./dist/types/filesystem/local-filesystem.d.ts",
+      "default": "./dist/filesystem/local-filesystem.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
