@@ -27,6 +27,7 @@ export enum TokenType {
   IDENTIFIER = 'IDENTIFIER',
   EOF = 'EOF',
   DIRECTIVE = 'DIRECTIVE',
+  COLON = 'COLON',
 }
 
 export interface Token {
@@ -81,6 +82,7 @@ export interface DirectiveNode extends ASTNode {
   rawArgs: string; // Raw unparsed arguments from the template
   parsedArgs?: any; // Parsed arguments (set by directive-specific parser)
   children: ASTNode[];
+  isInline?: boolean; // Whether this directive uses inline syntax with :
 }
 
 // ============================================================================

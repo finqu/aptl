@@ -135,13 +135,33 @@ Score: @{results.tests[0].score|0}
 
 Sections group related content and control output formatting.
 
-### Basic Section
+### Basic Section (Block Syntax)
 
 ```aptl
 @section sectionName
   Content goes here
 @end
 ```
+
+### Inline Section Syntax
+
+For simple, single-line sections, use the colon (`:`) syntax:
+
+```aptl
+@section title: AI Coding Assistant
+@section version: 2.1.0
+@section author: @{authorName}
+```
+
+**When to use inline syntax:**
+- Single-line content
+- Simple text without complex nesting
+- Quick metadata or short descriptions
+
+**When to use block syntax:**
+- Multi-line content
+- Nested directives or complex logic
+- Better readability for longer content
 
 ### Named Sections (String Literals)
 
@@ -159,7 +179,9 @@ Use quotes for section names with spaces or special characters:
 
 ### Section Attributes
 
-#### With Parentheses
+Attributes work with both block and inline syntax.
+
+#### Block Syntax with Parentheses
 
 ```aptl
 @section name(attribute="value")
@@ -169,6 +191,14 @@ Use quotes for section names with spaces or special characters:
 @section name(attr1="value1", attr2="value2")
   Content
 @end
+```
+
+#### Inline Syntax with Attributes
+
+```aptl
+@section title(format="markdown"): # Welcome to APTL
+@section config(role="system"): You are an AI assistant
+@section metadata(format="json"): { "version": "1.0" }
 ```
 
 #### Without Parentheses

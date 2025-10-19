@@ -232,8 +232,6 @@ describe('IncludeDirective', () => {
         userName: 'Alice',
       });
 
-      console.log(result);
-
       expect(result).toContain('Welcome, Alice!');
       expect(result).toContain('Your content here.');
     });

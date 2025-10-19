@@ -30,6 +30,7 @@ Conditional rendering based on expressions.
 
 #### Syntax
 
+**Block syntax:**
 ```aptl
 @if expression
   Content when true
@@ -50,6 +51,11 @@ Conditional rendering based on expressions.
 @end
 ```
 
+**Inline syntax** (for simple one-liners):
+```aptl
+@if expression: Single line content
+```
+
 #### Examples
 
 **Simple condition:**
@@ -57,6 +63,13 @@ Conditional rendering based on expressions.
 @if user.isActive
   Welcome back!
 @end
+```
+
+**Inline syntax:**
+```aptl
+@if isPremium: You have access to premium features
+@if isAdmin: Administrator privileges enabled
+@if user.hasNotifications: You have new notifications!
 ```
 
 **With else:**
@@ -111,18 +124,23 @@ Iterate over arrays and collections.
 
 #### Syntax
 
-**Basic iteration:**
+**Block syntax (basic iteration):**
 ```aptl
 @each itemName in arrayPath
   Content with @{itemName}
 @end
 ```
 
-**With index:**
+**Block syntax (with index):**
 ```aptl
 @each itemName, indexName in arrayPath
   Content with @{itemName} and @{indexName}
 @end
+```
+
+**Inline syntax** (for simple lists):
+```aptl
+@each itemName in arrayPath: Single line with @{itemName}
 ```
 
 #### Examples
@@ -132,6 +150,13 @@ Iterate over arrays and collections.
 @each feature in features
   - @{feature.name}: @{feature.description}
 @end
+```
+
+**Inline syntax:**
+```aptl
+@each item in items: • @{item.name} (@{item.price})
+@each user in users: - @{user.name} <@{user.email}>
+@each tag in tags: #@{tag}
 ```
 
 **With index:**
@@ -176,6 +201,7 @@ Define named sections for organization and template inheritance.
 
 #### Syntax
 
+**Block syntax:**
 ```aptl
 @section name
   Content
@@ -192,6 +218,20 @@ Define named sections for organization and template inheritance.
 @section name attribute="value", another="value"
   Content
 @end
+```
+
+**Inline syntax** (for simple one-liners):
+```aptl
+@section name: Content goes here
+@section title: AI Coding Assistant
+@section version: 2.1.0
+@section author: @{authorName}
+```
+
+**Inline with attributes:**
+```aptl
+@section title(format="markdown"): # Welcome
+@section config(role="system"): You are an assistant
 ```
 
 #### Attributes
@@ -215,6 +255,28 @@ Define named sections for organization and template inheritance.
 @end
 ```
 
+**Inline sections (for metadata and short content):**
+```aptl
+@section title: Code Review Assistant
+@section version: 3.2.1
+@section model: gpt-4
+@section temperature: 0.7
+```
+
+**Mixing block and inline:**
+```aptl
+@section title: AI Coding Assistant
+
+@section capabilities
+  - Code review
+  - Bug detection
+  - Refactoring suggestions
+@end
+
+@section author: @{authorName}
+@section lastUpdated: @{timestamp}
+```
+
 **With role:**
 ```aptl
 @section identity(role="system")
@@ -230,7 +292,7 @@ Define named sections for organization and template inheritance.
 
 @section documentation(format="markdown")
   ## Heading
-  
+
   Content here
 @end
 ```

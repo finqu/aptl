@@ -5,7 +5,7 @@
 
 import { ConditionalDirective, DirectiveParser } from './base-directive';
 import { DirectiveContext } from './types';
-import { APTLSyntaxError, APTLRuntimeError } from '@/utils/errors';
+import { APTLSyntaxError } from '@/utils/errors';
 import { DirectiveNode, NodeType, ASTNode, TokenType } from '@/core/types';
 import { parseAttributes } from './argument-parsers';
 import { VariableResolver } from '@/data/variable-resolver';

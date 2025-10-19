@@ -21,6 +21,7 @@ export class Tokenizer {
   private lastTokenType: TokenType | null = null;
   private atStatementStart: boolean = true; // Track if we're at the start of a statement
   private registeredDirectives: Set<string> = new Set();
+  private onDirectiveLine: boolean = false; // Track if we're on a line with a directive
 
   constructor(options: TokenizerOptions = {}) {
     this.options = {
@@ -41,6 +42,7 @@ export class Tokenizer {
     this.indentStack = [0];
     this.lastTokenType = null;
     this.atStatementStart = true; // Start at beginning of input
+    this.onDirectiveLine = false;
 
     const tokens: Token[] = [];
 
@@ -55,12 +57,17 @@ export class Tokenizer {
         // We're at statement start ONLY after: newlines, or directive keywords that end statements
         if (token.type === TokenType.NEWLINE || token.type === TokenType.END) {
           this.atStatementStart = true;
+          this.onDirectiveLine = false; // Reset directive line flag on newline
         } else if (
           token.type === TokenType.VARIABLE ||
           token.type === TokenType.DIRECTIVE
         ) {
           // Once we've started a statement with variable/directive start, we're no longer at start
           this.atStatementStart = false;
+          // If we just tokenized a directive, we're on a directive line
+          if (token.type === TokenType.DIRECTIVE) {
+            this.onDirectiveLine = true;
+          }
         } else if (token.type === TokenType.TEXT && token.value.trim() !== '') {
           // TEXT tokens with non-whitespace content mean we're no longer at statement start
           // But whitespace-only TEXT tokens (indentation) preserve the statement start state
@@ -177,6 +184,13 @@ export class Tokenizer {
     }
 
     if (this.peek() === ',') {
+      return this.handlePunctuation();
+    }
+
+    // Handle colon - only as punctuation on directive lines
+    // This allows inline directive syntax like @section name: content
+    // But doesn't interfere with regular text like "Email: user@example.com"
+    if (this.peek() === ':' && this.onDirectiveLine) {
       return this.handlePunctuation();
     }
 
@@ -534,7 +548,8 @@ export class Tokenizer {
           (this.peekNext() === '/' || this.peekNext() === '*')) ||
         char === '(' ||
         char === ')' ||
-        char === ','
+        char === ',' ||
+        (char === ':' && this.onDirectiveLine) // Stop at colon on directive lines
       ) {
         break;
       }
@@ -749,6 +764,8 @@ export class Tokenizer {
         return this.createToken(TokenType.PUNCTUATION, char, startColumn);
       case '=':
         return this.createToken(TokenType.ASSIGN, char, startColumn);
+      case ':':
+        return this.createToken(TokenType.COLON, char, startColumn);
       default:
         return this.createToken(TokenType.PUNCTUATION, char, startColumn);
     }

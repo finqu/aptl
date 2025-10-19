@@ -85,6 +85,7 @@ export class Parser implements DirectiveParser {
       case TokenType.LPAREN:
       case TokenType.RPAREN:
       case TokenType.ASSIGN:
+      case TokenType.COLON:
         return this.parseText();
       default:
         throw new APTLSyntaxError(
@@ -114,7 +115,8 @@ export class Parser implements DirectiveParser {
       startToken.type === TokenType.OPERATOR ||
       startToken.type === TokenType.LPAREN ||
       startToken.type === TokenType.RPAREN ||
-      startToken.type === TokenType.ASSIGN
+      startToken.type === TokenType.ASSIGN ||
+      startToken.type === TokenType.COLON
     ) {
       value = this.advance().value;
     }
@@ -137,7 +139,8 @@ export class Parser implements DirectiveParser {
         nextToken.type === TokenType.OPERATOR ||
         nextToken.type === TokenType.LPAREN ||
         nextToken.type === TokenType.RPAREN ||
-        nextToken.type === TokenType.ASSIGN
+        nextToken.type === TokenType.ASSIGN ||
+        nextToken.type === TokenType.COLON
       ) {
         value += this.advance().value;
       } else {
@@ -167,8 +170,8 @@ export class Parser implements DirectiveParser {
     const startToken = this.advance(); // consume @directive token
     const directiveName = startToken.value.toLowerCase();
 
-    // Read raw arguments until newline (everything after the directive name)
-    const rawArgs = this.readUntilNewline().trim();
+    // Read raw arguments until newline or colon (everything after the directive name)
+    const { rawArgs, hasColon } = this.readDirectiveArguments();
 
     // Get the directive from the registry to check if it has special parsing needs
     const directive = this.directiveRegistry?.get(directiveName);
@@ -176,8 +179,35 @@ export class Parser implements DirectiveParser {
     // Parse directive body until @end or terminating directive
     const children: ASTNode[] = [];
 
-    // Check if this directive has a body
-    // First check if the directive explicitly says it has no body
+    // If we have inline syntax with colon
+    if (hasColon) {
+      // Check if this directive supports having a body
+      if (directive && !directive.hasBody) {
+        throw new APTLSyntaxError(
+          `Directive @${directiveName} does not support inline syntax (no body)`,
+          startToken.line,
+          startToken.column,
+        );
+      }
+
+      // Parse the rest of the line as the inline body
+      const inlineBody = this.parseInlineBody();
+      if (inlineBody) {
+        children.push(inlineBody);
+      }
+
+      return {
+        type: NodeType.DIRECTIVE,
+        name: directiveName,
+        rawArgs,
+        children,
+        line: startToken.line,
+        column: startToken.column,
+        isInline: true,
+      };
+    }
+
+    // Check if this directive has a body (normal block syntax)
     const hasBody =
       directive && !directive.hasBody ? false : this.checkForDirectiveBody();
 
@@ -248,6 +278,79 @@ export class Parser implements DirectiveParser {
       line: startToken.line,
       column: startToken.column,
     };
+  }
+
+  /**
+   * Read directive arguments until newline or colon
+   * Returns the arguments and whether a colon was found
+   */
+  private readDirectiveArguments(): { rawArgs: string; hasColon: boolean } {
+    let text = '';
+    let hasColon = false;
+
+    while (!this.isAtEnd() && this.peek().type !== TokenType.NEWLINE) {
+      const token = this.peek();
+
+      // Stop at colon - this indicates inline syntax
+      if (token.type === TokenType.COLON) {
+        this.advance(); // consume the colon
+        hasColon = true;
+        break;
+      }
+
+      // Concatenate the raw token values
+      if (token.type === TokenType.STRING) {
+        // Re-add quotes for string literals
+        text += `"${token.value}"`;
+      } else {
+        text += token.value;
+      }
+      this.advance();
+    }
+
+    // Consume newline if no colon was found
+    if (!hasColon && this.peek().type === TokenType.NEWLINE) {
+      this.advance();
+    }
+
+    return { rawArgs: text.trim(), hasColon };
+  }
+
+  /**
+   * Parse the inline body (everything until end of line)
+   * Returns a single node or group of nodes
+   */
+  private parseInlineBody(): ASTNode | null {
+    const startLine = this.peek().line;
+    const startColumn = this.peek().column;
+    const nodes: ASTNode[] = [];
+
+    // Parse until end of line or end of input
+    while (!this.isAtEnd() && this.peek().line === startLine) {
+      const node = this.parseStatement();
+      if (node) {
+        nodes.push(node);
+      }
+    }
+
+    // If we have no nodes, return null
+    if (nodes.length === 0) {
+      return null;
+    }
+
+    // If we have a single node, return it directly
+    if (nodes.length === 1) {
+      return nodes[0];
+    }
+
+    // Multiple nodes - wrap in a template node
+    const templateNode: TemplateNode = {
+      type: NodeType.TEMPLATE,
+      children: nodes,
+      line: startLine,
+      column: startColumn,
+    };
+    return templateNode;
   }
 
   private checkForDirectiveBody(): boolean {

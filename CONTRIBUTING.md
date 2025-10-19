@@ -15,7 +15,7 @@ Thank you for your interest in contributing to APTL (AI Prompt Template Language
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/aptl.git
+   git clone https://github.com/finqu/aptl.git
    cd aptl
    ```
 3. **Install dependencies**:

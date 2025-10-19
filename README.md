@@ -137,6 +137,13 @@ Organize prompts into logical sections with automatic formatting:
 @end
 ```
 
+**Inline syntax** for simple sections:
+```aptl
+@section title: AI Coding Assistant
+@section version: v2.1.0
+@section author: @{authorName}
+```
+
 ### 🔀 Smart Conditionals
 
 Build adaptive prompts that respond to context:
@@ -155,6 +162,12 @@ Build adaptive prompts that respond to context:
 @end
 ```
 
+**Inline syntax** for simple one-liners:
+```aptl
+@if isPremium: You have access to premium features.
+@if isAdmin: Administrator privileges enabled.
+```
+
 ### 🔁 Powerful Iteration
 
 Loop through arrays with full context access:
@@ -167,6 +180,12 @@ Loop through arrays with full context access:
     Due: @{task.dueDate}
   @end
 @end
+```
+
+**Inline syntax** for compact lists:
+```aptl
+@each item in items: • @{item.name} (@{item.price})
+@each user in users: - @{user.name} <@{user.email}>
 ```
 
 ### 🏗️ Template Inheritance
