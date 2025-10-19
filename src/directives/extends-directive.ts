@@ -247,19 +247,44 @@ export class ExtendsDirective extends InlineDirective {
     > = {};
 
     for (const [name, section] of childSections) {
-      // Check if there's already an override from a deeper child
-      // If so, use that instead of rendering this template's section
-      if (existingOverrides && existingOverrides[name]) {
-        // Pass through the existing override
-        sectionOverrides[name] = existingOverrides[name];
-      } else {
-        // Render the section's children
-        const sectionContent = section.node.children
-          .map((child) => context.renderNode!(child, context.data))
-          .join('');
+      // Render the current section's children
+      const currentSectionContent = section.node.children
+        .map((child) => context.renderNode!(child, context.data))
+        .join('');
 
+      // Check if there's already an override from a deeper child
+      if (existingOverrides && existingOverrides[name]) {
+        const existingOverride = existingOverrides[name];
+
+        // If both the existing override and current section use prepend,
+        // we need to chain them: current prepends to existing
+        if (section.prepend && existingOverride.prepend) {
+          sectionOverrides[name] = {
+            content: currentSectionContent + '\n' + existingOverride.content,
+            overridable: section.overridable,
+            override: section.override,
+            prepend: true,
+            append: section.append,
+          };
+        }
+        // If both use append, chain them: existing appends to current
+        else if (section.append && existingOverride.append) {
+          sectionOverrides[name] = {
+            content: existingOverride.content + '\n' + currentSectionContent,
+            overridable: section.overridable,
+            override: section.override,
+            prepend: section.prepend,
+            append: true,
+          };
+        }
+        // Otherwise, just pass through the existing override
+        else {
+          sectionOverrides[name] = existingOverride;
+        }
+      } else {
+        // No existing override - use current content
         sectionOverrides[name] = {
-          content: sectionContent,
+          content: currentSectionContent,
           overridable: section.overridable,
           override: section.override,
           prepend: section.prepend,

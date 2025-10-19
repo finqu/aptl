@@ -476,4 +476,390 @@ Available tools:
       expect(result).toContain('- Stack trace analyzer');
     });
   });
+
+  describe('Variable Resolution in Different Contexts', () => {
+    describe('Variables in Included Templates', () => {
+      it('should resolve variables from inherited scope (parent context)', async () => {
+        // Create a partial template that uses variables from parent scope
+        await fileSystem.writeFile(
+          'greeting.aptl',
+          `Hello, @{userName}! Your role is @{userRole}.`,
+        );
+
+        const mainTemplate = `@include "greeting"`;
+
+        const data = {
+          userName: 'Alice',
+          userRole: 'Developer',
+        };
+
+        const result = await engine.render(mainTemplate, data);
+
+        expect(result).toContain('Hello, Alice!');
+        expect(result).toContain('Your role is Developer');
+      });
+
+      it('should resolve variables passed as explicit arguments', async () => {
+        await fileSystem.writeFile(
+          'greeting-with-title.aptl',
+          `@{title} @{name}, welcome!`,
+        );
+
+        // Pass variables explicitly with 'with' clause
+        const mainTemplate = `@include "greeting-with-title" with title, name`;
+
+        const data = {
+          title: 'Dr.',
+          name: 'Smith',
+          extraData: 'should not appear',
+        };
+
+        const result = await engine.render(mainTemplate, data);
+
+        expect(result).toContain('Dr. Smith, welcome!');
+      });
+
+      it('should resolve variables with literal values in arguments', async () => {
+        await fileSystem.writeFile(
+          'status-message.aptl',
+          `Status: @{status}, Code: @{code}`,
+        );
+
+        const mainTemplate = `@include "status-message" with status="Active", code=200`;
+
+        const result = await engine.render(mainTemplate, {});
+
+        expect(result).toContain('Status: Active');
+        expect(result).toContain('Code: 200');
+      });
+
+      it('should merge inherited scope with explicit arguments', async () => {
+        await fileSystem.writeFile(
+          'user-card.aptl',
+          `User: @{userName} (@{userEmail}), Status: @{status}`,
+        );
+
+        const mainTemplate = `@include "user-card" with status="Online"`;
+
+        const data = {
+          userName: 'Bob',
+          userEmail: 'bob@example.com',
+        };
+
+        const result = await engine.render(mainTemplate, data);
+
+        expect(result).toContain('User: Bob (bob@example.com)');
+        expect(result).toContain('Status: Online');
+      });
+
+      it('should pass nested object variables to included template', async () => {
+        await fileSystem.writeFile(
+          'user-profile.aptl',
+          `Name: @{user.name}, Email: @{user.email}, Age: @{user.age}`,
+        );
+
+        const mainTemplate = `@include "user-profile" with user`;
+
+        const data = {
+          user: {
+            name: 'Charlie',
+            email: 'charlie@example.com',
+            age: 30,
+          },
+        };
+
+        const result = await engine.render(mainTemplate, data);
+
+        expect(result).toContain('Name: Charlie');
+        expect(result).toContain('Email: charlie@example.com');
+        expect(result).toContain('Age: 30');
+      });
+    });
+
+    describe('Variables in Child Templates (with @extends)', () => {
+      it('should resolve variables from parent data in child template sections', async () => {
+        await fileSystem.writeFile(
+          'base-profile.aptl',
+          `@section "header"(overridable=true)
+Default Header
+@end
+
+@section "content"(overridable=true)
+Default Content
+@end`,
+        );
+
+        const childTemplate = `@extends "base-profile.aptl"
+
+@section "header"(override=true)
+User Profile: @{userName}
+@end
+
+@section "content"(override=true)
+Email: @{userEmail}
+Role: @{userRole}
+@end`;
+
+        const data = {
+          userName: 'Diana',
+          userEmail: 'diana@example.com',
+          userRole: 'Manager',
+        };
+
+        const result = await engine.render(childTemplate, data);
+
+        expect(result).toContain('User Profile: Diana');
+        expect(result).toContain('Email: diana@example.com');
+        expect(result).toContain('Role: Manager');
+      });
+
+      it('should resolve nested variables in child template with prepend', async () => {
+        await fileSystem.writeFile(
+          'base-report.aptl',
+          `@section "summary"(overridable=true)
+Base Report Summary
+@end`,
+        );
+
+        const childTemplate = `@extends "base-report.aptl"
+
+@section "summary"(prepend=true)
+Project: @{project.name}
+Status: @{project.status}
+Lead: @{project.lead.name}
+
+@end`;
+
+        const data = {
+          project: {
+            name: 'APTL Engine',
+            status: 'Active',
+            lead: {
+              name: 'Eve',
+              email: 'eve@example.com',
+            },
+          },
+        };
+
+        const result = await engine.render(childTemplate, data);
+
+        expect(result).toContain('Project: APTL Engine');
+        expect(result).toContain('Status: Active');
+        expect(result).toContain('Lead: Eve');
+        expect(result).toContain('Base Report Summary');
+      });
+
+      it('should resolve variables with conditionals in child sections', async () => {
+        await fileSystem.writeFile(
+          'base-notification.aptl',
+          `@section "message"(overridable=true)
+Standard notification
+@end`,
+        );
+
+        const childTemplate = `@extends "base-notification.aptl"
+
+@section "message"(override=true)
+@if priority == "high"
+🔴 URGENT: @{subject}
+@elif priority == "medium"
+🟡 Important: @{subject}
+@else
+ℹ️ Info: @{subject}
+@end
+
+@{details}
+@end`;
+
+        const dataHigh = {
+          priority: 'high',
+          subject: 'Server Down',
+          details: 'Immediate action required',
+        };
+
+        const dataLow = {
+          priority: 'low',
+          subject: 'Maintenance Window',
+          details: 'Scheduled for tomorrow',
+        };
+
+        const resultHigh = await engine.render(childTemplate, dataHigh);
+        expect(resultHigh).toContain('🔴 URGENT: Server Down');
+        expect(resultHigh).toContain('Immediate action required');
+
+        const resultLow = await engine.render(childTemplate, dataLow);
+        expect(resultLow).toContain('ℹ️ Info: Maintenance Window');
+        expect(resultLow).toContain('Scheduled for tomorrow');
+      });
+
+      it('should resolve variables with loops in child sections', async () => {
+        await fileSystem.writeFile(
+          'base-list.aptl',
+          `@section "items"(overridable=true)
+No items
+@end`,
+        );
+
+        const childTemplate = `@extends "base-list.aptl"
+
+@section "items"(override=true)
+Team Members:
+@each member in team.members
+- @{member.name} (@{member.role})
+@end
+
+Project: @{team.project}
+@end`;
+
+        const data = {
+          team: {
+            project: 'Web Redesign',
+            members: [
+              { name: 'Frank', role: 'Designer' },
+              { name: 'Grace', role: 'Developer' },
+              { name: 'Henry', role: 'QA' },
+            ],
+          },
+        };
+
+        const result = await engine.render(childTemplate, data);
+
+        expect(result).toContain('Team Members:');
+        expect(result).toContain('- Frank (Designer)');
+        expect(result).toContain('- Grace (Developer)');
+        expect(result).toContain('- Henry (QA)');
+        expect(result).toContain('Project: Web Redesign');
+      });
+    });
+
+    describe('Complex Scenario: Includes within Extended Templates', () => {
+      it('should resolve variables in included templates within child sections', async () => {
+        // Create a partial for user info
+        await fileSystem.writeFile(
+          'user-info.aptl',
+          `@{user.name} <@{user.email}>`,
+        );
+
+        // Create base template
+        await fileSystem.writeFile(
+          'base-document.aptl',
+          `@section "author"(overridable=true)
+Unknown Author
+@end
+
+@section "content"(overridable=true)
+No content
+@end`,
+        );
+
+        // Child template includes partial within section
+        const childTemplate = `@extends "base-document.aptl"
+
+@section "author"(override=true)
+Author:
+@include "user-info"
+@end
+
+@section "content"(override=true)
+Document Title: @{title}
+Created: @{date}
+@end`;
+
+        const data = {
+          user: {
+            name: 'Isaac',
+            email: 'isaac@example.com',
+          },
+          title: 'Technical Specification',
+          date: '2024-01-15',
+        };
+
+        const result = await engine.render(childTemplate, data);
+
+        expect(result).toContain('Isaac <isaac@example.com>');
+        expect(result).toContain('Document Title: Technical Specification');
+        expect(result).toContain('Created: 2024-01-15');
+      });
+
+      it('should resolve variables when include has explicit arguments in child section', async () => {
+        await fileSystem.writeFile('tag.aptl', `[@{label}: @{value}]`);
+
+        await fileSystem.writeFile(
+          'base-item.aptl',
+          `@section "tags"(overridable=true)
+No tags
+@end`,
+        );
+
+        const childTemplate = `@extends "base-item.aptl"
+
+@section "tags"(override=true)
+Item: @{itemName}
+Tags:
+@include "tag" with label="Priority", value=priority
+@include "tag" with label="Status", value=status
+@end`;
+
+        const data = {
+          itemName: 'Task-123',
+          priority: 'High',
+          status: 'In Progress',
+        };
+
+        const result = await engine.render(childTemplate, data);
+
+        expect(result).toContain('Item: Task-123');
+        expect(result).toContain('[Priority: High]');
+        expect(result).toContain('[Status: In Progress]');
+      });
+
+      it('should handle multi-level inheritance with variables', async () => {
+        // Grandparent
+        await fileSystem.writeFile(
+          'grandparent.aptl',
+          `@section "level"(overridable=true)
+Level: Grandparent
+ID: @{id}
+@end`,
+        );
+
+        // Parent
+        await fileSystem.writeFile(
+          'parent.aptl',
+          `@extends "grandparent.aptl"
+
+@section "level"(prepend=true)
+Level: Parent
+Name: @{name}
+
+@end`,
+        );
+
+        // Child
+        const childTemplate = `@extends "parent.aptl"
+
+@section "level"(prepend=true)
+Level: Child
+Type: @{type}
+
+@end`;
+
+        const data = {
+          id: '12345',
+          name: 'TestProject',
+          type: 'Application',
+        };
+
+        const result = await engine.render(childTemplate, data);
+
+        // All three levels should appear with their variables resolved
+        expect(result).toContain('Level: Child');
+        expect(result).toContain('Type: Application');
+        expect(result).toContain('Level: Parent');
+        expect(result).toContain('Name: TestProject');
+        expect(result).toContain('Level: Grandparent');
+        expect(result).toContain('ID: 12345');
+      });
+    });
+  });
 });

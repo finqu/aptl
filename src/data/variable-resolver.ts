@@ -20,21 +20,83 @@ export class VariableResolver {
   /**
    * Resolve a variable path in the data context
    * Supports dot notation (user.name), array access (items[0]), and mixed (items[0].name)
+   * Also supports default values with pipe syntax: name|"default value"
    */
   resolve(path: string, data: Record<string, any>): any {
     if (!path || path.trim() === '') {
       return this.options.defaultValue;
     }
 
+    // Check if path contains a default value (pipe syntax)
+    const pipeIndex = path.indexOf('|');
+    let actualPath = path;
+    let defaultValue: any = undefined;
+    let hasDefaultValue = false;
+
+    if (pipeIndex !== -1) {
+      actualPath = path.substring(0, pipeIndex).trim();
+      const defaultPart = path.substring(pipeIndex + 1).trim();
+
+      // Parse the default value
+      defaultValue = this.parseDefaultValue(defaultPart);
+      hasDefaultValue = true;
+    }
+
     try {
-      return this.resolvePath(path, data);
+      const resolvedValue = this.resolvePath(actualPath, data);
+
+      // If value is undefined/null
+      if (resolvedValue === undefined || resolvedValue === null) {
+        // If we have a pipe default, use it
+        if (hasDefaultValue) {
+          return defaultValue;
+        }
+        // Otherwise use the general default
+        return this.handleUndefined(actualPath);
+      }
+
+      return resolvedValue;
     } catch (error) {
-      return this.handleUndefined(path);
+      // If we have a default value, return it instead of the general default
+      if (hasDefaultValue) {
+        return defaultValue;
+      }
+      return this.handleUndefined(actualPath);
     }
   }
 
   /**
+   * Parse a default value from the pipe syntax
+   * Supports: "string", 'string', numbers, booleans
+   */
+  private parseDefaultValue(value: string): any {
+    const trimmed = value.trim();
+
+    // String literals with quotes
+    if (
+      (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'"))
+    ) {
+      return trimmed.slice(1, -1);
+    }
+
+    // Boolean literals
+    if (trimmed === 'true') return true;
+    if (trimmed === 'false') return false;
+
+    // Number literals
+    const num = Number(trimmed);
+    if (!isNaN(num) && trimmed !== '') {
+      return num;
+    }
+
+    // Otherwise return as-is
+    return trimmed;
+  }
+
+  /**
    * Internal path resolution with support for arrays and object properties
+   * Returns undefined if the path doesn't exist in the data
    */
   private resolvePath(path: string, data: Record<string, any>): any {
     // Split path into segments, handling both dots and brackets
@@ -43,7 +105,7 @@ export class VariableResolver {
 
     for (const segment of segments) {
       if (value == null) {
-        return this.handleUndefined(path);
+        return undefined;
       }
 
       if (segment.type === 'property') {
@@ -52,14 +114,10 @@ export class VariableResolver {
         // Handle array index access
         const index = parseInt(segment.key, 10);
         if (isNaN(index)) {
-          return this.handleUndefined(path);
+          return undefined;
         }
         value = Array.isArray(value) ? value[index] : value[segment.key];
       }
-    }
-
-    if (value === undefined || value === null) {
-      return this.handleUndefined(path);
     }
 
     return value;

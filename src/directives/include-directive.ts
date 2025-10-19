@@ -100,7 +100,7 @@ function parseVariablesPart(varsPart: string): {
 
   // Parse comma-separated list of variables and key-value pairs
   const variableNames: string[] = [];
-  const literalValues: Record<string, string> = {};
+  const literalValues: Record<string, any> = {};
 
   // Split by comma, but respect quotes
   const parts = splitByComma(trimmed);
@@ -114,8 +114,32 @@ function parseVariablesPart(varsPart: string): {
 
     if (assignMatch) {
       const [, key, value] = assignMatch;
-      // Store the literal value (remove quotes if present)
-      literalValues[key.trim()] = extractTemplatePath(value.trim());
+      const trimmedKey = key.trim();
+      const trimmedValue = value.trim();
+
+      // Check if value is quoted (literal string)
+      const isQuoted =
+        (trimmedValue.startsWith('"') && trimmedValue.endsWith('"')) ||
+        (trimmedValue.startsWith("'") && trimmedValue.endsWith("'"));
+
+      if (isQuoted) {
+        // Store as literal value (remove quotes)
+        literalValues[trimmedKey] = trimmedValue.slice(1, -1);
+      } else if (/^\d+(\.\d+)?$/.test(trimmedValue)) {
+        // It's a numeric literal
+        literalValues[trimmedKey] = Number(trimmedValue);
+      } else if (trimmedValue === 'true' || trimmedValue === 'false') {
+        // It's a boolean literal
+        literalValues[trimmedKey] = trimmedValue === 'true';
+      } else if (trimmedValue.startsWith('{') && trimmedValue.endsWith('}')) {
+        // It's an object literal like {} or {key: value}
+        // Store as a string literal for now - could be enhanced to parse JSON
+        literalValues[trimmedKey] = trimmedValue;
+      } else {
+        // It's a variable reference - store as "key=varname" in variableNames
+        // This will be resolved in prepareIncludeData
+        variableNames.push(`${trimmedKey}=${trimmedValue}`);
+      }
     } else {
       // It's a variable name
       variableNames.push(cleaned);
@@ -355,6 +379,13 @@ export class IncludeDirective extends InlineDirective {
         if (resolved !== undefined && typeof resolved === 'object') {
           // Merge the resolved object
           Object.assign(includeData, resolved);
+        }
+      } else if (varName.includes('=')) {
+        // It's a key=varname assignment where varname should be resolved
+        const [key, valuePath] = varName.split('=').map((s) => s.trim());
+        const resolved = this.resolveVariable(valuePath, parentData);
+        if (resolved !== undefined) {
+          includeData[key] = resolved;
         }
       } else {
         // Regular variable name - use the name as the key
