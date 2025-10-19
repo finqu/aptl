@@ -82,20 +82,54 @@ Combine dot and bracket notation:
 
 ### Default Values
 
-Provide fallback values when variables are undefined:
+**Provide fallback values when variables are undefined or null:**
 
 ```aptl
-@{user.name|"Guest"}
-@{config.timeout|30}
-@{settings.theme|"dark"}
+Welcome, @{user.name|"Guest"}!
+Timeout: @{config.timeout|30} seconds
+Debug mode: @{settings.debug|false}
+Theme: @{preferences.theme|"dark"}
 ```
 
-Syntax: `@{variablePath|defaultValue}`
+**Syntax:** `@{variablePath|defaultValue}`
 
-Default values can be:
-- Strings: `"default"`
-- Numbers: `42`, `3.14`
-- Booleans: `true`, `false`
+**Supported default value types:**
+- **Strings**: `"default"` or `'default'` (quotes required)
+- **Numbers**: `42`, `3.14`, `-10`
+- **Booleans**: `true`, `false`
+
+**Resolution behavior:**
+1. Try to resolve `variablePath` from data
+2. If result is `undefined` or `null`, use the pipe default value
+3. If no pipe default, fall back to engine's global default
+4. If no global default, throw error (or return empty string based on config)
+
+**Examples:**
+
+```aptl
+// String defaults
+Hello, @{userName|"Anonymous User"}!
+Email: @{contact.email|"noreply@example.com"}
+
+// Number defaults
+Max retries: @{config.maxRetries|3}
+Temperature: @{params.temperature|0.7}
+Port: @{server.port|8080}
+
+// Boolean defaults
+Debug: @{settings.debug|false}
+Verbose: @{options.verbose|true}
+
+// Nested paths with defaults
+City: @{user.address.city|"Unknown"}
+Score: @{results.tests[0].score|0}
+```
+
+**Important notes:**
+- Default values are only used when the variable is `undefined` or `null`
+- Empty strings (`""`) and zero (`0`) are valid values and won't trigger defaults
+- For strings, quotes are **required**: `|"default"` not `|default`
+- Whitespace around the pipe is ignored: `@{var | "default"}` works
 
 ## Sections
 

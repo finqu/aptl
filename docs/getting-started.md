@@ -70,21 +70,30 @@ Help users with programming questions.
 
 ### 1. Variables
 
-Variables use the `@{...}` syntax:
+Variables use the `@{...}` syntax and support default values:
 
 ```aptl
-Hello, @{user.name}!
-Your role: @{user.role}
+Hello, @{user.name|"Guest"}!
+Your role: @{user.role|"Member"}
+Level: @{user.level|1}
 ```
 
-With data:
+**With data:**
 ```typescript
 {
   user: {
     name: 'Alice',
     role: 'Developer'
+    // level is missing - will use default value 1
   }
 }
+```
+
+**Output:**
+```
+Hello, Alice!
+Your role: Developer
+Level: 1
 ```
 
 ### 2. Sections
@@ -127,21 +136,26 @@ Iterate over arrays:
 
 ## Working with Files
 
-You can load templates from files:
+You can load templates from `.aptl` files:
 
 ```typescript
-import { APTLEngine, TemplateRegistry, LocalFileSystem } from '@finqu/aptl';
+import { APTLEngine, TemplateRegistry } from '@finqu/aptl';
+import { LocalFileSystem } from '@finqu/aptl/local-filesystem';
 
-const engine = new APTLEngine('gpt-5.1');
-const fileSystem = new LocalFileSystem();
-const registry = new TemplateRegistry(engine, fileSystem);
+const engine = new APTLEngine('gpt-4');
+const fileSystem = new LocalFileSystem('./templates');
+const registry = new TemplateRegistry(engine, { fileSystem });
 
-// Load templates from a directory
-await registry.loadDirectory('./templates');
+// Load templates from directories
+await registry.loadDirectory('base');
+await registry.loadDirectory('agents');
 
 // Get and render a template
-const template = registry.get('my-template');
-const output = await template.render(data);
+const template = registry.get('coding-assistant');
+const output = await template.render({
+  agentName: 'CodeBot',
+  capabilities: ['debugging', 'refactoring']
+});
 ```
 
 ## Next Steps
@@ -159,12 +173,19 @@ Now that you have the basics, explore more features:
 
 ```aptl
 @section identity(role="system")
-  You are @{agentName}, a @{agentRole}.
-  
+  You are @{agentName|"AI Assistant"}, a @{agentRole|"helpful assistant"}.
+
   @if credentials
     Your credentials:
     @each credential in credentials
       • @{credential}
+    @end
+  @end
+
+  @if specializations
+    You specialize in:
+    @each spec in specializations
+      - @{spec}
     @end
   @end
 @end
@@ -176,11 +197,17 @@ Now that you have the basics, explore more features:
 @section context
   @if userLevel == "beginner"
     Use simple, non-technical language.
+    Explain concepts step-by-step.
   @elif userLevel == "intermediate"
     Balance technical detail with clarity.
+    Provide examples when helpful.
   @else
     Use technical terminology appropriately.
+    Focus on efficiency and best practices.
   @end
+
+  Response length: @{maxLength|"moderate"}
+  Format: @{outputFormat|"markdown"}
 @end
 ```
 
@@ -189,7 +216,7 @@ Now that you have the basics, explore more features:
 ```aptl
 @section examples
   Here are some example interactions:
-  
+
   @each example in examples
     **Input:** @{example.input}
     **Output:** @{example.output}

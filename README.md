@@ -1,42 +1,62 @@
 # APTL (AI Prompt Template Language)
 
-> **A modern template engine for authoring AI system prompts.**
+> **A modern template engine designed specifically for AI system prompts.**
 >
-> Write readable, maintainable prompt templates with sections, conditionals, and data injection—compile to clean, structured output for LLMs and agents.
+> Stop wrestling with string concatenation and messy JSON. Write clean, maintainable prompt templates with inheritance, conditionals, and type-safe data injection—compile to optimized output for any LLM.
+
+[![npm version](https://img.shields.io/npm/v/@finqu/aptl.svg)](https://www.npmjs.com/package/@finqu/aptl)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
 ## Why APTL?
 
-APTL is designed for building robust, maintainable AI system prompts. It lets you:
+Building AI prompts shouldn't feel like writing assembly code. APTL brings modern templating to AI development:
 
-- **Write readable, indented templates** (no more unreadable JSON or string concatenation)
-- **Organize prompts with sections** for identity, objectives, guidelines, and more
-- **Inject dynamic data** with simple variable syntax
-- **Use conditionals and loops** for adaptive, context-aware prompts
-- **Output in multiple formats** (plain, markdown, JSON, XML-style)
-- **Validate and manage templates** at scale
+- 🎯 **Purpose-Built for AI** - Designed for LLM system prompts, not HTML pages
+- 📝 **Human-Readable** - Clean, indented syntax that makes sense at a glance
+- 🏗️ **Template Inheritance** - DRY principles with `@extends` and modular snippets
+- 🔄 **Dynamic & Adaptive** - Conditionals, loops, and context-aware rendering
+- 🎨 **Multi-Format Output** - Plain text, Markdown, JSON, or structured XML
+- 🛡️ **Type-Safe** - Full TypeScript support with detailed error messages
+- 📦 **Production-Ready** - Used in production AI systems, not a toy project
 
 ---
 
 ## Installation
 
 ```bash
-npm install aptl
+npm install @finqu/aptl
+```
+
+Or with pnpm:
+```bash
+pnpm add @finqu/aptl
 ```
 
 ---
 
-## Basic Example: AI System Prompt
+## Quick Example: From Chaos to Clarity
 
+**Before APTL (the old way):**
 ```typescript
-import { APTLEngine } from 'aptl';
+const systemPrompt =
+  "You are " + (agentName || "AI") + ", a " + role + ".\n" +
+  (hasCredentials ? "Credentials: " + credentials.join(", ") + "\n" : "") +
+  "Your goal is to " + goal + ".\n" +
+  (examples ? "Examples:\n" + examples.map(e => `- ${e}`).join("\n") : "");
+```
+
+**With APTL (the better way):**
+```typescript
+import { APTLEngine } from '@finqu/aptl';
 
 const template = `
 @section identity(role="system")
-  You are @{agentName}, a @{agentRole} specialized in @{domain}.
+  You are @{agentName|"AI"}, a @{agentRole} specialized in @{domain}.
+
   @if credentials
-    You have the following credentials:
+    Credentials:
     @each credential in credentials
       • @{credential}
     @end
@@ -45,188 +65,340 @@ const template = `
 
 @section objective
   Your primary goal is to @{primaryGoal}.
-  @if secondaryGoals
-    Secondary objectives:
-    @each goal in secondaryGoals
-      - @{goal}
+
+  @if examples
+    Examples of great responses:
+    @each example in examples
+      Input: @{example.input}
+      Output: @{example.output}
     @end
   @end
 @end
 `;
 
-const data = {
-  agentName: 'Copilot',
-  agentRole: 'AI assistant',
-  domain: 'software development',
-  credentials: ['Certified Prompt Engineer', 'OpenAI Beta Access'],
-  primaryGoal: 'help users write better code',
-  secondaryGoals: ['explain concepts', 'suggest improvements'],
-};
+const engine = new APTLEngine('gpt-4');
+const output = await engine.render(template, {
+  agentName: 'CodeAssist Pro',
+  agentRole: 'senior software engineer',
+  domain: 'full-stack development',
+  credentials: ['10+ years experience', 'TypeScript expert'],
+  primaryGoal: 'write clean, maintainable code',
+  examples: [
+    { input: 'Optimize this loop', output: 'Use map() instead of forEach for transformation' },
+    { input: 'Fix memory leak', output: 'Remove event listener in cleanup function' }
+  ]
+});
+```
 
-const engine = new APTLEngine('gpt-5.1');
-console.log(engine.render(template, data));
+**Output:**
+```
+You are CodeAssist Pro, a senior software engineer specialized in full-stack development.
+
+Credentials:
+  • 10+ years experience
+  • TypeScript expert
+
+Your primary goal is to write clean, maintainable code.
+
+Examples of great responses:
+  Input: Optimize this loop
+  Output: Use map() instead of forEach for transformation
+
+  Input: Fix memory leak
+  Output: Remove event listener in cleanup function
 ```
 
 ---
 
-## Template Syntax
+## Core Features
 
-### Variables
+### 🔤 Variables with Default Values
 
-Interpolate data with `@{variable.path}`:
+Never crash on missing data—gracefully fallback to defaults:
 
 ```aptl
-Hello, @{user.name}!
-Your email: @{user.email}
+Welcome, @{user.name|"Guest"}!
+Timeout: @{config.timeout|30} seconds
+Debug mode: @{settings.debug|false}
 ```
 
-### Sections
+### 📋 Sections with Smart Formatting
 
-Group content and control output formatting:
+Organize prompts into logical sections with automatic formatting:
 
 ```aptl
-@section identity(role="system")
+@section identity(role="system", format="markdown")
+  # AI Assistant
   You are @{agentName}.
 @end
 
-// Spaces between name and attributes are supported for readability
-@section "role" (overridable=true)
-  Content here
-@end
-
-// Parentheses are optional
-@section "role" overridable=true, format="json"
-  Content here
+@section guidelines(format="json")
+  { "rules": ["Be helpful", "Be concise"] }
 @end
 ```
 
-### Conditionals
+### 🔀 Smart Conditionals
 
-Show/hide content based on data:
+Build adaptive prompts that respond to context:
 
 ```aptl
-@if userType == "premium"
-  Welcome, premium user!
-@elif userType == "trial"
-  You are on a trial account.
+@if userLevel == "beginner"
+  Explain concepts in simple terms.
+@elif userLevel == "expert"
+  Use technical terminology freely.
 @else
-  Please upgrade.
+  Balance clarity with precision.
+@end
+
+@if hasApiKey and rateLimit > 100
+  You have premium API access.
 @end
 ```
 
-### Iteration
+### 🔁 Powerful Iteration
 
-Loop through arrays:
+Loop through arrays with full context access:
 
 ```aptl
-@each feature in features
-  - @{feature.name}: @{feature.description}
+@each task in tasks
+  @{task.priority} priority: @{task.name}
+  Assigned to: @{task.owner}
+  @if task.dueDate
+    Due: @{task.dueDate}
+  @end
 @end
 ```
 
-### Comments
+### 🏗️ Template Inheritance
+
+Build sophisticated prompts from reusable components:
+
+**base-agent.aptl:**
+```aptl
+@section identity(overridable=true)
+  You are an AI assistant.
+@end
+
+@section guidelines
+  Always be helpful and ethical.
+@end
+```
+
+**coding-assistant.aptl:**
+```aptl
+@extends "base-agent.aptl"
+
+@section identity(override=true)
+  You are @{agentName|"CodeAssist"}, an expert software developer.
+
+  Languages: @{languages|"TypeScript, Python, Rust"}
+@end
+
+@section capabilities(new=true)
+  @include "snippets/code-review-checklist.aptl"
+@end
+```
+
+### 📦 Modular Snippets
+
+Share common patterns across templates:
 
 ```aptl
-// Line comment
-/* Block comment */
+@section examples
+  @include "snippets/few-shot-examples.aptl"
+@end
+
+@section guidelines
+  @include "snippets/ethical-guidelines.aptl"
+  @include "snippets/output-format.aptl"
+@end
 ```
 
 ---
 
-## Output Formatters
+## Real-World Example
 
-APTL supports multiple output styles for your prompts:
+See a complete production-ready example in the [`/demo`](./demo) directory:
 
-- **Plain text** (default)
-- **Markdown** (`@section ... format="markdown"`)
-- **JSON** (`format="json"`)
-- **Structured/XML** (`format="structured"`)
+```bash
+cd demo
+pnpm install
+pnpm demo
+```
 
-You can set a default formatter or use section attributes to control output.
+The demo includes:
+- ✅ **5+ production-ready AI agent templates** (coding, data analysis, technical writing, support, research)
+- ✅ **Template inheritance** with base templates and specialized agents
+- ✅ **Reusable snippets** for ethical guidelines, code review, thinking processes
+- ✅ **File system integration** loading `.aptl` files from disk
+- ✅ **Complex conditionals** and dynamic content generation
 
 ---
 
-## Advanced: Variable Resolution
+## Advanced Features
 
-APTL's variable resolver supports:
+### Template Registry
 
-- Dot and bracket notation: `user.profile.name`, `items[0].name`
-- Existence checks, path validation, and extraction of all variables from a template
+Manage templates at scale:
 
 ```typescript
-import { VariableResolver } from 'aptl';
+import { TemplateRegistry, APTLEngine, LocalFileSystem } from '@finqu/aptl';
+import { LocalFileSystem } from '@finqu/aptl/local-filesystem';
+
+const engine = new APTLEngine('gpt-4');
+const fileSystem = new LocalFileSystem('./templates');
+const registry = new TemplateRegistry(engine, { fileSystem });
+
+// Load all .aptl files from directories
+await registry.loadDirectory('base');
+await registry.loadDirectory('agents');
+await registry.loadDirectory('snippets');
+
+// Get and render a template
+const template = registry.get('coding-assistant');
+const output = await template.render({
+  agentName: 'CodeBot',
+  capabilities: ['debugging', 'refactoring', 'code review']
+});
+```
+
+### Output Formatters
+
+Control how sections render:
+
+```typescript
+import { APTLEngine } from '@finqu/aptl';
+
+const engine = new APTLEngine('gpt-4', {
+  defaultFormat: 'markdown' // or 'plain', 'json', 'structured'
+});
+```
+
+Per-section formatting:
+```aptl
+@section identity(format="markdown")
+  # AI Assistant
+  Professional coding assistant
+@end
+
+@section config(format="json")
+  { "maxTokens": 4000, "temperature": 0.7 }
+@end
+
+@section structure(format="structured")
+  <identity>CodeAssist Pro</identity>
+  <role>Software Engineer</role>
+@end
+```
+
+### Advanced Variable Resolution
+
+TypeScript-friendly variable handling:
+
+```typescript
+import { VariableResolver } from '@finqu/aptl';
+
 const resolver = new VariableResolver();
-const data = { user: { name: 'Alice' }, items: [{ name: 'A' }] };
+const data = {
+  user: { name: 'Alice', profile: { email: 'alice@example.com' } },
+  items: [{ name: 'First' }, { name: 'Second' }]
+};
+
+// Dot notation
 resolver.resolve('user.name', data); // 'Alice'
-resolver.resolve('items[0].name', data); // 'A'
-```
+resolver.resolve('user.profile.email', data); // 'alice@example.com'
 
----
+// Bracket notation
+resolver.resolve('items[0].name', data); // 'First'
 
-## Template Management
-
-Register and manage templates programmatically:
-
-```typescript
-import { TemplateRegistry, APTLEngine } from 'aptl';
-const engine = new APTLEngine('gpt-5.1');
-const registry = new TemplateRegistry(engine);
-registry.register('welcome', '@section main Hello, @{user}!@end');
-const tpl = registry.get('welcome');
-console.log(tpl.render({ user: 'Jane' }));
+// With defaults
+resolver.resolve('user.age|25', data); // 25 (default)
+resolver.resolve('user.name|"Guest"', data); // 'Alice' (existing value)
 ```
 
 ---
 
 ## Error Handling
 
-APTL provides specific error types for robust prompt development:
-
-- `APTLSyntaxError` – Syntax errors in templates
-- `APTLRuntimeError` – Runtime errors during rendering
-- `APTLValidationError` – Template validation errors
+APTL provides detailed, actionable error messages:
 
 ```typescript
-import { APTLEngine, APTLSyntaxError } from 'aptl';
+import { APTLEngine, APTLSyntaxError, APTLRuntimeError } from '@finqu/aptl';
+
 try {
-  new APTLEngine('gpt-5.1').render('@if', {});
+  const engine = new APTLEngine('gpt-4');
+  await engine.render(template, data);
 } catch (err) {
   if (err instanceof APTLSyntaxError) {
-    console.error('Syntax error:', err.message);
+    console.error(`Syntax error at line ${err.line}, column ${err.column}:`);
+    console.error(err.message);
+  } else if (err instanceof APTLRuntimeError) {
+    console.error('Runtime error:', err.message);
+    console.error('Context:', err.context);
   }
 }
 ```
 
 ---
 
-## Live Demo
+## TypeScript Support
 
-Want to see APTL in action? Check out the `/demo` directory for a complete, runnable example:
+Full TypeScript definitions included:
 
-```bash
-cd demo
-npm install
-npm run demo
+```typescript
+import type { APTLEngine, Template, DirectiveNode, ASTNode } from '@finqu/aptl';
+
+interface MyPromptData {
+  agentName: string;
+  capabilities: string[];
+  config?: {
+    temperature?: number;
+    maxTokens?: number;
+  };
+}
+
+const engine: APTLEngine = new APTLEngine('gpt-4');
+const output: string = await engine.render<MyPromptData>(template, data);
 ```
-
-The demo showcases:
-- **Real-world templates** stored as `.aptl` files
-- **Template inheritance** using `@extends`
-- **LocalFileSystem** integration for reading templates from disk
-- **Multiple use cases**: emails, reports, AI agent prompts
-- **Conditional logic** and dynamic content generation
-
-See [demo/README.md](demo/README.md) for full details.
 
 ---
 
-## Best Practices for AI Prompt Engineering
+## Use Cases
 
-1. **Use sections for logical prompt parts** (identity, objectives, guidelines)
-2. **Keep logic simple**—move complexity to your data
-3. **Comment templates** for maintainability
-4. **Test with diverse data** to ensure robust prompt behavior
-5. **Leverage output formatters** for LLM compatibility (Markdown, JSON, etc.)
+APTL excels at:
+
+- 🤖 **AI Agent System Prompts** - Define identity, capabilities, and behavior
+- 💬 **Conversational AI** - Build context-aware chatbot responses
+- 🎯 **Few-Shot Learning** - Manage examples and demonstrations
+- 📊 **Dynamic Prompt Generation** - Create prompts based on user data
+- 🔧 **Prompt Engineering at Scale** - Version control and maintain prompts as code
+- 📝 **Multi-Modal Prompts** - Generate prompts for text, code, and data analysis
+- 🏢 **Enterprise AI Applications** - Standardize prompts across teams
+
+---
+
+## Best Practices
+
+1. **Use template inheritance** - Create base templates and specialize via `@extends`
+2. **Keep logic simple** - Complex logic belongs in your data, not templates
+3. **Leverage defaults** - Use `@{var|"default"}` to handle missing data gracefully
+4. **Organize with sections** - Group related content for clarity
+5. **Comment liberally** - Future you (and your team) will thank you
+6. **Use snippets** - Share common patterns via `@include`
+7. **Test with diverse data** - Ensure prompts work across all scenarios
+8. **Version control** - Treat `.aptl` files like code (because they are!)
+
+---
+
+## Performance
+
+APTL is built for production:
+
+- ⚡ **Fast compilation** - Templates compile in milliseconds
+- 🔄 **Template caching** - Compiled templates are cached automatically
+- 📦 **Lightweight** - Minimal dependencies (~108 KB minified)
+- 🎯 **Efficient rendering** - Optimized AST traversal
+- 🧵 **Async by default** - Non-blocking I/O for file system operations
 
 ---
 
@@ -234,13 +406,19 @@ See [demo/README.md](demo/README.md) for full details.
 
 For comprehensive documentation, visit our [GitHub Pages site](https://finqu.github.io/aptl):
 
-- [Getting Started](https://finqu.github.io/aptl/getting-started)
-- [Syntax Reference](https://finqu.github.io/aptl/syntax-reference)
-- [Directives](https://finqu.github.io/aptl/directives)
-- [Advanced Features](https://finqu.github.io/aptl/advanced-features)
-- [Examples](https://finqu.github.io/aptl/examples)
-- [API Reference](https://finqu.github.io/aptl/api-reference)
-- [Best Practices](https://finqu.github.io/aptl/best-practices)
+- [Getting Started](https://finqu.github.io/aptl/getting-started) - Installation and first steps
+- [Syntax Reference](https://finqu.github.io/aptl/syntax-reference) - Complete template syntax
+- [Directives](https://finqu.github.io/aptl/directives) - All built-in directives
+- [Advanced Features](https://finqu.github.io/aptl/advanced-features) - Inheritance, formatters, and more
+- [Examples](https://finqu.github.io/aptl/examples) - Real-world use cases
+- [API Reference](https://finqu.github.io/aptl/api-reference) - TypeScript API docs
+- [Best Practices](https://finqu.github.io/aptl/best-practices) - Prompt engineering guidelines
+
+---
+
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
@@ -250,6 +428,10 @@ For comprehensive documentation, visit our [GitHub Pages site](https://finqu.git
 
 ---
 
-## Contributing
+## Links
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
+- [GitHub Repository](https://github.com/finqu/aptl)
+- [NPM Package](https://www.npmjs.com/package/@finqu/aptl)
+- [Documentation](https://finqu.github.io/aptl)
+- [Report Issues](https://github.com/finqu/aptl/issues)
+- [Discussions](https://github.com/finqu/aptl/discussions)

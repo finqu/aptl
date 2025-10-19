@@ -210,7 +210,7 @@ Content
 ```typescript
 import { APTLEngine, MarkdownFormatter } from '@finqu/aptl';
 
-const engine = new APTLEngine('gpt-5.1', {
+const engine = new APTLEngine('gpt-4', {
   defaultFormatter: new MarkdownFormatter()
 });
 ```
@@ -226,7 +226,7 @@ class CustomFormatter implements OutputFormatter {
   formatSection(name: string, content: string, attributes: Record<string, any>): string {
     return `[${name}]\n${content}\n[/${name}]`;
   }
-  
+
   formatOutput(sections: Array<{ name: string; content: string }>): string {
     return sections.map(s => this.formatSection(s.name, s.content, {})).join('\n\n');
   }
@@ -242,22 +242,24 @@ Manage and organize multiple templates.
 ### Basic Usage
 
 ```typescript
-import { APTLEngine, TemplateRegistry, LocalFileSystem } from '@finqu/aptl';
+import { APTLEngine, TemplateRegistry } from '@finqu/aptl';
+import { LocalFileSystem } from '@finqu/aptl/local-filesystem';
 
-const engine = new APTLEngine('gpt-5.1');
-const fileSystem = new LocalFileSystem();
-const registry = new TemplateRegistry(engine, fileSystem);
+const engine = new APTLEngine('gpt-4');
+const fileSystem = new LocalFileSystem('./templates');
+const registry = new TemplateRegistry(engine, { fileSystem });
 
-// Load templates from a directory
-await registry.loadDirectory('./templates');
+// Load templates from directories
+await registry.loadDirectory('base');
+await registry.loadDirectory('agents');
 
 // Get a template
-const template = registry.get('agent-prompt');
+const template = registry.get('coding-assistant');
 
 // Render it
 const output = await template.render({
-  agentName: 'Copilot',
-  domain: 'coding'
+  agentName: 'CodeBot',
+  capabilities: ['debugging', 'refactoring']
 });
 ```
 
@@ -324,7 +326,7 @@ Advanced variable resolution features.
 
 ### Path Resolution
 
-The variable resolver supports complex paths:
+The variable resolver supports complex paths with default values:
 
 ```typescript
 import { VariableResolver } from '@finqu/aptl';
@@ -351,7 +353,26 @@ resolver.resolve('items[0].name', data); // 'Item 1'
 
 // Mixed notation
 resolver.resolve('user.profile.contacts[0]', data); // 'email@example.com'
+
+// With default values (pipe syntax)
+resolver.resolve('user.age|25', data); // 25 (uses default)
+resolver.resolve('user.profile.name|"Guest"', data); // 'Alice' (value exists)
+resolver.resolve('config.timeout|30', data); // 30 (uses default)
+resolver.resolve('settings.debug|false', data); // false (uses default)
 ```
+
+### Default Value Types
+
+The resolver supports multiple default value types:
+
+- **Strings**: `@{var|"default"}` or `@{var|'default'}`
+- **Numbers**: `@{var|42}` or `@{var|3.14}`
+- **Booleans**: `@{var|true}` or `@{var|false}`
+
+**Important:**
+- String defaults require quotes: `|"value"` not `|value`
+- Default is only used when variable is `undefined` or `null`
+- Empty strings `""` and zero `0` are valid values and won't trigger defaults
 
 ### Extract All Variables
 
@@ -527,7 +548,7 @@ Usage:
 ```typescript
 import { APTLEngine } from '@finqu/aptl';
 
-const engine = new APTLEngine('gpt-5.1');
+const engine = new APTLEngine('gpt-4');
 const directive = new TimestampDirective();
 
 // Register with both registry and tokenizer

@@ -5,20 +5,21 @@ title: Home
 
 # APTL (AI Prompt Template Language)
 
-> **A modern template engine for authoring AI system prompts.**
+> **A modern template engine designed specifically for AI system prompts.**
 >
-> Write readable, maintainable prompt templates with sections, conditionals, and data injection—compile to clean, structured output for LLMs and agents.
+> Stop wrestling with string concatenation and messy JSON. Write clean, maintainable prompt templates with inheritance, conditionals, and type-safe data injection—compile to optimized output for any LLM.
 
 ## Why APTL?
 
-APTL is designed for building robust, maintainable AI system prompts. It lets you:
+Building AI prompts shouldn't feel like writing assembly code. APTL brings modern templating to AI development:
 
-- ✨ **Write readable, indented templates** (no more unreadable JSON or string concatenation)
-- 📦 **Organize prompts with sections** for identity, objectives, guidelines, and more
-- 🔄 **Inject dynamic data** with simple variable syntax
-- ⚡ **Use conditionals and loops** for adaptive, context-aware prompts
-- 🎨 **Output in multiple formats** (plain, markdown, JSON, XML-style)
-- ✅ **Validate and manage templates** at scale
+- 🎯 **Purpose-Built for AI** - Designed for LLM system prompts, not HTML pages
+- 📝 **Human-Readable** - Clean, indented syntax that makes sense at a glance
+- 🏗️ **Template Inheritance** - DRY principles with `@extends` and modular snippets
+- 🔄 **Dynamic & Adaptive** - Conditionals, loops, and context-aware rendering
+- 🎨 **Multi-Format Output** - Plain text, Markdown, JSON, or structured XML
+- 🛡️ **Type-Safe** - Full TypeScript support with detailed error messages
+- 📦 **Production-Ready** - Used in production AI systems, not a toy project
 
 ## Quick Start
 
@@ -28,6 +29,11 @@ APTL is designed for building robust, maintainable AI system prompts. It lets yo
 npm install @finqu/aptl
 ```
 
+Or with pnpm:
+```bash
+pnpm add @finqu/aptl
+```
+
 ### Basic Example
 
 ```typescript
@@ -35,62 +41,116 @@ import { APTLEngine } from '@finqu/aptl';
 
 const template = `
 @section identity(role="system")
-  You are @{agentName}, a @{agentRole} specialized in @{domain}.
+  You are @{agentName|"AI"}, a @{agentRole} specialized in @{domain}.
+
+  @if credentials
+    Credentials:
+    @each credential in credentials
+      • @{credential}
+    @end
+  @end
 @end
 
 @section objective
   Your primary goal is to @{primaryGoal}.
+
+  @if examples
+    Examples of great responses:
+    @each example in examples
+      Input: @{example.input}
+      Output: @{example.output}
+    @end
+  @end
 @end
 `;
 
 const data = {
-  agentName: 'Copilot',
-  agentRole: 'AI assistant',
-  domain: 'software development',
-  primaryGoal: 'help users write better code',
+  agentName: 'CodeAssist Pro',
+  agentRole: 'senior software engineer',
+  domain: 'full-stack development',
+  credentials: ['10+ years experience', 'TypeScript expert'],
+  primaryGoal: 'write clean, maintainable code',
+  examples: [
+    { input: 'Optimize this loop', output: 'Use map() for transformations' },
+    { input: 'Fix memory leak', output: 'Remove event listener in cleanup' }
+  ]
 };
 
-const engine = new APTLEngine('gpt-5.1');
+const engine = new APTLEngine('gpt-4');
 const output = await engine.render(template, data);
 console.log(output);
 ```
 
 ## Core Features
 
-### 🔤 Variable Interpolation
+### 🔤 Variable Interpolation with Defaults
+
+Never crash on missing data:
 
 ```aptl
-Hello, @{user.name}!
-Your email: @{user.email}
+Hello, @{user.name|"Guest"}!
+Timeout: @{config.timeout|30} seconds
+Debug: @{settings.debug|false}
 ```
 
-### 📋 Sections
+### 📋 Smart Sections
+
+Organize and format output:
 
 ```aptl
-@section identity(role="system")
+@section identity(role="system", format="markdown")
+  # AI Assistant
   You are @{agentName}.
 @end
 ```
 
-### 🔀 Conditionals
+### 🔀 Adaptive Conditionals
+
+Build context-aware prompts:
 
 ```aptl
-@if userType == "premium"
-  Welcome, premium user!
+@if userLevel == "beginner"
+  Explain in simple terms.
+@elif userLevel == "expert"
+  Use technical terminology.
 @else
-  Please upgrade.
+  Balance clarity with precision.
 @end
 ```
 
-### 🔁 Iteration
+### 🔁 Powerful Iteration
+
+Loop with full context:
 
 ```aptl
-@each feature in features
-  - @{feature.name}: @{feature.description}
+@each task in tasks
+  Priority: @{task.priority}
+  Task: @{task.name}
+  @if task.dueDate
+    Due: @{task.dueDate}
+  @end
+@end
+```
+
+### 🏗️ Template Inheritance
+
+Build from reusable bases:
+
+```aptl
+@extends "base-agent.aptl"
+
+@section identity(override=true)
+  You are @{agentName|"CodeAssist"}.
+@end
+
+@section capabilities(new=true)
+  @include "snippets/code-review.aptl"
 @end
 ```
 
 ### 📝 Comments
+
+Document your templates:
 
 ```aptl
 // Line comment
