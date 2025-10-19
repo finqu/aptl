@@ -1,33 +1,41 @@
 title: APTL Documentation
 description: AI Prompt Template Language - A modern template engine for authoring AI system prompts
-remote_theme: pages-themes/cayman@v0.2.0
 url: https://finqu.github.io
-baseurl: /
+baseurl: /aptl
 markdown: kramdown
 kramdown:
   input: GFM
   syntax_highlighter: rouge
+  auto_ids: true
 plugins:
-  - jekyll-remote-theme
+  - jekyll-seo-tag
 
-# Navigation
+# Exclude remote theme to use custom layout
+theme: null
+remote_theme: null
+
+# Navigation with dropdown groups
 navigation:
   - title: Home
     url: /
-  - title: Getting Started
-    url: /getting-started
-  - title: Syntax Reference
-    url: /syntax-reference
-  - title: Directives
-    url: /directives
-  - title: Advanced Features
-    url: /advanced-features
-  - title: Examples
-    url: /examples
-  - title: API Reference
-    url: /api-reference
-  - title: Best Practices
-    url: /best-practices
+  - title: Documentation
+    dropdown:
+      - title: Getting Started
+        url: /getting-started
+      - title: Syntax Reference
+        url: /syntax-reference
+      - title: Directives
+        url: /directives
+      - title: Advanced Features
+        url: /advanced-features
+  - title: Resources
+    dropdown:
+      - title: Examples
+        url: /examples
+      - title: API Reference
+        url: /api-reference
+      - title: Best Practices
+        url: /best-practices
 
 # GitHub metadata
 repository: finqu/aptl

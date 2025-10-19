@@ -53,3 +53,5 @@ _site/
 demo/node_modules/
 demo/dist/
 demo/package-lock.json
+
+docs/Gemfile.lock

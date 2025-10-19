@@ -13,13 +13,13 @@ title: Home
 
 Building AI prompts shouldn't feel like writing assembly code. APTL brings modern templating to AI development:
 
-- 🎯 **Purpose-Built for AI** - Designed for LLM system prompts, not HTML pages
-- 📝 **Human-Readable** - Clean, indented syntax that makes sense at a glance
-- 🏗️ **Template Inheritance** - DRY principles with `@extends` and modular snippets
-- 🔄 **Dynamic & Adaptive** - Conditionals, loops, and context-aware rendering
-- 🎨 **Multi-Format Output** - Plain text, Markdown, JSON, or structured XML
-- 🛡️ **Type-Safe** - Full TypeScript support with detailed error messages
-- 📦 **Production-Ready** - Used in production AI systems, not a toy project
+- **Purpose-Built for AI** - Designed for LLM system prompts, not HTML pages
+- **Human-Readable** - Clean, indented syntax that makes sense at a glance
+- **Template Inheritance** - DRY principles with `@extends` and modular snippets
+- **Dynamic & Adaptive** - Conditionals, loops, and context-aware rendering
+- **Multi-Format Output** - Plain text, Markdown, JSON, or structured XML
+- **Type-Safe** - Full TypeScript support with detailed error messages
+- **Production-Ready** - Used in production AI systems, not a toy project
 
 ## Quick Start
 
@@ -83,7 +83,7 @@ console.log(output);
 
 ## Core Features
 
-### 🔤 Variable Interpolation with Defaults
+### Variable Interpolation with Defaults
 
 Never crash on missing data:
 
@@ -93,7 +93,7 @@ Timeout: @{config.timeout|30} seconds
 Debug: @{settings.debug|false}
 ```
 
-### 📋 Smart Sections
+### Smart Sections
 
 Organize and format output:
 
@@ -104,7 +104,7 @@ Organize and format output:
 @end
 ```
 
-### 🔀 Adaptive Conditionals
+### Adaptive Conditionals
 
 Build context-aware prompts:
 
@@ -118,7 +118,7 @@ Build context-aware prompts:
 @end
 ```
 
-### 🔁 Powerful Iteration
+### Powerful Iteration
 
 Loop with full context:
 
@@ -132,7 +132,7 @@ Loop with full context:
 @end
 ```
 
-### 🏗️ Template Inheritance
+### Template Inheritance
 
 Build from reusable bases:
 
@@ -148,7 +148,7 @@ Build from reusable bases:
 @end
 ```
 
-### 📝 Comments
+### Comments
 
 Document your templates:
 
@@ -171,11 +171,11 @@ Document your templates:
 
 APTL is perfect for:
 
-- 🤖 **AI Agent System Prompts** - Define agent identity, capabilities, and behavior
-- 💬 **Conversational AI** - Build context-aware chatbot responses
-- 🎯 **Few-Shot Learning** - Manage examples and demonstrations
-- 📊 **Dynamic Prompt Generation** - Create prompts based on user context
-- 🔧 **Prompt Engineering at Scale** - Maintain and version control prompts
+- **AI Agent System Prompts** - Define agent identity, capabilities, and behavior
+- **Conversational AI** - Build context-aware chatbot responses
+- **Few-Shot Learning** - Manage examples and demonstrations
+- **Dynamic Prompt Generation** - Create prompts based on user context
+- **Prompt Engineering at Scale** - Maintain and version control prompts
 
 ## Contributing
 
