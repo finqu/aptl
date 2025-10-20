@@ -12,6 +12,7 @@ Complete guide to all built-in APTL directives.
 - [Control Flow](#control-flow)
   - [@if / @elif / @else](#if--elif--else)
   - [@each](#each)
+  - [@switch / @case / @default](#switch--case--default)
 - [Template Composition](#template-composition)
   - [@section](#section)
   - [@extends](#extends)
@@ -190,6 +191,140 @@ Iterate over arrays and collections.
 - Item and index variables are scoped to the loop body
 - Parent scope variables remain accessible
 - Empty arrays produce no output
+
+---
+
+### @switch / @case / @default
+
+Switch-case conditional rendering for matching a value against multiple cases.
+
+#### Syntax
+
+```aptl
+@switch expression
+  @case value1
+    Content for case 1
+  @case value2
+    Content for case 2
+  @default
+    Default content
+@end
+```
+
+#### Examples
+
+**Basic switch with string values:**
+```aptl
+@switch status
+  @case "pending"
+    ⏳ Waiting for approval
+  @case "approved"
+    ✅ Request approved
+  @case "rejected"
+    ❌ Request rejected
+  @default
+    ❓ Unknown status
+@end
+```
+
+**Switch with numeric values:**
+```aptl
+@switch priority
+  @case 1
+    🔴 Critical
+  @case 2
+    🟡 High
+  @case 3
+    🟢 Normal
+  @default
+    ⚪ Low priority
+@end
+```
+
+**Switch with variables:**
+```aptl
+@switch userRole
+  @case adminRole
+    Administrator access
+  @case moderatorRole
+    Moderator access
+  @default
+    User access
+@end
+```
+
+**Switch with nested content:**
+```aptl
+@switch role
+  @case "admin"
+    @if isPremium
+      👑 Premium Administrator
+    @else
+      🔧 Administrator
+    @end
+  @case "user"
+    👤 Regular User
+  @default
+    👥 Guest
+@end
+```
+
+**Nested switches:**
+```aptl
+@switch category
+  @case "admin"
+    @switch level
+      @case 1
+        Super Admin
+      @case 2
+        Regular Admin
+      @default
+        Admin (Level @{level})
+    @end
+  @default
+    Regular User
+@end
+```
+
+**Switch in a loop:**
+```aptl
+@each task in tasks
+  @{task.name}: @switch task.status
+    @case "done"
+✓ Complete
+    @case "in-progress"
+⏳ In Progress
+    @case "todo"
+☐ To Do
+  @end
+@end
+```
+
+#### Features
+
+- **Strict equality**: Uses `===` comparison (no type coercion)
+- **First match wins**: Only the first matching case is rendered
+- **Variable or literal values**: Both switch expression and case values can be variables or literals
+- **Optional default**: If no case matches and no `@default` is provided, renders nothing
+- **Nested variable paths**: Supports `user.role`, `data[0].status`, etc.
+- **Supports all types**: Strings, numbers, booleans, null, undefined
+
+#### Supported Value Types
+
+- **String literals**: `@case "approved"`
+- **Numeric literals**: `@case 42`
+- **Boolean literals**: `@case true` or `@case false`
+- **Null/undefined**: `@case null` or `@case undefined`
+- **Variables**: `@case someVariable`
+- **Nested paths**: `@case user.role`
+
+#### Notes
+
+- Uses strict equality (`===`) - `"0"` and `0` are different
+- The first matching case is rendered (subsequent matches are ignored)
+- The `@default` case is optional
+- Only one case or the default is rendered per switch
+- Case values can be literals or variables that resolve at runtime
 
 ---
 

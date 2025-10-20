@@ -168,7 +168,38 @@ Build adaptive prompts that respond to context:
 @if isAdmin: Administrator privileges enabled.
 ```
 
-### 🔁 Powerful Iteration
+### � Switch-Case for Multi-way Branching
+
+Clean pattern matching for multiple conditions:
+
+```aptl
+@switch userRole
+  @case "admin"
+    You have full administrative access.
+  @case "moderator"
+    You can moderate content and manage users.
+  @case "contributor"
+    You can create and edit content.
+  @default
+    You have standard user access.
+@end
+```
+
+Works with variables, literals, and nested paths:
+```aptl
+@switch task.status
+  @case "pending"
+    ⏳ Awaiting review
+  @case "approved"
+    ✅ Ready to proceed
+  @case "rejected"
+    ❌ Needs revision
+  @default
+    ❓ Status unknown
+@end
+```
+
+### �🔁 Powerful Iteration
 
 Loop through arrays with full context access:
 
