@@ -254,7 +254,7 @@ Common content
 Structured data
 @end
 
-@section markdown(model="gpt-5.1/md, claude-4/md")
+@section markdown model="gpt-5.1/md, claude-4/md"
 Markdown content
 @end
 
@@ -286,6 +286,18 @@ Default content
   });
 
   describe('edge cases', () => {
+    it('should handle section without parentheses around attributes', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section test model="gpt-5.1"
+Content without parentheses
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('Content without parentheses');
+    });
+
     it('should handle empty model attribute', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const template = `
@@ -307,6 +319,47 @@ Content
 
       const result = await engine.render(template);
       expect(result.trim()).toBe('');
+    });
+
+    it('should handle empty section with only whitespace', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section empty(model="gpt-5.1")
+
+
+
+
+
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toBe('');
+    });
+
+    it('should handle empty section with only whitespace with multiple empty sections', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section empty(model="gpt-5.1")
+
+
+
+
+
+@end
+
+
+@section emptyToo(model="gpt-5.1")
+
+
+
+
+
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toBe('');
     });
 
     it('should handle whitespace in model attribute', async () => {

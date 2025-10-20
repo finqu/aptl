@@ -128,7 +128,7 @@ export function parseSectionArgs(rawArgs: string): {
 
   // Tokenize the arguments using directive argument mode
   const tokenizer = new Tokenizer();
-  const tokens = tokenizer.tokenizeDirectiveArguments(trimmed);
+  let tokens = tokenizer.tokenizeDirectiveArguments(trimmed);
 
   // First token should be the section name (TEXT or STRING)
   if (tokens.length === 0 || tokens[0].type === TokenType.EOF) {
@@ -136,12 +136,37 @@ export function parseSectionArgs(rawArgs: string): {
   }
 
   let name: string;
+  let nextTokenIndex = 1; // Index to start looking for attributes
+
   if (tokens[0].type === TokenType.STRING) {
     // Handle quoted section names like "role"
     name = tokens[0].value.trim();
   } else if (tokens[0].type === TokenType.TEXT) {
     // Handle unquoted section names
-    name = tokens[0].value.trim();
+    // If the text contains a space, only the first word is the section name
+    const textValue = tokens[0].value.trim();
+    const spaceIndex = textValue.indexOf(' ');
+
+    if (spaceIndex > 0) {
+      // Split: first part is the name, rest are attributes
+      name = textValue.substring(0, spaceIndex).trim();
+
+      // Create a modified token stream where the first token only contains the attributes part
+      const remainder = textValue.substring(spaceIndex + 1).trim();
+      if (remainder) {
+        // Reconstruct tokens with the remainder as the first token
+        tokens = [
+          {
+            ...tokens[0],
+            value: remainder,
+          },
+          ...tokens.slice(1),
+        ];
+        nextTokenIndex = 0; // Start from the beginning since we reconstructed
+      }
+    } else {
+      name = textValue;
+    }
   } else {
     throw new APTLSyntaxError(
       `Expected section name, got ${tokens[0].type}`,
@@ -151,7 +176,6 @@ export function parseSectionArgs(rawArgs: string): {
   }
 
   // Find the next non-whitespace token after the section name
-  let nextTokenIndex = 1;
   while (nextTokenIndex < tokens.length) {
     const token = tokens[nextTokenIndex];
     // Skip whitespace-only TEXT tokens and NEWLINE tokens
