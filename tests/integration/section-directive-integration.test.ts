@@ -565,6 +565,100 @@ Content without parentheses
       expect(result).toContain('Content without parentheses');
     });
 
+    it('should render section without format attribute correctly', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+
+      // Test complex nested template with sections that don't use format attribute
+      // Uses APTL inline syntax with colon `:` for inline @if directives
+      const template = `
+@section context overridable=true
+@if relatedGoalContext
+@each ctx in relatedGoalContext
+- @{ctx.contextType}/@{ctx.contextKey}: @{ctx.contextValue}@if(ctx.similarity): (relevance: @{ctx.similarity})
+@end
+@end
+@if userRequestContext
+@each ctx in userRequestContext
+- @{ctx.contextType}/@{ctx.contextKey}: @{ctx.contextValue}@if(ctx.similarity): (relevance: @{ctx.similarity})
+@end
+@end
+@end
+            `.trim();
+
+      const data = {
+        relatedGoalContext: [
+          {
+            contextType: 'goal',
+            contextKey: 'feature',
+            contextValue: 'authentication',
+            similarity: 0.95,
+          },
+          {
+            contextType: 'task',
+            contextKey: 'implement',
+            contextValue: 'login',
+            similarity: 0.88,
+          },
+        ],
+        userRequestContext: [
+          {
+            contextType: 'user',
+            contextKey: 'preference',
+            contextValue: 'dark-mode',
+          },
+        ],
+      };
+
+      const result = await engine.render(template, data);
+
+      // Should render the content without any formatter markup
+      expect(result).toContain(
+        '- goal/feature: authentication (relevance: 0.95)',
+      );
+      expect(result).toContain('- task/implement: login (relevance: 0.88)');
+      expect(result).toContain('- user/preference: dark-mode');
+
+      // Should NOT have formatter markup like <context> tags or ## headings
+      expect(result).not.toContain('<context>');
+      expect(result).not.toContain('## ');
+      expect(result).not.toContain('</context>');
+    });
+
+    it('should handle section with overridable attribute but no format', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section header overridable=true
+Default Header Content
+@end
+
+@section body
+Main content here
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('Default Header Content');
+      expect(result).toContain('Main content here');
+
+      // Should not have any formatter markup
+      expect(result).not.toContain('<header>');
+      expect(result).not.toContain('## Header');
+    });
+
+    it('should handle section with multiple attributes but no format', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section config overridable=true model="gpt-5.1"
+Configuration content
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('Configuration content');
+      expect(result).not.toContain('<config>');
+      expect(result).not.toContain('## Config');
+    });
+
     it('should handle empty model attribute', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const template = `

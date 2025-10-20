@@ -275,8 +275,15 @@ export class SectionDirective extends BlockDirective {
       return this.renderWithFormatter(context, name, attributes, formatAttr);
     }
 
-    // Render the original section content
-    const originalContent = context.renderTemplate('');
+    // Render the original section content by rendering all children
+    const originalContent = context.node.children
+      .map((child) => {
+        if (context.renderNode) {
+          return context.renderNode(child);
+        }
+        return '';
+      })
+      .join('');
 
     // Apply section override logic if present
     if (sectionOverrides && sectionOverrides[name]) {

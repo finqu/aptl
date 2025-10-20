@@ -233,6 +233,13 @@ describe('Section Directive', () => {
           // Simple mock that returns the children content
           return 'Test content';
         }),
+        renderNode: jest.fn((node: any) => {
+          // Mock renderNode to return text content for TextNodes
+          if (node.type === NodeType.TEXT) {
+            return node.value;
+          }
+          return '';
+        }),
       } as any;
     };
 
@@ -240,21 +247,21 @@ describe('Section Directive', () => {
       const context = createContext('gpt-5.1', 'intro');
       const result = sectionDirective.execute(context);
       expect(result).toBe('Test content');
-      expect(context.renderTemplate).toHaveBeenCalled();
+      expect(context.renderNode).toHaveBeenCalled();
     });
 
     it('should render section when model matches exactly', () => {
       const context = createContext('gpt-5.1', 'intro(model="gpt-5.1")');
       const result = sectionDirective.execute(context);
       expect(result).toBe('Test content');
-      expect(context.renderTemplate).toHaveBeenCalled();
+      expect(context.renderNode).toHaveBeenCalled();
     });
 
     it('should not render section when model does not match', () => {
       const context = createContext('claude-4', 'intro(model="gpt-5.1")');
       const result = sectionDirective.execute(context);
       expect(result).toBe('');
-      expect(context.renderTemplate).not.toHaveBeenCalled();
+      expect(context.renderNode).not.toHaveBeenCalled();
     });
 
     it('should render with default format when model does not match but default provided', () => {
@@ -264,7 +271,7 @@ describe('Section Directive', () => {
       );
       const result = sectionDirective.execute(context);
       expect(result).toBe('Test content');
-      expect(context.renderTemplate).toHaveBeenCalled();
+      expect(context.renderNode).toHaveBeenCalled();
       expect(context.metadata.get('format')).toBe('md');
     });
 
@@ -275,7 +282,7 @@ describe('Section Directive', () => {
       );
       const result = sectionDirective.execute(context);
       expect(result).toBe('Test content');
-      expect(context.renderTemplate).toHaveBeenCalled();
+      expect(context.renderNode).toHaveBeenCalled();
       expect(context.metadata.get('format')).toBe('structured');
     });
 
@@ -286,7 +293,7 @@ describe('Section Directive', () => {
       );
       const result = sectionDirective.execute(context);
       expect(result).toBe('Test content');
-      expect(context.renderTemplate).toHaveBeenCalled();
+      expect(context.renderNode).toHaveBeenCalled();
       expect(context.metadata.get('format')).toBe('json');
     });
 

@@ -118,13 +118,13 @@ describe('Tokenizer - The @ Whisperer', () => {
       expect(tokens[0].type).toBe(TokenType.DIRECTIVE);
     });
 
-    it('should reject directives mid-line in strict mode', () => {
+    it('should reject directives mid-line without colon (requires inline syntax)', () => {
       const strictTokenizer = new Tokenizer({ strictMode: true });
       strictTokenizer.registerDirective('if');
 
       expect(() =>
         strictTokenizer.tokenize('Some text @if condition\n'),
-      ).toThrow(/must be at the start of a statement/);
+      ).toThrow(/must use inline syntax with ':'/);
     });
 
     it('should allow directives after newlines', () => {
@@ -535,12 +535,12 @@ Regular text`;
   });
 
   describe('Strict vs Lenient Mode - The Discipline Debate', () => {
-    it('should throw in strict mode for mid-line directives', () => {
+    it('should throw for mid-line directives without colon (requires inline syntax)', () => {
       const strict = new Tokenizer({ strictMode: true });
       strict.registerDirective('if');
 
       expect(() => strict.tokenize('text @if cond\n')).toThrow(
-        /must be at the start/,
+        /must use inline syntax with ':'/,
       );
     });
 

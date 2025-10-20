@@ -347,20 +347,7 @@ export class Tokenizer {
 
     // Special case: @end is always recognized as it closes all directives
     if (keyword.toLowerCase() === 'end') {
-      if (!this.atStatementStart) {
-        if (this.options.strictMode) {
-          throw new APTLSyntaxError(
-            `Directive @end must be at the start of a statement (after a newline).`,
-            this.line,
-            startColumn,
-          );
-        } else {
-          // In lenient mode, backtrack and treat as text
-          this.position = keywordStart - 1;
-          this.column = startColumn;
-          return this.handleText();
-        }
-      }
+      // @end can appear anywhere (inline or at statement start)
       return this.createToken(TokenType.END, keyword, startColumn);
     }
 
@@ -379,20 +366,34 @@ export class Tokenizer {
     }
 
     // Check if we're at a valid position for a directive
-    // Directives can only appear at statement boundaries
+    // If NOT at statement start (i.e., there's text before the @),
+    // we MUST have inline syntax with a colon `:` somewhere before the newline
     if (!this.atStatementStart) {
-      if (this.options.strictMode) {
-        // In strict mode, this is an error
+      // Look ahead to check if there's a colon before the next newline
+      // This validates inline syntax: text @directive args: inline content
+      const savedPos = this.position;
+      const savedCol = this.column;
+
+      let foundColon = false;
+      while (!this.isAtEnd() && this.peek() !== '\n' && this.peek() !== '\r') {
+        if (this.peek() === ':') {
+          foundColon = true;
+          break;
+        }
+        this.advance();
+      }
+
+      // Restore position
+      this.position = savedPos;
+      this.column = savedCol;
+
+      // Now we should have found a colon for inline syntax
+      if (!foundColon) {
         throw new APTLSyntaxError(
-          `Directive @${keyword} must be at the start of a statement (after a newline). Multiple directives on the same line are not allowed.`,
+          `Directive @${keyword} must use inline syntax with ':' when not at statement start. Expected: @${keyword}(...): content`,
           this.line,
           startColumn,
         );
-      } else {
-        // In lenient mode, backtrack and treat as text
-        this.position = keywordStart - 1;
-        this.column = startColumn;
-        return this.handleText();
       }
     }
 
@@ -515,16 +516,9 @@ export class Tokenizer {
           );
 
           if (isEndKeyword || isRegisteredKeyword) {
-            if (this.atStatementStart) {
-              break; // Let handleDirective process it
-            } else if (this.options.strictMode) {
-              // In strict mode, throw an error if a directive is not at statement start
-              throw new APTLSyntaxError(
-                `Directive @${keyword} must be at the start of a statement (after a newline). Multiple directives on the same line are not allowed.`,
-                this.line,
-                this.column,
-              );
-            }
+            // Always break to let handleDirective process it, regardless of position
+            // The directive handler will determine if it needs a colon for inline syntax
+            break;
           } else {
             // Unknown directive - must be escaped!
             throw new APTLSyntaxError(
