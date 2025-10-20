@@ -33,16 +33,36 @@ export class LocalFileSystem implements FileSystem {
    * @param basePath - Optional base path for all operations (defaults to process.cwd())
    */
   constructor(basePath?: string) {
-    this.basePath = basePath || process.cwd();
+    // Normalize and resolve the base path to prevent symlink exploitation
+    this.basePath = path.resolve(basePath || process.cwd());
   }
 
   /**
-   * Resolve a path relative to the base path
+   * Resolve a path relative to the base path and validate it's within basePath
+   * @throws {FileSystemError} if the resolved path is outside basePath
    */
   private resolvePath(filePath: string): string {
-    return path.isAbsolute(filePath)
-      ? filePath
-      : path.join(this.basePath, filePath);
+    // Resolve the path (handles both absolute and relative paths)
+    const resolved = path.resolve(this.basePath, filePath);
+
+    // Normalize both paths to ensure consistent comparison
+    const normalizedResolved = path.normalize(resolved);
+    const normalizedBase = path.normalize(this.basePath);
+
+    // Check if the resolved path is within the base path
+    // Use path.relative to check if we need to go "up" (..) to reach the resolved path from base
+    const relative = path.relative(normalizedBase, normalizedResolved);
+
+    // If relative path starts with '..' or is absolute, it's outside basePath
+    if (relative.startsWith('..') || path.isAbsolute(relative)) {
+      throw new FileSystemError(
+        `Access denied: Path '${filePath}' resolves outside the base directory`,
+        'EACCES',
+        filePath,
+      );
+    }
+
+    return resolved;
   }
 
   async readFile(filePath: string): Promise<string> {
@@ -50,6 +70,10 @@ export class LocalFileSystem implements FileSystem {
       const resolved = this.resolvePath(filePath);
       return await fs.readFile(resolved, 'utf-8');
     } catch (error: any) {
+      // Re-throw security errors from resolvePath
+      if (error instanceof FileSystemError) {
+        throw error;
+      }
       if (error.code === 'ENOENT') {
         throw FileSystemError.notFound(filePath);
       }
@@ -74,6 +98,10 @@ export class LocalFileSystem implements FileSystem {
       await fs.mkdir(path.dirname(resolved), { recursive: true });
       await fs.writeFile(resolved, content, 'utf-8');
     } catch (error: any) {
+      // Re-throw security errors from resolvePath
+      if (error instanceof FileSystemError) {
+        throw error;
+      }
       if (error.code === 'EACCES') {
         throw FileSystemError.permissionDenied(filePath);
       }
@@ -90,7 +118,11 @@ export class LocalFileSystem implements FileSystem {
       const resolved = this.resolvePath(filePath);
       await fs.access(resolved);
       return true;
-    } catch {
+    } catch (error: any) {
+      // Re-throw security errors
+      if (error instanceof FileSystemError && error.code === 'EACCES') {
+        throw error;
+      }
       return false;
     }
   }
@@ -106,6 +138,10 @@ export class LocalFileSystem implements FileSystem {
         modifiedTime: stats.mtime,
       };
     } catch (error: any) {
+      // Re-throw security errors from resolvePath
+      if (error instanceof FileSystemError) {
+        throw error;
+      }
       if (error.code === 'ENOENT') {
         throw FileSystemError.notFound(filePath);
       }
@@ -127,6 +163,10 @@ export class LocalFileSystem implements FileSystem {
         isDirectory: entry.isDirectory(),
       }));
     } catch (error: any) {
+      // Re-throw security errors from resolvePath
+      if (error instanceof FileSystemError) {
+        throw error;
+      }
       if (error.code === 'ENOENT') {
         throw FileSystemError.notFound(dirPath);
       }
@@ -146,6 +186,10 @@ export class LocalFileSystem implements FileSystem {
       const resolved = this.resolvePath(filePath);
       await fs.unlink(resolved);
     } catch (error: any) {
+      // Re-throw security errors from resolvePath
+      if (error instanceof FileSystemError) {
+        throw error;
+      }
       if (error.code === 'ENOENT') {
         throw FileSystemError.notFound(filePath);
       }
@@ -165,6 +209,10 @@ export class LocalFileSystem implements FileSystem {
       const resolved = this.resolvePath(dirPath);
       await fs.mkdir(resolved, { recursive: true });
     } catch (error: any) {
+      // Re-throw security errors from resolvePath
+      if (error instanceof FileSystemError) {
+        throw error;
+      }
       if (error.code === 'EEXIST') {
         throw FileSystemError.alreadyExists(dirPath);
       }
@@ -181,6 +229,10 @@ export class LocalFileSystem implements FileSystem {
       const resolved = this.resolvePath(dirPath);
       await fs.rmdir(resolved);
     } catch (error: any) {
+      // Re-throw security errors from resolvePath
+      if (error instanceof FileSystemError) {
+        throw error;
+      }
       if (error.code === 'ENOENT') {
         throw FileSystemError.notFound(dirPath);
       }
@@ -209,21 +261,29 @@ export class LocalFileSystem implements FileSystem {
     filePath: string,
     callback: (eventType: 'change' | 'rename', filename: string) => void,
   ): Promise<() => void> {
-    const resolved = this.resolvePath(filePath);
+    try {
+      const resolved = this.resolvePath(filePath);
 
-    const watcher = fsSync.watch(
-      resolved,
-      { persistent: false },
-      (eventType: any, filename: any) => {
-        if (filename) {
-          callback(eventType as 'change' | 'rename', filename);
-        }
-      },
-    );
+      const watcher = fsSync.watch(
+        resolved,
+        { persistent: false },
+        (eventType: any, filename: any) => {
+          if (filename) {
+            callback(eventType as 'change' | 'rename', filename);
+          }
+        },
+      );
 
-    // Return cleanup function
-    return () => {
-      watcher.close();
-    };
+      // Return cleanup function
+      return () => {
+        watcher.close();
+      };
+    } catch (error: any) {
+      // Re-throw security errors from resolvePath
+      if (error instanceof FileSystemError) {
+        throw error;
+      }
+      throw error;
+    }
   }
 }
