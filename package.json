@@ -18,8 +18,14 @@
       }
     },
     "./local-filesystem": {
-      "types": "./dist/types/filesystem/local-filesystem.d.ts",
-      "default": "./dist/filesystem/local-filesystem.js"
+      "import": {
+        "types": "./dist/types/filesystem/local-filesystem.d.ts",
+        "default": "./dist/filesystem/local-filesystem.mjs"
+      },
+      "require": {
+        "types": "./dist/types/filesystem/local-filesystem.d.ts",
+        "default": "./dist/filesystem/local-filesystem.cjs"
+      }
     },
     "./package.json": "./package.json"
   },
