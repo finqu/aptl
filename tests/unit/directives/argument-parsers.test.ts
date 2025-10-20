@@ -108,6 +108,19 @@ describe('Argument Parsers - The String Surgeons', () => {
       expect(() => parseAttributes('key "value"')).toThrow(/Expected '='/);
     });
 
+    it('should throw on attributes missing comma separator', () => {
+      // When unquoted values are followed by another attribute without a comma
+      expect(() => parseAttributes('overridable=true format="md"')).toThrow(
+        APTLSyntaxError,
+      );
+      expect(() => parseAttributes('overridable=true format="md"')).toThrow(
+        /Attributes must be separated by commas/,
+      );
+      expect(() => parseAttributes('overridable=true format="md"')).toThrow(
+        /Did you mean.*overridable="true", format/,
+      );
+    });
+
     it('should handle multiline attributes gracefully', () => {
       const result = parseAttributes('key1="value1"\nkey2="value2"');
       expect(result).toEqual({

@@ -83,7 +83,7 @@ describe('Formatters', () => {
       expect(result).toContain('I am an AI assistant');
     });
 
-    it('should include metadata from attributes', () => {
+    it('should not display attributes as metadata', () => {
       const section: Section = {
         name: 'test',
         attributes: { role: 'system', model: 'gpt-4' },
@@ -91,21 +91,33 @@ describe('Formatters', () => {
       };
 
       const result = formatter.formatSection(section);
-      expect(result).toContain('**role**: system');
-      expect(result).toContain('**model**: gpt-4');
+      // Attributes are directive control, not content - should not be displayed
+      expect(result).not.toContain('**role**');
+      expect(result).not.toContain('**model**');
+      expect(result).toContain('## Test');
+      expect(result).toContain('Content');
     });
 
-    it('should filter out output and format attributes from metadata', () => {
+    it('should only use title attribute for display, not other attributes', () => {
       const section: Section = {
         name: 'test',
-        attributes: { output: 'md', format: 'markdown', role: 'system' },
+        attributes: {
+          output: 'md',
+          format: 'markdown',
+          role: 'system',
+          overridable: 'true',
+        },
         content: 'Content',
       };
 
       const result = formatter.formatSection(section);
+      // No attributes should be displayed
       expect(result).not.toContain('output');
       expect(result).not.toContain('format');
-      expect(result).toContain('**role**: system');
+      expect(result).not.toContain('role');
+      expect(result).not.toContain('overridable');
+      expect(result).toContain('## Test');
+      expect(result).toContain('Content');
     });
 
     it('should support md and markdown formats', () => {

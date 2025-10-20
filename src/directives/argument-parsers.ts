@@ -79,6 +79,17 @@ export function parseAttributes(rawArgs: string): Record<string, string> {
         value = valueToken.value;
       } else if (valueToken.type === TokenType.TEXT) {
         value = valueToken.value.trim();
+
+        // Check if the TEXT value contains a space followed by what looks like another attribute
+        // This catches cases like: overridable=true format="md" where "true format" is one TEXT token
+        const nextWordMatch = value.match(/^(\S+)\s+(\S+)/);
+        if (nextWordMatch) {
+          throw new APTLSyntaxError(
+            `Invalid attribute value '${value}' for '${key}'. Attributes must be separated by commas. Did you mean: ${key}="${nextWordMatch[1]}", ${nextWordMatch[2]}...?`,
+            valueToken.line,
+            valueToken.column,
+          );
+        }
       } else {
         throw new APTLSyntaxError(
           `Expected string or value for attribute '${key}', got ${valueToken.type}`,

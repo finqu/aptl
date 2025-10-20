@@ -19,15 +19,8 @@ export class MarkdownFormatter implements OutputFormatter {
       // Use title attribute if present, otherwise use section name
       const displayTitle = titleAttr || this.capitalizeFirst(section.name);
       const heading = this.createHeadingWithTitle(displayTitle, level);
-      const metadata = this.formatMetadata(section.attributes);
 
-      result = heading;
-
-      if (metadata) {
-        result += `\n${metadata}`;
-      }
-
-      result += `\n\n${section.content}`;
+      result = heading + `\n\n${section.content}`;
 
       // Handle nested sections with increased level
       if (section.children && section.children.length > 0) {
@@ -71,16 +64,6 @@ export class MarkdownFormatter implements OutputFormatter {
     const actualLevel = Math.min(level, 6);
     const hashes = '#'.repeat(actualLevel);
     return `${hashes} ${title}`;
-  }
-
-  private formatMetadata(attributes: Record<string, string>): string {
-    // Filter out special attributes
-    const metadata = Object.entries(attributes)
-      .filter(([key]) => !['output', 'format', 'title'].includes(key))
-      .map(([key, value]) => `- **${key}**: ${value}`)
-      .join('\n');
-
-    return metadata ? `\n${metadata}` : '';
   }
 
   private capitalizeFirst(str: string): string {

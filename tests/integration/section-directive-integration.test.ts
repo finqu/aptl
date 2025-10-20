@@ -648,7 +648,7 @@ Main content here
     it('should handle section with multiple attributes but no format', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const template = `
-@section config overridable=true model="gpt-5.1"
+@section config overridable=true, model="gpt-5.1"
 Configuration content
 @end
             `.trim();
