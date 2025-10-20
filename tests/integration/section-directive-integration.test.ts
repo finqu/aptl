@@ -766,10 +766,10 @@ Content
   });
 });
 
-  describe('line breaks between sections', () => {
-    it('should preserve line breaks between consecutive sections with format attribute', async () => {
-      const engine = new APTLEngine('gpt-5.1');
-      const template = `@section one format="structured"
+describe('line breaks between sections', () => {
+  it('should preserve line breaks between consecutive sections with format attribute', async () => {
+    const engine = new APTLEngine('gpt-5.1');
+    const template = `@section one format="structured"
 Content 1
 @end
 
@@ -781,17 +781,17 @@ Content 2
 Content 3
 @end`;
 
-      const result = await engine.render(template);
-      
-      // Each formatted section should be followed by a blank line
-      // This ensures proper spacing between consecutive formatted sections
-      expect(result).toContain('</one>\n\n<two>');
-      expect(result).toContain('</two>\n\n<three>');
-    });
+    const result = await engine.render(template);
 
-    it('should preserve line breaks between mixed sections (formatted and non-formatted)', async () => {
-      const engine = new APTLEngine('gpt-5.1');
-      const template = `@section capabilities overridable=true
+    // Each formatted section should be followed by a blank line
+    // This ensures proper spacing between consecutive formatted sections
+    expect(result).toContain('</one>\n\n<two>');
+    expect(result).toContain('</two>\n\n<three>');
+  });
+
+  it('should preserve line breaks between mixed sections (formatted and non-formatted)', async () => {
+    const engine = new APTLEngine('gpt-5.1');
+    const template = `@section capabilities overridable=true
 Help merchants succeed
 @end
 
@@ -805,17 +805,17 @@ Help merchants succeed
 Access to: sales, revenue
 @end`;
 
-      const result = await engine.render(template);
-      
-      // Check that there's a blank line between capabilities and approach
-      expect(result).toContain('Help merchants succeed\n\n<approach>');
-      // Check that there's a blank line between approach and guidelines
-      expect(result).toContain('</approach>\n\n## Available Analytics');
-    });
+    const result = await engine.render(template);
 
-    it('should handle multiple consecutive formatted sections correctly', async () => {
-      const engine = new APTLEngine('gpt-5.1');
-      const template = `@section first format="markdown"
+    // Check that there's a blank line between capabilities and approach
+    expect(result).toContain('Help merchants succeed\n\n<approach>');
+    // Check that there's a blank line between approach and guidelines
+    expect(result).toContain('</approach>\n\n## Available Analytics');
+  });
+
+  it('should handle multiple consecutive formatted sections correctly', async () => {
+    const engine = new APTLEngine('gpt-5.1');
+    const template = `@section first format="markdown"
 First section content
 @end
 
@@ -827,11 +827,11 @@ Second section content
 Third section content
 @end`;
 
-      const result = await engine.render(template);
-      const lines = result.split('\n');
-      
-      // Count empty lines - there should be blank lines between sections
-      const emptyLines = lines.filter(line => line === '').length;
-      expect(emptyLines).toBeGreaterThanOrEqual(2); // At least 2 blank lines between 3 sections
-    });
+    const result = await engine.render(template);
+    const lines = result.split('\n');
+
+    // Count empty lines - there should be blank lines between sections
+    const emptyLines = lines.filter((line) => line === '').length;
+    expect(emptyLines).toBeGreaterThanOrEqual(2); // At least 2 blank lines between 3 sections
   });
+});
