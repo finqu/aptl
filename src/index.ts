@@ -31,6 +31,9 @@ export { ConditionalEvaluator } from './conditionals/conditional-evaluator';
 // Directives
 export * from './directives';
 
+// FileSystem
+export * from './filesystem';
+
 // FileSystem and Utils
 export * from './utils';
 

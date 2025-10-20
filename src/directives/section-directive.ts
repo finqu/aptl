@@ -270,11 +270,6 @@ export class SectionDirective extends BlockDirective {
     // Check if format attribute is present (direct format, not from model matching)
     const formatAttr = attributes.format;
 
-    if (formatAttr) {
-      // Use formatter to render this section
-      return this.renderWithFormatter(context, name, attributes, formatAttr);
-    }
-
     // Render the original section content by rendering all children
     const originalContent = context.node.children
       .map((child) => {
@@ -317,6 +312,17 @@ export class SectionDirective extends BlockDirective {
       sectionContent = originalContent;
     }
 
+    // If format attribute is present, use formatter to render
+    if (formatAttr) {
+      return this.renderWithFormatter(
+        context,
+        name,
+        attributes,
+        formatAttr,
+        sectionContent,
+      );
+    }
+
     return sectionContent;
   }
 
@@ -328,6 +334,7 @@ export class SectionDirective extends BlockDirective {
     name: string,
     attributes: Record<string, any>,
     formatName: string,
+    sectionContent: string,
   ): string {
     // Get formatter registry from context data
     const formatterRegistry = context.data.__formatterRegistry__;
@@ -347,17 +354,14 @@ export class SectionDirective extends BlockDirective {
       );
     }
 
-    // Extract content and nested sections
-    const { content, children } = this.extractNestedSections(
-      context.node,
-      context,
-    );
+    // Extract nested sections from the node (but use sectionContent for main content)
+    const { children } = this.extractNestedSections(context.node, context);
 
-    // Build Section object
+    // Build Section object with the (possibly overridden) content
     const section: Section = {
       name,
       attributes,
-      content: content.trim(),
+      content: sectionContent.trim(),
       children: children.length > 0 ? children : undefined,
     };
 

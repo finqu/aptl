@@ -733,5 +733,35 @@ Content
       const result = await engine.render(template);
       expect(result).toContain('Content');
     });
+
+    it('should handle section override with format attribute', async () => {
+      const { APTLEngine, ObjectFileSystem } = await import('@/index');
+
+      const fs = new ObjectFileSystem({
+        'base.aptl': `
+@section identity overridable=true, format="md"
+  Identity spec from base
+@end
+`,
+        'child.aptl': `
+@extends "base"
+
+@section identity
+  Identity spec from child (override)
+@end
+`,
+      });
+
+      const engine = new APTLEngine('gpt-5.1', { fileSystem: fs });
+
+      const result = await engine.renderFile('child.aptl');
+
+      // Should contain the child's content (override), not the base content
+      expect(result).toContain('Identity spec from child (override)');
+      expect(result).not.toContain('Identity spec from base');
+
+      // Should still be formatted with markdown
+      expect(result).toContain('## Identity');
+    });
   });
 });
