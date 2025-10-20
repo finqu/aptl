@@ -11,23 +11,46 @@ export class MarkdownFormatter implements OutputFormatter {
   }
 
   formatSection(section: Section, level: number = 2): string {
-    const heading = this.createHeading(section.name, level);
-    const metadata = this.formatMetadata(section.attributes);
+    const titleAttr = section.attributes.title;
+    let result = '';
 
-    let result = heading;
+    // Check if title should be rendered
+    if (titleAttr !== 'false') {
+      // Use title attribute if present, otherwise use section name
+      const displayTitle = titleAttr || this.capitalizeFirst(section.name);
+      const heading = this.createHeadingWithTitle(displayTitle, level);
+      const metadata = this.formatMetadata(section.attributes);
 
-    if (metadata) {
-      result += `\n${metadata}`;
-    }
+      result = heading;
 
-    result += `\n\n${section.content}`;
+      if (metadata) {
+        result += `\n${metadata}`;
+      }
 
-    // Handle nested sections
-    if (section.children && section.children.length > 0) {
-      const childContent = section.children
-        .map((child) => this.formatSection(child, level + 1))
-        .join('\n\n');
-      result += `\n\n${childContent}`;
+      result += `\n\n${section.content}`;
+
+      // Handle nested sections with increased level
+      if (section.children && section.children.length > 0) {
+        const childContent = section.children
+          .map((child) => this.formatSection(child, level + 1))
+          .join('\n\n');
+        result += `\n\n${childContent}`;
+      }
+    } else {
+      // No heading, just content
+      result = section.content;
+
+      // Handle nested sections without increasing level
+      if (section.children && section.children.length > 0) {
+        const childContent = section.children
+          .map((child) => this.formatSection(child, level))
+          .join('\n\n');
+        if (section.content && section.content.trim()) {
+          result += `\n\n${childContent}`;
+        } else {
+          result = childContent;
+        }
+      }
     }
 
     return result;
@@ -44,10 +67,16 @@ export class MarkdownFormatter implements OutputFormatter {
     return `${hashes} ${formattedName}`;
   }
 
+  private createHeadingWithTitle(title: string, level: number): string {
+    const actualLevel = Math.min(level, 6);
+    const hashes = '#'.repeat(actualLevel);
+    return `${hashes} ${title}`;
+  }
+
   private formatMetadata(attributes: Record<string, string>): string {
     // Filter out special attributes
     const metadata = Object.entries(attributes)
-      .filter(([key]) => !['output', 'format'].includes(key))
+      .filter(([key]) => !['output', 'format', 'title'].includes(key))
       .map(([key, value]) => `- **${key}**: ${value}`)
       .join('\n');
 

@@ -6,7 +6,7 @@
 import { BlockDirective } from './base-directive';
 import { DirectiveContext } from './types';
 import { APTLSyntaxError, APTLRuntimeError } from '@/utils/errors';
-import { DirectiveNode } from '@/core/types';
+import { DirectiveNode, Section, NodeType } from '@/core/types';
 import { parseSectionArgs } from './argument-parsers';
 
 /**
@@ -151,6 +151,65 @@ export class SectionDirective extends BlockDirective {
   }
 
   /**
+   * Extract nested section directives as Section children
+   */
+  private extractNestedSections(
+    node: DirectiveNode,
+    context: DirectiveContext,
+  ): { content: string; children: Section[] } {
+    const children: Section[] = [];
+    let contentParts: string[] = [];
+
+    for (const child of node.children) {
+      if (
+        child.type === NodeType.DIRECTIVE &&
+        (child as DirectiveNode).name === 'section'
+      ) {
+        const childDirectiveNode = child as DirectiveNode;
+
+        // Parse the child section's arguments
+        if (!childDirectiveNode.parsedArgs) {
+          childDirectiveNode.parsedArgs = parseSectionArgs(
+            childDirectiveNode.rawArgs,
+          );
+        }
+
+        const { name: childName, attributes: childAttributes } =
+          childDirectiveNode.parsedArgs;
+
+        // Recursively extract nested sections
+        const nestedResult = this.extractNestedSections(
+          childDirectiveNode,
+          context,
+        );
+
+        // Create Section object for this child
+        const childSection: Section = {
+          name: childName,
+          attributes: childAttributes,
+          content: nestedResult.content.trim(),
+          children:
+            nestedResult.children.length > 0
+              ? nestedResult.children
+              : undefined,
+        };
+
+        children.push(childSection);
+      } else {
+        // Render non-section nodes as content
+        if (context.renderNode) {
+          contentParts.push(context.renderNode(child));
+        }
+      }
+    }
+
+    return {
+      content: contentParts.join(''),
+      children,
+    };
+  }
+
+  /**
    * Execute the section directive
    */
   execute(context: DirectiveContext): string {
@@ -208,6 +267,14 @@ export class SectionDirective extends BlockDirective {
       );
     }
 
+    // Check if format attribute is present (direct format, not from model matching)
+    const formatAttr = attributes.format;
+
+    if (formatAttr) {
+      // Use formatter to render this section
+      return this.renderWithFormatter(context, name, attributes, formatAttr);
+    }
+
     // Render the original section content
     const originalContent = context.renderTemplate('');
 
@@ -244,5 +311,50 @@ export class SectionDirective extends BlockDirective {
     }
 
     return sectionContent;
+  }
+
+  /**
+   * Render section using a formatter
+   */
+  private renderWithFormatter(
+    context: DirectiveContext,
+    name: string,
+    attributes: Record<string, any>,
+    formatName: string,
+  ): string {
+    // Get formatter registry from context data
+    const formatterRegistry = context.data.__formatterRegistry__;
+
+    if (!formatterRegistry) {
+      throw new APTLRuntimeError(
+        'Formatter registry not available in context. Cannot use format attribute.',
+      );
+    }
+
+    // Get the formatter
+    const formatter = formatterRegistry.get(formatName);
+
+    if (!formatter) {
+      throw new APTLRuntimeError(
+        `Unknown formatter: "${formatName}". Available formatters: ${Array.from(formatterRegistry.get ? [] : []).join(', ')}`,
+      );
+    }
+
+    // Extract content and nested sections
+    const { content, children } = this.extractNestedSections(
+      context.node,
+      context,
+    );
+
+    // Build Section object
+    const section: Section = {
+      name,
+      attributes,
+      content: content.trim(),
+      children: children.length > 0 ? children : undefined,
+    };
+
+    // Format using the formatter
+    return formatter.formatSection(section);
   }
 }

@@ -326,20 +326,35 @@ const engine = new APTLEngine('gpt-4', {
 
 Per-section formatting:
 ```aptl
-@section identity(format="markdown")
-  # AI Assistant
-  Professional coding assistant
+@section identity format="markdown"
+# AI Assistant
+Professional coding assistant
 @end
 
-@section config(format="json")
-  { "maxTokens": 4000, "temperature": 0.7 }
+@section config format="json"
+{ "maxTokens": 4000, "temperature": 0.7 }
 @end
 
-@section structure(format="structured")
-  <identity>CodeAssist Pro</identity>
-  <role>Software Engineer</role>
+@section structure format="structured" title="System Configuration"
+CodeAssist Pro
+
+@section role title=false
+Software Engineer
+@end
 @end
 ```
+
+Output with structured format:
+```xml
+<structure>
+# System Configuration
+CodeAssist Pro
+
+Software Engineer
+</structure>
+```
+
+The `title` attribute customizes or suppresses section headings. When set to `false`, heading levels don't increase for nested sections.
 
 ### Advanced Variable Resolution
 

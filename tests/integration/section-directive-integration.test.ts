@@ -285,6 +285,273 @@ Default content
     });
   });
 
+  describe('format attribute without model', () => {
+    it('should render section with structured format', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section test format="structured"
+content
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('<test>');
+      expect(result).toContain('content');
+      expect(result).toContain('</test>');
+    });
+
+    it('should render nested sections with structured format', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section test format="structured"
+content
+
+@section nested format="structured"
+content2
+@end
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('<test>');
+      expect(result).toContain('content');
+      expect(result).toContain('## Nested');
+      expect(result).toContain('content2');
+      expect(result).toContain('</test>');
+    });
+
+    it('should render section with markdown format', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section intro format="markdown"
+Introduction text
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('## Intro');
+      expect(result).toContain('Introduction text');
+    });
+
+    it('should render section with json format', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section data format="json"
+Some content
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('"data"');
+      expect(result).toContain('Some content');
+    });
+
+    it('should render section with plain format', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section test format="plain"
+Plain content
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('Plain content');
+      // Plain format should not add extra markup
+      expect(result).not.toContain('<test>');
+      expect(result).not.toContain('## Test');
+    });
+
+    it('should handle format attribute without parentheses', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section test format="structured"
+content
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('<test>');
+      expect(result).toContain('content');
+      expect(result).toContain('</test>');
+    });
+
+    it('should handle deeply nested sections with structured format', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section outer format="structured"
+Outer content
+
+@section middle format="structured"
+Middle content
+
+@section inner format="structured"
+Inner content
+@end
+@end
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('<outer>');
+      expect(result).toContain('Outer content');
+      expect(result).toContain('## Middle');
+      expect(result).toContain('Middle content');
+      expect(result).toContain('### Inner');
+      expect(result).toContain('Inner content');
+      expect(result).toContain('</outer>');
+    });
+  });
+
+  it('should handle deeply nested sections with mixed format', async () => {
+    const engine = new APTLEngine('gpt-5.1');
+    const template = `
+@section outer format="structured"
+  Outer content
+
+  @section "Middle Content Title" format="markdown"
+    Middle content
+
+    @section inner format="structured"
+      Inner content
+    @end
+  @end
+@end
+            `.trim();
+
+    const result = await engine.render(template);
+    expect(result).toContain('<outer>');
+    expect(result).toContain('Outer content');
+    expect(result).toContain('## Middle Content Title');
+    expect(result).toContain('Middle content');
+    expect(result).toContain('### Inner');
+    expect(result).toContain('Inner content');
+    expect(result).toContain('</outer>');
+  });
+
+  describe('title attribute', () => {
+    it('should render section with custom title in structured format', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section first format="structured" title="Example"
+content
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('<first>');
+      expect(result).toContain('# Example');
+      expect(result).toContain('content');
+      expect(result).toContain('</first>');
+    });
+
+    it('should not render heading when title is false', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section outer format="structured"
+Outer content
+
+@section middle format="markdown" title=false
+Middle content
+
+@section inner format="structured"
+Inner content
+@end
+@end
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('<outer>');
+      expect(result).toContain('Outer content');
+      expect(result).toContain('Middle content');
+      expect(result).not.toContain('## Middle');
+      expect(result).toContain('## Inner');
+      expect(result).toContain('Inner content');
+      expect(result).toContain('</outer>');
+    });
+
+    it('should use custom title in markdown format', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section intro format="markdown" title="Welcome to APTL"
+This is the introduction
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('## Welcome to APTL');
+      expect(result).toContain('This is the introduction');
+      expect(result).not.toContain('## Intro');
+    });
+
+    it('should not increase heading level when title is false', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section outer format="structured"
+Outer
+
+@section middle title=false
+Middle
+
+@section inner
+Inner
+@end
+@end
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('<outer>');
+      expect(result).toContain('Outer');
+      expect(result).toContain('Middle');
+      expect(result).not.toContain('## Middle');
+      // Inner should be ## (level 2) not ### (level 3) because middle has no heading
+      expect(result).toContain('## Inner');
+      expect(result).not.toContain('### Inner');
+      expect(result).toContain('Inner');
+      expect(result).toContain('</outer>');
+    });
+
+    it('should handle complex nested structure with mixed titles', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section root format="structured" title="Root Section"
+Root content
+
+@section child1 title="First Child"
+Child 1 content
+
+@section grandchild title=false
+Grandchild content
+@end
+@end
+
+@section child2 title=false
+Child 2 content
+
+@section grandchild2 title="Grandchild Two"
+Grandchild 2 content
+@end
+@end
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('<root>');
+      expect(result).toContain('# Root Section');
+      expect(result).toContain('Root content');
+      expect(result).toContain('## First Child');
+      expect(result).toContain('Child 1 content');
+      expect(result).toContain('Grandchild content');
+      expect(result).not.toContain('### Grandchild');
+      expect(result).toContain('Child 2 content');
+      expect(result).not.toContain('## Child2');
+      expect(result).toContain('## Grandchild Two');
+      expect(result).toContain('Grandchild 2 content');
+      expect(result).toContain('</root>');
+    });
+  });
+
   describe('edge cases', () => {
     it('should handle section without parentheses around attributes', async () => {
       const engine = new APTLEngine('gpt-5.1');
@@ -347,7 +614,6 @@ Content
 
 
 @end
-
 
 @section emptyToo(model="gpt-5.1")
 

@@ -182,15 +182,36 @@ Examples:
 
 ```aptl
 @section identity
-  You are an AI assistant.
+You are an AI assistant.
 @end
 
-@section code(format="json")
-  @{anObjectVar}
+@section code format="json"
+@{anObjectVar}
 @end
 
+@section structure format="structured"
+Main content
+
+@section nested
+Nested content
+@end
+@end
+```
+
+The structured format example above would output:
+```xml
+<structure>
+Main content
+
+## Nested
+Nested content
+</structure>
+```
+
+Template inheritance example:
+```aptl
 @section header(overridable=true)
-  Default header
+Default header
 @end
 ```
 

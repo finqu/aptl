@@ -167,15 +167,15 @@ Output:
 
 **Structured Formatter**
 
-The structured formatter works similarly to the Markdown formatter but wraps the top-level section in XML-style tags while using Markdown headings for nested sections:
+The structured formatter wraps the top-level section in XML-style tags while using Markdown headings for nested sections. Section names are capitalized in the output:
 
 ```aptl
-@section info(format="structured")
-  Main content here.
+@section info format="structured"
+Main content here.
 
-  @section details
-    Detailed information.
-  @end
+@section details
+Detailed information.
+@end
 @end
 ```
 
@@ -185,9 +185,85 @@ Output:
 Main content here.
 
 ## Details
-
 Detailed information.
 </info>
+```
+
+**Custom Section Titles**
+
+Use the `title` attribute to customize section headings or suppress them entirely:
+
+```aptl
+@section api format="structured" title="API Reference"
+Core API documentation.
+@end
+```
+
+Output:
+```xml
+<api>
+# API Reference
+Core API documentation.
+</api>
+```
+
+Set `title=false` to suppress headings without increasing nesting levels:
+
+```aptl
+@section docs format="structured"
+Documentation
+
+@section intro title=false
+Introduction text without a heading
+
+@section details
+Detailed content
+@end
+@end
+@end
+```
+
+Output:
+```xml
+<docs>
+Documentation
+
+Introduction text without a heading
+
+## Details
+Detailed content
+</docs>
+```
+
+**Mixed Format Example**
+
+You can mix different formatters for different sections. Here's a powerful example combining structured and markdown formats:
+
+```aptl
+@section outer format="structured"
+Outer content
+
+@section "Middle Content Title" format="markdown"
+Middle content
+
+@section inner format="structured"
+Inner content
+@end
+@end
+@end
+```
+
+Output:
+```xml
+<outer>
+Outer content
+
+## Middle Content Title
+Middle content
+
+### Inner
+Inner content
+</outer>
 ```
 
 This makes it easy to combine the structure of XML with the readability of Markdown for nested content.

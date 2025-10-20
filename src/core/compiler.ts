@@ -113,10 +113,16 @@ export class Compiler {
     return {
       render: (data: Record<string, any>) => {
         try {
+          // Inject formatter registry into data context for section directive
+          const dataWithRegistry = {
+            ...data,
+            __formatterRegistry__: this.formatterRegistry,
+          };
+
           const context: RenderContext = {
-            data,
+            data: dataWithRegistry,
             helpers: { ...this.options.helpers },
-            scope: [data],
+            scope: [dataWithRegistry],
           };
 
           let result = this.renderNode(ast, context, ast);

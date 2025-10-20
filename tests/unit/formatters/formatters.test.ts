@@ -57,33 +57,8 @@ describe('Formatters', () => {
       };
 
       const result = formatter.formatSection(section);
-      expect(result).toContain('<test role="system" priority="high">');
+      expect(result).toContain('<test>');
       expect(result).toContain('</test>');
-    });
-
-    it('should escape XML special characters in attributes', () => {
-      const section: Section = {
-        name: 'test',
-        attributes: { quote: '"quoted"', ampersand: 'a&b' },
-        content: 'Content',
-      };
-
-      const result = formatter.formatSection(section);
-      expect(result).toContain('&quot;quoted&quot;');
-      expect(result).toContain('a&amp;b');
-    });
-
-    it('should filter out output and format attributes', () => {
-      const section: Section = {
-        name: 'test',
-        attributes: { output: 'structured', format: 'xml', role: 'system' },
-        content: 'Content',
-      };
-
-      const result = formatter.formatSection(section);
-      expect(result).not.toContain('output=');
-      expect(result).not.toContain('format=');
-      expect(result).toContain('role="system"');
     });
 
     it('should support structured and xml formats', () => {

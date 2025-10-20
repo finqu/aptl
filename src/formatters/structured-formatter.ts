@@ -11,30 +11,88 @@ export class StructuredFormatter implements OutputFormatter {
   }
 
   formatSection(section: Section): string {
-    const attrs = this.formatAttributes(section.attributes);
-    const openTag = attrs ? `<${section.name} ${attrs}>` : `<${section.name}>`;
+    const openTag = `<${section.name}>`;
 
-    // Handle nested sections if present - render children as markdown
-    const content =
-      section.children && section.children.length > 0
-        ? section.children
-            .map((child) => this.formatSectionAsMarkdown(child))
-            .join('\n\n')
-        : section.content;
+    // Check if title attribute is present
+    const titleAttr = section.attributes.title;
+    let titleContent = '';
+
+    if (titleAttr && titleAttr !== 'false') {
+      // Use title attribute value as H1 heading
+      titleContent = `# ${titleAttr}\n`;
+    }
+
+    // Build content: optional title + parent content + nested sections as markdown
+    let content = titleContent + section.content;
+
+    if (section.children && section.children.length > 0) {
+      const childrenContent = section.children
+        .map((child) => this.formatSectionAsMarkdown(child, 2))
+        .join('\n\n');
+
+      // If parent has content, add separator before children
+      if (content && content.trim()) {
+        content = `${content}\n\n${childrenContent}`;
+      } else {
+        content = childrenContent;
+      }
+    }
 
     return `${openTag}\n${content}\n</${section.name}>`;
   }
 
-  private formatSectionAsMarkdown(section: Section): string {
-    // Format nested sections as markdown with heading
-    let result = `## ${section.name}\n\n`;
+  private formatSectionAsMarkdown(section: Section, level: number = 2): string {
+    // Check if title attribute is present
+    const titleAttr = section.attributes.title;
+    let result = '';
 
-    if (section.children && section.children.length > 0) {
-      result += section.children
-        .map((child) => this.formatSectionAsMarkdown(child))
-        .join('\n\n');
+    if (titleAttr === 'false') {
+      // No heading, don't increase level for children
+      // Add parent content if present
+      if (section.content && section.content.trim()) {
+        result += section.content;
+      }
+
+      // Add nested children without increasing heading level
+      if (section.children && section.children.length > 0) {
+        const childrenContent = section.children
+          .map((child) => this.formatSectionAsMarkdown(child, level))
+          .join('\n\n');
+
+        // Add separator if there was parent content
+        if (section.content && section.content.trim()) {
+          result += '\n\n' + childrenContent;
+        } else {
+          result += childrenContent;
+        }
+      }
     } else {
-      result += section.content;
+      // Use title attribute if present, otherwise use section name
+      const displayTitle =
+        titleAttr ||
+        section.name.charAt(0).toUpperCase() + section.name.slice(1);
+
+      const hashes = '#'.repeat(Math.min(level, 6)); // Max heading level is 6
+      result = `${hashes} ${displayTitle}\n\n`;
+
+      // Add parent content if present
+      if (section.content && section.content.trim()) {
+        result += section.content;
+      }
+
+      // Add nested children with increased heading level
+      if (section.children && section.children.length > 0) {
+        const childrenContent = section.children
+          .map((child) => this.formatSectionAsMarkdown(child, level + 1))
+          .join('\n\n');
+
+        // Add separator if there was parent content
+        if (section.content && section.content.trim()) {
+          result += '\n\n' + childrenContent;
+        } else {
+          result += childrenContent;
+        }
+      }
     }
 
     return result;
@@ -42,14 +100,6 @@ export class StructuredFormatter implements OutputFormatter {
 
   supportsFormat(format: string): boolean {
     return format === 'structured' || format === 'xml';
-  }
-
-  private formatAttributes(attributes: Record<string, string>): string {
-    // Filter out special attributes used for formatting control
-    return Object.entries(attributes)
-      .filter(([key]) => !['output', 'format'].includes(key))
-      .map(([key, value]) => `${key}="${this.escapeXml(value)}"`)
-      .join(' ');
   }
 
   private escapeXml(str: string): string {

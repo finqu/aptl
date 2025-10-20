@@ -452,16 +452,115 @@ You can mix block and inline syntax based on your content:
 The `format` attribute controls how section content is rendered:
 
 ```aptl
-@section code(format="json")
-  { "example": "data" }
+@section code format="json"
+{ "example": "data" }
 @end
 
-@section documentation(format="markdown")
-  ## Heading
+@section documentation format="markdown"
+## Heading
 
-  Content here
+Content here
+@end
+
+@section structure format="structured"
+Main content
+
+@section details
+Detailed information
+@end
 @end
 ```
+
+The structured format example above outputs:
+```xml
+<structure>
+Main content
+
+## Details
+Detailed information
+</structure>
+```
+
+**Custom Section Titles**
+
+The `title` attribute allows you to override the section name in the output, or suppress the heading entirely:
+
+```aptl
+@section first format="structured" title="Example"
+content
+@end
+```
+
+Output:
+```xml
+<first>
+# Example
+content
+</first>
+```
+
+Set `title=false` to suppress the heading and prevent heading level increase for nested sections:
+
+```aptl
+@section outer format="structured"
+Outer content
+
+@section middle format="markdown" title=false
+Middle content
+
+@section inner format="structured"
+Inner content
+@end
+@end
+@end
+```
+
+Output:
+```xml
+<outer>
+Outer content
+
+Middle content
+
+## Inner
+Inner content
+</outer>
+```
+
+Notice that when `title=false` is used, the nested `inner` section becomes `##` (level 2) instead of `###` (level 3), because the `middle` section doesn't contribute a heading level.
+
+**Mixed Format Example**
+
+You can mix different formatters for different sections. Here's a powerful example combining structured and markdown formats:
+
+```aptl
+@section api format="structured"
+API Documentation
+
+@section "Endpoint Details" format="markdown"
+Use POST /api/users to create a new user
+
+@section example format="json"
+{ "name": "Alice", "role": "admin" }
+@end
+@end
+@end
+```
+
+Output:
+```xml
+<api>
+API Documentation
+
+## Endpoint Details
+Use POST /api/users to create a new user
+
+### Example
+{ "name": "Alice", "role": "admin" }
+</api>
+```
+
+**Template Inheritance**
 
 In template inheritance, you can completely replace a parent section with `override`:
 
