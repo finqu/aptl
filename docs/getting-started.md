@@ -34,7 +34,7 @@ Let's create a simple AI system prompt template:
 import { APTLEngine } from '@finqu/aptl';
 
 // Create an engine instance
-const engine = new APTLEngine('gpt-5.1');
+const engine = new APTLEngine('gpt-5');
 
 // Define your template
 const template = `
@@ -142,7 +142,7 @@ You can load templates from `.aptl` files:
 import { APTLEngine, TemplateRegistry } from '@finqu/aptl';
 import { LocalFileSystem } from '@finqu/aptl/local-filesystem';
 
-const engine = new APTLEngine('gpt-4');
+const engine = new APTLEngine('gpt-5');
 const fileSystem = new LocalFileSystem('./templates');
 const registry = new TemplateRegistry(engine, { fileSystem });
 
@@ -156,72 +156,6 @@ const output = await template.render({
   agentName: 'CodeBot',
   capabilities: ['debugging', 'refactoring']
 });
-```
-
-## Next Steps
-
-Now that you have the basics, explore more features:
-
-- [Syntax Reference](syntax-reference) - Complete syntax guide
-- [Directives](directives) - Learn about all built-in directives
-- [Advanced Features](advanced-features) - Template inheritance, formatters, and more
-- [Examples](examples) - Real-world examples
-
-## Common Patterns
-
-### AI Agent Identity
-
-```aptl
-@section identity(role="system")
-  You are @{agentName|"AI Assistant"}, a @{agentRole|"helpful assistant"}.
-
-  @if credentials
-    Your credentials:
-    @each credential in credentials
-      • @{credential}
-    @end
-  @end
-
-  @if specializations
-    You specialize in:
-    @each spec in specializations
-      - @{spec}
-    @end
-  @end
-@end
-```
-
-### Context-Aware Responses
-
-```aptl
-@section context
-  @if userLevel == "beginner"
-    Use simple, non-technical language.
-    Explain concepts step-by-step.
-  @elif userLevel == "intermediate"
-    Balance technical detail with clarity.
-    Provide examples when helpful.
-  @else
-    Use technical terminology appropriately.
-    Focus on efficiency and best practices.
-  @end
-
-  Response length: @{maxLength|"moderate"}
-  Format: @{outputFormat|"markdown"}
-@end
-```
-
-### Few-Shot Examples
-
-```aptl
-@section examples
-  Here are some example interactions:
-
-  @each example in examples
-    **Input:** @{example.input}
-    **Output:** @{example.output}
-  @end
-@end
 ```
 
 ## Troubleshooting
@@ -243,6 +177,16 @@ try {
 }
 ```
 
+For stricter template syntax validation during development, enable strict mode:
+
+```typescript
+const engine = new APTLEngine('gpt-5.1', {
+  strict: true
+});
+```
+
+This enforces stricter syntax rules, such as requiring directives to be at statement boundaries.
+
 ### Variable Not Found
 
 Use default values to handle missing variables:
@@ -251,22 +195,21 @@ Use default values to handle missing variables:
 Welcome, @{user.name|"Guest"}!
 ```
 
-### Debugging Templates
-
-Enable debug mode to see what's happening:
+By default, undefined variables without defaults render as empty strings. To catch missing variables and throw errors during development:
 
 ```typescript
-const engine = new APTLEngine('gpt-5.1', {
-  debug: true
+const engine = new APTLEngine('gpt-5', {
+  allowUndefined: false
 });
 ```
 
-## Getting Help
+With `allowUndefined: false`, undefined variables will throw a runtime error, helping you catch typos and missing data.
 
-- [GitHub Issues](https://github.com/finqu/aptl/issues) - Report bugs or request features
-- [Discussions](https://github.com/finqu/aptl/discussions) - Ask questions and share ideas
-- [Examples](https://github.com/finqu/aptl/tree/main/examples) - Browse example code
+## Next Steps
 
----
+Now that you have the basics, explore more features:
 
-[← Back to Home](index) | [Next: Syntax Reference →](syntax-reference)
+- [Syntax Reference](syntax-reference) - Complete syntax guide
+- [Directives](directives) - Learn about all built-in directives
+- [Advanced Features](advanced-features) - Template inheritance, formatters, and more
+- [Examples](examples) - Real-world examples

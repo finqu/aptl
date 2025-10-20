@@ -7,80 +7,56 @@ title: Syntax Reference
 
 A comprehensive guide to APTL's template syntax.
 
-## Table of Contents
-
-- [Variables](#variables)
-- [Sections](#sections)
-- [Comments](#comments)
-- [Whitespace and Indentation](#whitespace-and-indentation)
-- [Escaping](#escaping)
-- [Expressions](#expressions)
-
 ## Variables
 
-Variables interpolate data into your templates using the `@{...}` syntax.
+Variables interpolate data into your templates using the `@{...}` syntax. At its simplest, you can use `@{name}` to insert a value, but APTL supports much more sophisticated data access patterns.
 
-### Basic Variables
+You can access nested object properties using dot notation, such as `@{user.profile.name}` or `@{settings.theme.color}`. This makes it easy to work with complex data structures without flattening your data model.
 
-```aptl
-@{variableName}
-```
-
-Example:
 ```aptl
 Hello, @{name}!
+User email: @{user.profile.email}
+Theme color: @{settings.theme.color}
 ```
 
-### Nested Properties (Dot Notation)
-
-Access nested object properties:
-
-```aptl
-@{user.profile.name}
-@{settings.theme.color}
-```
-
-Example with data:
+For data structured like this:
 ```typescript
 {
+  name: 'Alice',
   user: {
     profile: {
-      name: 'Alice'
+      name: 'Alice',
+      email: 'alice@example.com'
+    }
+  },
+  settings: {
+    theme: {
+      color: 'blue'
     }
   }
 }
 ```
 
-### Array Access (Bracket Notation)
-
-Access array elements by index:
+Array elements can be accessed by index using bracket notation. You can use `@{items[0]}` for simple arrays, or combine it with dot notation like `@{users[1].name}` to access properties of array elements. This notation can be mixed freely - for example, `@{users[0].profile.email}` or `@{data.items[2].name}` both work as expected.
 
 ```aptl
-@{items[0]}
-@{users[1].name}
+First item: @{items[0]}
+Second user: @{users[1].name}
+Nested access: @{users[0].profile.email}
 ```
 
-Example:
+Example data:
 ```typescript
 {
   items: ['First', 'Second', 'Third'],
   users: [
-    { name: 'Alice' },
-    { name: 'Bob' }
+    { name: 'Alice', profile: { email: 'alice@example.com' } },
+    { name: 'Bob', profile: { email: 'bob@example.com' } }
   ]
 }
 ```
 
-### Mixed Notation
-
-Combine dot and bracket notation:
-
-```aptl
-@{users[0].profile.email}
-@{data.items[2].name}
-```
-
-### Default Values
+**Default Values**
 
 **Provide fallback values when variables are undefined or null:**
 
@@ -133,19 +109,18 @@ Score: @{results.tests[0].score|0}
 
 ## Sections
 
-Sections group related content and control output formatting.
+Sections are the primary way to organize and structure your template content. They group related content together and give you fine-grained control over output formatting. Each section can have a name and optional attributes that control how it's rendered.
 
-### Basic Section (Block Syntax)
+The most common form is the block syntax, which uses `@section` to open and `@end` to close:
 
 ```aptl
 @section sectionName
   Content goes here
+  It can span multiple lines
 @end
 ```
 
-### Inline Section Syntax
-
-For simple, single-line sections, use the colon (`:`) syntax:
+For simple, single-line sections, APTL provides a more concise inline syntax using a colon (`:`). This is particularly useful for metadata, configuration values, or short descriptions where the block syntax would feel overly verbose:
 
 ```aptl
 @section title: AI Coding Assistant
@@ -153,35 +128,23 @@ For simple, single-line sections, use the colon (`:`) syntax:
 @section author: @{authorName}
 ```
 
-**When to use inline syntax:**
-- Single-line content
-- Simple text without complex nesting
-- Quick metadata or short descriptions
+Use the inline syntax for single-line content, simple text without complex nesting, or quick metadata. The block syntax is better when you have multi-line content, nested directives or complex logic, or when readability benefits from the clear opening and closing markers.
 
-**When to use block syntax:**
-- Multi-line content
-- Nested directives or complex logic
-- Better readability for longer content
-
-### Named Sections (String Literals)
-
-Use quotes for section names with spaces or special characters:
+When your section name contains spaces or special characters, wrap it in quotes (single or double):
 
 ```aptl
 @section "role"
-  Content
+  You are a helpful assistant
 @end
 
 @section "my section"
-  Content with spaces
+  Content with spaces in the section name
 @end
 ```
 
-### Section Attributes
+**Section Attributes**
 
-Attributes work with both block and inline syntax.
-
-#### Block Syntax with Parentheses
+Attributes provide additional configuration for sections and work with both block and inline syntax. The most readable approach uses parentheses around the attributes:
 
 ```aptl
 @section name(attribute="value")
@@ -193,7 +156,7 @@ Attributes work with both block and inline syntax.
 @end
 ```
 
-#### Inline Syntax with Attributes
+Inline sections can also have attributes:
 
 ```aptl
 @section title(format="markdown"): # Welcome to APTL
@@ -201,7 +164,7 @@ Attributes work with both block and inline syntax.
 @section metadata(format="json"): { "version": "1.0" }
 ```
 
-#### Without Parentheses
+Alternatively, you can omit the parentheses if you prefer:
 
 ```aptl
 @section name attribute="value"
@@ -213,25 +176,17 @@ Attributes work with both block and inline syntax.
 @end
 ```
 
-### Common Section Attributes
-
-- `role` - Section role (e.g., "system", "user", "assistant")
-- `format` - Output format ("plain", "markdown", "json", "structured")
-- `override` - Override parent section in template inheritance
-- `prepend` - Prepend to parent section content
-- `append` - Append to parent section content
-- `overridable` - Allow child templates to override this section
-- `new` - Create a new section (don't inherit from parent)
+Several attributes have special meanings in APTL. The `format` attribute controls the output format and accepts values like "plain", "markdown", "json", or "structured". The `override`, `prepend`, and `append` attributes are used in template inheritance to control how child templates modify parent sections. The `overridable` attribute marks a section as being allowed to be overridden by child templates.
 
 Examples:
 
 ```aptl
-@section identity(role="system")
+@section identity
   You are an AI assistant.
 @end
 
 @section code(format="json")
-  { "key": "value" }
+  @{anObjectVar}
 @end
 
 @section header(overridable=true)
@@ -241,9 +196,9 @@ Examples:
 
 ## Comments
 
-### Line Comments
+APTL supports both single-line and multi-line comments to help document your templates.
 
-Use `//` for single-line comments:
+For single-line comments, use `//` just like in JavaScript or TypeScript. Everything from `//` to the end of the line is treated as a comment and won't appear in the output:
 
 ```aptl
 // This is a comment
@@ -253,14 +208,13 @@ Use `//` for single-line comments:
 @end
 ```
 
-### Block Comments
-
-Use `/* ... */` for multi-line comments:
+When you need to comment out multiple lines or write longer explanations, use block comments with `/* ... */` syntax. These can span multiple lines and work anywhere in your template:
 
 ```aptl
 /*
   This is a multi-line comment
   It can span multiple lines
+  Useful for documentation
 */
 
 @section main
@@ -273,11 +227,9 @@ Use `/* ... */` for multi-line comments:
 
 ## Whitespace and Indentation
 
-APTL is indent-aware and preserves meaningful whitespace.
+APTL automatically removes leading and trailing whitespace from your template output by default, creating clean, compact results. This means that indentation you use in your template files for readability is stripped away unless you explicitly configure the engine to preserve it.
 
-### Indentation
-
-APTL tracks indentation to maintain proper structure:
+For example, this template:
 
 ```aptl
 @section main
@@ -287,16 +239,14 @@ APTL tracks indentation to maintain proper structure:
 @end
 ```
 
-Output preserves the indentation:
+Renders by default as:
 ```
 Line 1
-  Indented line
+Indented line
 Line 3
 ```
 
-### Blank Lines
-
-Blank lines are preserved in the output:
+Similarly, blank lines between content are removed by default:
 
 ```aptl
 @section main
@@ -306,52 +256,42 @@ Blank lines are preserved in the output:
 @end
 ```
 
-### Trailing Whitespace
+Renders as:
+```
+First paragraph
+Second paragraph (with blank line above)
+```
 
-Trailing whitespace on lines is generally preserved, but you can control this with output formatters.
+If you need to preserve whitespace, indentation, or blank lines in your output, you can configure the engine's whitespace handling behavior through engine options. This gives you full control over whether to optimize for compact output (the default) or maintain the exact formatting from your template files.
 
 ## Escaping
 
-Use backslash `\` to escape special characters.
+Use backslash `\` to escape special characters when you need them to appear literally in your output.
 
-### Escaping the @ Symbol
+The most common case is escaping the `@` symbol, which APTL uses to introduce directives and variables. To output a literal `@` character, prefix it with a backslash:
 
 ```aptl
 Email me at user\@example.com
 Use \@section to print @section literally
 ```
 
-Output:
+This renders as:
 ```
 Email me at user@example.com
 Use @section to print @section literally
 ```
 
-### Other Escape Sequences
+APTL also supports other standard escape sequences: `\\` for a literal backslash, `\n` for newline, `\t` for tab, `\r` for carriage return, and `\/` for forward slash. For example, when working with file paths on Windows:
 
-- `\\` - Backslash
-- `\n` - Newline
-- `\t` - Tab
-- `\r` - Carriage return
-- `\/` - Forward slash
-
-Example:
 ```aptl
 Path: C:\\Users\\Documents
 ```
 
 ## Expressions
 
-Expressions are used in conditional directives (`@if`, `@elif`).
+Expressions are used in conditional directives like `@if` and `@elif` to make decisions about what content to include in your templates.
 
-### Comparison Operators
-
-- `==` - Equal to
-- `!=` - Not equal to
-- `>` - Greater than
-- `<` - Less than
-- `>=` - Greater than or equal to
-- `<=` - Less than or equal to
+APTL supports standard comparison operators: `==` for equality, `!=` for inequality, `>` for greater than, `<` for less than, `>=` for greater than or equal to, and `<=` for less than or equal to. These work with numbers, strings, and other values:
 
 ```aptl
 @if age >= 18
@@ -367,11 +307,7 @@ Expressions are used in conditional directives (`@if`, `@elif`).
 @end
 ```
 
-### Logical Operators
-
-- `and` - Logical AND
-- `or` - Logical OR
-- `not` - Logical NOT
+You can combine conditions using logical operators. Use `and` to require multiple conditions to be true, `or` when any condition should match, and `not` to negate a condition:
 
 ```aptl
 @if user.isActive and user.isPremium
@@ -387,7 +323,7 @@ Expressions are used in conditional directives (`@if`, `@elif`).
 @end
 ```
 
-### Grouping with Parentheses
+Complex expressions can be grouped with parentheses to control evaluation order:
 
 ```aptl
 @if (age >= 18 and hasConsent) or isAdmin
@@ -395,9 +331,7 @@ Expressions are used in conditional directives (`@if`, `@elif`).
 @end
 ```
 
-### In Operator
-
-Check if a value exists in an array or property:
+The special `in` operator checks if a value exists in an array or as a property:
 
 ```aptl
 @if "admin" in user.roles
@@ -409,9 +343,7 @@ Check if a value exists in an array or property:
 @end
 ```
 
-### Truthiness
-
-Variables are evaluated for truthiness:
+Variables are evaluated for truthiness when used directly in conditions. Falsy values include `false`, `null`, `undefined`, `0`, empty strings (`""`), and empty arrays (`[]`). Everything else is truthy:
 
 ```aptl
 @if user.isActive
@@ -423,17 +355,9 @@ Variables are evaluated for truthiness:
 @end
 ```
 
-Falsy values:
-- `false`
-- `null`
-- `undefined`
-- `0`
-- `""` (empty string)
-- `[]` (empty array)
-
 ## String Literals
 
-Strings can use single or double quotes:
+String values in APTL can be enclosed in either single or double quotes - whichever you prefer or fits your content better:
 
 ```aptl
 @section "section name"
@@ -441,7 +365,7 @@ Strings can use single or double quotes:
 @{user.name|"Default"}
 ```
 
-### Escape Sequences in Strings
+When you need to include quote characters within a string, escape them with a backslash:
 
 ```aptl
 @if message == "Hello \"World\""
@@ -451,37 +375,30 @@ Strings can use single or double quotes:
 
 ## Number Literals
 
-Both integers and floats are supported:
+APTL supports both integers and floating-point numbers in expressions and default values:
 
 ```aptl
 @if age >= 18
 @if price <= 99.99
 @if count == 0
+@{retries|3}
+@{temperature|0.7}
 ```
 
 ## Boolean Literals
 
+Use `true` and `false` for boolean values in comparisons:
+
 ```aptl
 @if isPremium == true
 @if isBlocked != false
+@{debug|false}
 ```
 
 ## Variable Path Resolution
 
-The variable resolver supports:
+The variable resolver in APTL is quite flexible and supports multiple ways to access your data.
 
-1. **Simple variables**: `name`
-2. **Dot notation**: `user.name`, `user.profile.email`
-3. **Bracket notation**: `items[0]`, `users[1]`
-4. **Mixed notation**: `users[0].profile.email`
+You can use simple variable names (`name`), dot notation for nested properties (`user.name`, `user.profile.email`), bracket notation for array access (`items[0]`, `users[1]`), or mix them together (`users[0].profile.email`).
 
-### Resolution Order
-
-1. Check if the path exists in the data
-2. Traverse the path step by step
-3. Return `undefined` if any step fails
-4. Apply default value if provided and result is `undefined`
-
----
-
-[← Getting Started](getting-started) | [Next: Directives →](directives)
+When resolving a variable path, APTL checks if the path exists in your data, then traverses it step by step. If any step in the path fails (for example, trying to access a property on `undefined`), the resolver returns `undefined`. If you've provided a default value using the pipe syntax, that default will be used. Otherwise, it falls back to the engine's global default value if configured.

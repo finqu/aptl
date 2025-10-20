@@ -155,7 +155,8 @@ export type HelperFunction = (...args: any[]) => any;
 // ============================================================================
 
 export interface APTLOptions {
-  strict?: boolean;
+  strict?: boolean; // Strict syntax checking (directives at statement boundaries)
+  allowUndefined?: boolean; // Allow undefined variables (default: true)
   cache?: boolean;
   formatter?: OutputFormatter;
   helpers?: Record<string, HelperFunction>;

@@ -7,76 +7,49 @@ title: API Reference
 
 Complete TypeScript API documentation for APTL.
 
-## Table of Contents
-
-- [Core Classes](#core-classes)
-  - [APTLEngine](#aptlengine)
-  - [TemplateRegistry](#templateregistry)
-  - [VariableResolver](#variableresolver)
-- [Directives](#directives)
-  - [InlineDirective](#inlinedirective)
-  - [BlockDirective](#blockdirective)
-  - [ConditionalDirective](#conditionaldirective)
-- [Formatters](#formatters)
-  - [OutputFormatter](#outputformatter)
-  - [PlainFormatter](#plainformatter)
-  - [MarkdownFormatter](#markdownformatter)
-  - [JSONFormatter](#jsonformatter)
-  - [StructuredFormatter](#structuredformatter)
-- [File Systems](#file-systems)
-  - [FileSystem](#filesystem)
-  - [LocalFileSystem](#localfilesystem)
-  - [ObjectFileSystem](#objectfilesystem)
-- [Error Types](#error-types)
-- [Type Definitions](#type-definitions)
-
----
-
 ## Core Classes
 
 ### APTLEngine
 
-The main template engine class.
+The main template engine class that orchestrates tokenization, parsing, compilation, and rendering of APTL templates.
 
-#### Constructor
+**Constructor**
 
 ```typescript
 constructor(modelId: string, options?: EngineOptions)
 ```
 
-**Parameters:**
-- `modelId` - Model identifier (e.g., 'gpt-4', 'claude-3')
+Parameters:
+- `modelId` - Model identifier (e.g., 'gpt-5', 'claude-3')
 - `options` - Optional configuration
   - `debug?: boolean` - Enable debug logging
   - `defaultFormatter?: OutputFormatter` - Default output formatter
 
-**Example:**
+Example:
 ```typescript
-const engine = new APTLEngine('gpt-4', {
+const engine = new APTLEngine('gpt-5', {
   debug: true,
   defaultFormatter: new MarkdownFormatter()
 });
 ```
 
-#### Methods
-
-##### render()
+**render() Method**
 
 ```typescript
 async render(template: string, data: Record<string, any>): Promise<string>
 ```
 
-Renders a template with the provided data.
+Renders a template with the provided data. This is the most common way to use APTL - provide a template string and data, get back rendered output.
 
-**Parameters:**
+Parameters:
 - `template` - APTL template string
 - `data` - Data object for variable interpolation
 
-**Returns:** Rendered output string
+Returns: Rendered output string
 
-**Throws:** `APTLSyntaxError`, `APTLRuntimeError`
+Throws: `APTLSyntaxError`, `APTLRuntimeError`
 
-**Example:**
+Example:
 ```typescript
 const output = await engine.render(
   '@section main\nHello, @{name}!\n@end',
@@ -84,27 +57,27 @@ const output = await engine.render(
 );
 ```
 
-##### compile()
+**compile() Method**
 
 ```typescript
 async compile(template: string): Promise<CompiledTemplate>
 ```
 
-Compiles a template without rendering.
+Compiles a template without rendering it. Use this when you need to render the same template multiple times with different data - compile once, render many times for better performance.
 
-**Parameters:**
+Parameters:
 - `template` - APTL template string
 
-**Returns:** Compiled template object
+Returns: Compiled template object
 
-**Example:**
+Example:
 ```typescript
 const compiled = await engine.compile(template);
 const output1 = await compiled.render(data1);
 const output2 = await compiled.render(data2);
 ```
 
-#### Properties
+**Properties**
 
 - `modelId: string` - Current model identifier
 - `directiveRegistry: DirectiveRegistry` - Registry of available directives
@@ -113,38 +86,34 @@ const output2 = await compiled.render(data2);
 - `parser: Parser` - Template parser
 - `compiler: Compiler` - Template compiler
 
----
-
 ### TemplateRegistry
 
-Manages a collection of templates.
+Manages a collection of templates, providing convenient loading, registration, and retrieval functionality.
 
-#### Constructor
+**Constructor**
 
 ```typescript
 constructor(engine: APTLEngine, fileSystem?: FileSystem)
 ```
 
-**Parameters:**
+Parameters:
 - `engine` - APTLEngine instance
 - `fileSystem` - Optional file system implementation (defaults to LocalFileSystem)
 
-#### Methods
-
-##### register()
+**register() Method**
 
 ```typescript
 register(name: string, template: string | CompiledTemplate): void
 ```
 
-Register a template.
+Register a template by name for later retrieval.
 
-**Example:**
+Example:
 ```typescript
 registry.register('welcome', '@section main\nWelcome!\n@end');
 ```
 
-##### get()
+**get() Method**
 
 ```typescript
 get(name: string): CompiledTemplate
@@ -152,130 +121,124 @@ get(name: string): CompiledTemplate
 
 Retrieve a template by name.
 
-**Throws:** Error if template not found
+Throws: Error if template not found
 
-##### has()
+**has() Method**
 
 ```typescript
 has(name: string): boolean
 ```
 
-Check if a template exists.
+Check if a template exists in the registry.
 
-##### list()
+**list() Method**
 
 ```typescript
 list(): string[]
 ```
 
-Get all template names.
+Get all registered template names.
 
-##### unregister()
+**unregister() Method**
 
 ```typescript
 unregister(name: string): void
 ```
 
-Remove a template from registry.
+Remove a template from the registry.
 
-##### loadDirectory()
+**loadDirectory() Method**
 
 ```typescript
 async loadDirectory(path: string): Promise<void>
 ```
 
-Load all `.aptl` files from a directory.
+Load all `.aptl` files from a directory and register them automatically.
 
-**Example:**
+Example:
 ```typescript
 await registry.loadDirectory('./templates');
 ```
 
-##### refresh()
+**refresh() Method**
 
 ```typescript
 async refresh(): Promise<void>
 ```
 
-Reload templates from all tracked directories.
-
----
+Reload templates from all tracked directories to pick up any changes.
 
 ### VariableResolver
 
-Resolves variable paths in data objects.
+Resolves variable paths in data objects, supporting dot notation, bracket notation, and default values.
 
-#### Constructor
+**Constructor**
 
 ```typescript
 constructor()
 ```
 
-#### Methods
-
-##### resolve()
+**resolve() Method**
 
 ```typescript
 resolve(path: string, data: Record<string, any>): any
 ```
 
-Resolve a variable path to its value.
+Resolve a variable path to its value in the provided data object.
 
-**Example:**
+Example:
 ```typescript
 const resolver = new VariableResolver();
 resolver.resolve('user.name', { user: { name: 'Alice' } }); // 'Alice'
 resolver.resolve('items[0]', { items: ['first'] }); // 'first'
 ```
 
-##### exists()
+**exists() Method**
 
 ```typescript
 exists(path: string, data: Record<string, any>): boolean
 ```
 
-Check if a variable path exists in data.
+Check if a variable path exists in the data.
 
-##### extractVariables()
+**extractVariables() Method**
 
 ```typescript
 extractVariables(template: string): string[]
 ```
 
-Extract all variable paths from a template.
+Extract all variable paths from a template string.
 
-**Example:**
+Example:
 ```typescript
 const vars = resolver.extractVariables('@{user.name} @{user.email}');
 // ['user.name', 'user.email']
 ```
 
-##### validateTemplate()
+**validateTemplate() Method**
 
 ```typescript
 validateTemplate(template: string, data: Record<string, any>): string[]
 ```
 
-Find missing variables in a template.
+Find missing variables in a template by comparing against provided data.
 
-**Returns:** Array of missing variable paths
-
----
+Returns: Array of missing variable paths
 
 ## Directives
 
 ### InlineDirective
 
-Base class for directives without a body.
+Base class for directives without a body (single-line directives like `@extends`, `@include`).
 
-#### Abstract Methods
+**Abstract Methods (must be implemented)**
 
 ```typescript
 abstract get name(): string
 abstract execute(context: DirectiveContext): string
 ```
 
-#### Optional Methods
+**Optional Methods**
 
 ```typescript
 parseArguments(argsString: string): any
@@ -283,44 +246,42 @@ async parse?(node: DirectiveNode): Promise<void>
 validate?(node: DirectiveNode): void
 ```
 
-#### Example
+Example implementation:
 
 ```typescript
 class MyDirective extends InlineDirective {
   get name() { return 'mydir'; }
-  
+
   execute(context: DirectiveContext): string {
     return 'output';
   }
 }
 ```
 
----
-
 ### BlockDirective
 
-Base class for directives with a body and `@end` terminator.
+Base class for directives with a body and `@end` terminator (like `@section`, `@uppercase`).
 
-#### Abstract Methods
+**Abstract Methods (must be implemented)**
 
 ```typescript
 abstract get name(): string
 abstract execute(context: DirectiveContext): string
 ```
 
-#### Helper Methods
+**Helper Methods**
 
 ```typescript
 protected renderChildren(context: DirectiveContext): string
 protected renderNode(node: ASTNode, context: DirectiveContext): string
 ```
 
-#### Example
+Example implementation:
 
 ```typescript
 class UppercaseDirective extends BlockDirective {
   get name() { return 'uppercase'; }
-  
+
   execute(context: DirectiveContext): string {
     const content = this.renderChildren(context);
     return content.toUpperCase();
@@ -328,13 +289,11 @@ class UppercaseDirective extends BlockDirective {
 }
 ```
 
----
-
 ### ConditionalDirective
 
-Base class for conditional directives with branching.
+Base class for conditional directives with branching logic (like `@if`, `@each`, `@switch`).
 
-#### Abstract Methods
+**Abstract Methods (must be implemented)**
 
 ```typescript
 abstract get name(): string
@@ -342,20 +301,18 @@ abstract execute(context: DirectiveContext): string
 abstract evaluateCondition(context: DirectiveContext): boolean
 ```
 
-#### Methods
+**Methods**
 
 ```typescript
 shouldTerminateBody(directiveName: string): boolean
 handleChildDirective(name: string, parser: DirectiveParser, children: ASTNode[]): boolean
 ```
 
----
-
 ## Formatters
 
 ### OutputFormatter
 
-Interface for output formatters.
+Interface for output formatters that control how sections are rendered.
 
 ```typescript
 interface OutputFormatter {
@@ -365,21 +322,17 @@ interface OutputFormatter {
 }
 ```
 
----
-
 ### PlainFormatter
 
-Default plain text formatter (no special formatting).
+Default plain text formatter with no special formatting.
 
 ```typescript
 const formatter = new PlainFormatter();
 ```
 
----
-
 ### MarkdownFormatter
 
-Formats sections as Markdown headings.
+Formats sections as Markdown headings with automatic heading level tracking for nested sections.
 
 ```typescript
 const formatter = new MarkdownFormatter();
@@ -392,21 +345,17 @@ Output:
 Section content
 ```
 
----
-
 ### JSONFormatter
 
-Formats output as JSON.
+Formats output as JSON objects.
 
 ```typescript
 const formatter = new JSONFormatter();
 ```
 
----
-
 ### StructuredFormatter
 
-Formats sections with XML-style tags.
+Formats sections with XML-style tags for the top level and Markdown headings for nested sections.
 
 ```typescript
 const formatter = new StructuredFormatter();
@@ -419,13 +368,11 @@ Section content
 </section-name>
 ```
 
----
-
 ## File Systems
 
 ### FileSystem
 
-Interface for file system abstraction.
+Interface for file system abstraction, allowing both disk-based and in-memory file systems.
 
 ```typescript
 interface FileSystem {
@@ -435,22 +382,18 @@ interface FileSystem {
 }
 ```
 
----
-
 ### LocalFileSystem
 
-Node.js file system implementation.
+Node.js file system implementation for reading templates from disk.
 
 ```typescript
 const fs = new LocalFileSystem();
 const content = await fs.readFile('./template.aptl');
 ```
 
----
-
 ### ObjectFileSystem
 
-In-memory file system for testing.
+In-memory file system for testing and demos, where files are stored as JavaScript objects.
 
 ```typescript
 const fs = new ObjectFileSystem({
@@ -458,8 +401,6 @@ const fs = new ObjectFileSystem({
   'template2.aptl': '@section main\nOther\n@end'
 });
 ```
-
----
 
 ## Error Types
 
@@ -470,13 +411,11 @@ Thrown for syntax errors in templates.
 ```typescript
 class APTLSyntaxError extends Error {
   constructor(message: string, line?: number, column?: number)
-  
+
   line?: number
   column?: number
 }
 ```
-
----
 
 ### APTLRuntimeError
 
@@ -485,12 +424,10 @@ Thrown during template execution.
 ```typescript
 class APTLRuntimeError extends Error {
   constructor(message: string, context?: any)
-  
+
   context?: any
 }
 ```
-
----
 
 ### APTLValidationError
 
@@ -501,8 +438,6 @@ class APTLValidationError extends Error {
   constructor(message: string)
 }
 ```
-
----
 
 ## Type Definitions
 
@@ -533,7 +468,7 @@ interface DirectiveNode extends ASTNode {
 ### ASTNode
 
 ```typescript
-type ASTNode = 
+type ASTNode =
   | TextNode
   | VariableNode
   | DirectiveNode
@@ -557,8 +492,6 @@ interface CompiledTemplate {
   ast: ASTNode[];
 }
 ```
-
----
 
 ## Usage Examples
 
@@ -606,11 +539,9 @@ class CustomFormatter implements OutputFormatter {
 }
 
 // Use
-const engine = new APTLEngine('gpt-4', {
+const engine = new APTLEngine('gpt-5', {
   defaultFormatter: new CustomFormatter()
 });
 ```
-
----
 
 [← Examples](examples) | [Next: Best Practices →](best-practices)

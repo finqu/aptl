@@ -38,6 +38,7 @@ export class APTLEngine {
   constructor(model: string, options: APTLOptions = {}) {
     this.options = {
       strict: false,
+      allowUndefined: true,
       cache: true,
       ...options,
     };
@@ -48,13 +49,16 @@ export class APTLEngine {
     // Store file system if provided
     this.fileSystem = options.fileSystem;
 
-    this.tokenizer = new Tokenizer();
+    this.tokenizer = new Tokenizer({
+      strictMode: this.options.strict,
+    });
     this.parser = new Parser();
     this.helpers = options.helpers || {};
     this.formatterRegistry = new DefaultFormatterRegistry();
 
     this.compiler = new Compiler(this.tokenizer, this.parser, {
       strict: this.options.strict,
+      allowUndefined: this.options.allowUndefined,
       helpers: this.helpers,
       formatterRegistry: this.formatterRegistry,
       preserveWhitespace: this.options.preserveWhitespace || false,

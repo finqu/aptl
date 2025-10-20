@@ -105,8 +105,10 @@ describe('Compiler', () => {
   });
 
   describe('Compiler Options', () => {
-    it('should respect strict mode for undefined variables', async () => {
-      const strictCompiler = new Compiler(tokenizer, parser, { strict: true });
+    it('should throw error for undefined variables when allowUndefined is false', async () => {
+      const strictCompiler = new Compiler(tokenizer, parser, {
+        allowUndefined: false,
+      });
       const compiled = await strictCompiler.compile('Hello @{missing}!');
 
       expect(() => compiled.render({})).toThrow(APTLRuntimeError);
@@ -197,8 +199,10 @@ describe('Compiler', () => {
   });
 
   describe('Error Handling', () => {
-    it('should provide meaningful error messages', async () => {
-      const strictCompiler = new Compiler(tokenizer, parser, { strict: true });
+    it('should provide meaningful error messages for undefined variables', async () => {
+      const strictCompiler = new Compiler(tokenizer, parser, {
+        allowUndefined: false,
+      });
       const compiled = await strictCompiler.compile(
         'Hello @{missing.deeply.nested}!',
       );
@@ -234,22 +238,22 @@ describe('Compiler', () => {
 
   describe('Option Updates', () => {
     it('should allow updating options', () => {
-      expect(compiler.getOptions().strict).toBe(false);
+      expect(compiler.getOptions().allowUndefined).toBe(true);
 
-      compiler.updateOptions({ strict: true });
-      expect(compiler.getOptions().strict).toBe(true);
+      compiler.updateOptions({ allowUndefined: false });
+      expect(compiler.getOptions().allowUndefined).toBe(false);
     });
 
-    it('should update variable resolver when strict mode changes', async () => {
+    it('should update variable resolver when allowUndefined changes', async () => {
       const compiled = await compiler.compile('Hello @{missing}!');
 
-      // Should work in non-strict mode
+      // Should work when allowUndefined is true (default)
       expect(() => compiled.render({})).not.toThrow();
 
-      compiler.updateOptions({ strict: true });
+      compiler.updateOptions({ allowUndefined: false });
       const strictCompiled = await compiler.compile('Hello @{missing}!');
 
-      // Should throw in strict mode
+      // Should throw when allowUndefined is false
       expect(() => strictCompiled.render({})).toThrow();
     });
   });

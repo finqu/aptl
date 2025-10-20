@@ -7,11 +7,10 @@ import {
   CompiledTemplate,
   TemplateRegistryOptions,
   LoadOptions,
-} from '../core/types';
-import { APTLEngine } from '../core/engine';
-import { FileSystem } from '../filesystem/filesystem';
-import { ObjectFileSystem } from '../filesystem/object-filesystem';
-import { Compiler } from 'src/core/compiler';
+} from '@/core/types';
+import { FileSystem } from '@/filesystem/filesystem';
+import { ObjectFileSystem } from '@/filesystem/object-filesystem';
+import { Compiler } from '@/core/compiler';
 
 export interface TemplateRegistryConfig extends TemplateRegistryOptions {
   fileSystem?: FileSystem;

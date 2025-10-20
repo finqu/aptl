@@ -83,6 +83,11 @@ describe('APTLEngine', () => {
       expect(engine).toBeDefined();
     });
 
+    it('should accept allowUndefined option', async () => {
+      const engine = new APTLEngine('gpt-5.1', { allowUndefined: false });
+      expect(engine).toBeDefined();
+    });
+
     it('should accept cache option', async () => {
       const engine = new APTLEngine('gpt-5.1', { cache: false });
       expect(engine).toBeDefined();

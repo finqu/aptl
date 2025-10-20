@@ -25,7 +25,8 @@ import { Tokenizer } from './tokenizer';
 import { Parser } from './parser';
 
 export interface CompilerOptions {
-  strict?: boolean;
+  strict?: boolean; // Strict syntax checking
+  allowUndefined?: boolean; // Allow undefined variables (default: true)
   helpers?: Record<string, HelperFunction>;
   preserveWhitespace?: boolean;
   formatterRegistry?: FormatterRegistry;
@@ -45,6 +46,7 @@ export class Compiler {
   ) {
     this.options = {
       strict: false,
+      allowUndefined: true,
       helpers: {},
       preserveWhitespace: false,
       ...options,
@@ -54,8 +56,8 @@ export class Compiler {
       options.formatterRegistry || new DefaultFormatterRegistry();
 
     this.variableResolver = new VariableResolver({
-      allowUndefined: !this.options.strict,
-      defaultValue: this.options.strict ? undefined : '',
+      allowUndefined: this.options.allowUndefined ?? true,
+      defaultValue: this.options.allowUndefined !== false ? '' : undefined,
     });
     this.conditionalEvaluator = new ConditionalEvaluator();
   }
@@ -246,13 +248,11 @@ export class Compiler {
 
       return String(value);
     } catch (error) {
-      if (this.options.strict) {
-        throw new APTLRuntimeError(
-          `Failed to render variable '${node.path}': ${error instanceof Error ? error.message : 'Unknown error'}`,
-          { path: node.path, context: context.data },
-        );
-      }
-      return '';
+      // Re-throw errors from variable resolution (e.g., undefined variables when allowUndefined=false)
+      throw new APTLRuntimeError(
+        `Failed to render variable '${node.path}': ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { path: node.path, context: context.data },
+      );
     }
   }
 
@@ -425,11 +425,11 @@ export class Compiler {
   updateOptions(options: Partial<CompilerOptions>): void {
     this.options = { ...this.options, ...options };
 
-    // Update variable resolver if strict mode changed
-    if ('strict' in options) {
+    // Update variable resolver if allowUndefined changed
+    if ('allowUndefined' in options) {
       this.variableResolver = new VariableResolver({
-        allowUndefined: !this.options.strict,
-        defaultValue: this.options.strict ? undefined : '',
+        allowUndefined: this.options.allowUndefined ?? true,
+        defaultValue: this.options.allowUndefined !== false ? '' : undefined,
       });
     }
   }

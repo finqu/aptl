@@ -7,28 +7,12 @@ title: Best Practices
 
 Guidelines and recommendations for building effective, maintainable AI prompts using APTL.
 
-## Table of Contents
-
-- [Template Organization](#template-organization)
-- [Prompt Structure](#prompt-structure)
-- [Variable Management](#variable-management)
-- [Conditionals and Logic](#conditionals-and-logic)
-- [Template Inheritance](#template-inheritance)
-- [Performance](#performance)
-- [Testing and Validation](#testing-and-validation)
-- [Security](#security)
-- [Maintainability](#maintainability)
-
----
-
 ## Template Organization
 
-### Use Sections for Logical Grouping
-
-Organize your prompts into well-defined sections:
+Organize your prompts into well-defined sections using logical grouping. This makes prompts easier to understand, modify, and debug:
 
 ```aptl
-@section identity(role="system")
+@section identity
   // Agent's identity and role
 @end
 
@@ -49,11 +33,7 @@ Organize your prompts into well-defined sections:
 @end
 ```
 
-**Why:** This makes prompts easier to understand, modify, and debug.
-
-### Name Sections Clearly
-
-Use descriptive, consistent section names:
+Use descriptive, consistent section names for clarity:
 
 ✅ **Good:**
 ```aptl
@@ -69,9 +49,7 @@ Use descriptive, consistent section names:
 @section section1
 ```
 
-### Keep Templates Focused
-
-One template should serve one clear purpose.
+Keep your templates focused - one template should serve one clear purpose:
 
 ✅ **Good:**
 - `code-review-agent.aptl`
@@ -82,17 +60,13 @@ One template should serve one clear purpose.
 - `all-agents.aptl` (too broad)
 - `misc-templates.aptl` (unfocused)
 
----
-
 ## Prompt Structure
 
-### Follow a Consistent Pattern
-
-Use a standard structure across similar templates:
+Follow a standard structure across similar templates for consistency:
 
 ```aptl
 // 1. Identity - Who is the AI?
-@section identity(role="system")
+@section identity
   You are @{agentName}...
 @end
 
@@ -124,14 +98,12 @@ Use a standard structure across similar templates:
 @end
 ```
 
-### Start with Identity
-
 Always begin with a clear identity statement:
 
 ```aptl
-@section identity(role="system")
+@section identity
   You are @{agentName}, a @{agentRole} specialized in @{domain}.
-  
+
   @if expertise
     Your areas of expertise:
     @each area in expertise
@@ -141,9 +113,7 @@ Always begin with a clear identity statement:
 @end
 ```
 
-### Be Specific About Objectives
-
-Clearly state what you want the AI to accomplish:
+Be specific about what you want the AI to accomplish. Clearly state your objectives:
 
 ✅ **Good:**
 ```aptl
@@ -162,11 +132,9 @@ Clearly state what you want the AI to accomplish:
 @end
 ```
 
----
-
 ## Variable Management
 
-### Use Meaningful Variable Names
+Use meaningful variable names that clearly indicate their purpose:
 
 ✅ **Good:**
 ```aptl
@@ -182,9 +150,7 @@ Clearly state what you want the AI to accomplish:
 @{data1}
 ```
 
-### Always Provide Defaults
-
-Use default values for optional variables:
+Always provide default values for optional variables to ensure graceful fallback behavior:
 
 ```aptl
 Welcome, @{user.name|"Guest"}!
@@ -192,9 +158,7 @@ Timeout: @{config.timeout|30} seconds
 Theme: @{preferences.theme|"light"}
 ```
 
-### Validate Required Variables
-
-Check for required data before using it:
+Check for required data before using it to prevent errors:
 
 ```aptl
 @if user.name and user.email
@@ -208,7 +172,7 @@ Check for required data before using it:
 @end
 ```
 
-### Keep Data Structures Flat When Possible
+Keep data structures flat when possible, but use logical grouping when it helps clarity:
 
 ✅ **Good:**
 ```typescript
@@ -245,13 +209,9 @@ Check for required data before using it:
 }
 ```
 
----
-
 ## Conditionals and Logic
 
-### Keep Logic Simple
-
-Move complex logic to your data preparation, not your templates.
+Keep your template logic simple by moving complex calculations to your data preparation code:
 
 ✅ **Good:**
 ```typescript
@@ -276,7 +236,7 @@ const template = `
 @end
 ```
 
-### Use @elif for Multiple Conditions
+Use `@elif` for multiple conditions to create clear branching logic:
 
 ```aptl
 @if userLevel == "expert"
@@ -290,7 +250,7 @@ const template = `
 @end
 ```
 
-### Avoid Deeply Nested Conditionals
+Avoid deeply nested conditionals as they become hard to read and maintain:
 
 ✅ **Good:**
 ```aptl
@@ -318,11 +278,9 @@ const template = `
 @end
 ```
 
----
-
 ## Template Inheritance
 
-### Create Reusable Base Templates
+Create reusable base templates that can be extended by specialized templates:
 
 ```aptl
 // base-agent.aptl
@@ -341,7 +299,7 @@ const template = `
 @end
 ```
 
-### Use Override Strategically
+Use override attributes strategically to control how child templates modify parent sections:
 
 - **`override=true`** - Replace completely
 - **`prepend=true`** - Add before parent content
@@ -360,13 +318,11 @@ const template = `
   Medical-specific guidelines:
   • Use evidence-based information
   • Recommend professional consultation
-  
+
 @end
 ```
 
-### Mark Sections as Overridable
-
-Make it clear which sections children can customize:
+Mark sections as overridable to make it clear which sections children can customize:
 
 ```aptl
 @section identity(overridable=true)
@@ -378,11 +334,9 @@ Make it clear which sections children can customize:
 @end
 ```
 
----
-
 ## Performance
 
-### Compile Templates Once
+Compile templates once and render them multiple times for better performance:
 
 ```typescript
 // ✅ Good: Compile once, render many times
@@ -401,7 +355,7 @@ for (const data of dataArray) {
 }
 ```
 
-### Use Template Registry
+Use the template registry to load templates once and reuse them:
 
 ```typescript
 // ✅ Good: Load templates once
@@ -413,7 +367,7 @@ const template = registry.get('agent-prompt');
 const output = await template.render(data);
 ```
 
-### Cache Frequently Used Data
+Cache frequently used static data to avoid repeated processing:
 
 ```typescript
 // Prepare static data once
@@ -431,11 +385,9 @@ const output = await template.render({
 });
 ```
 
----
-
 ## Testing and Validation
 
-### Test with Edge Cases
+Test your templates with edge cases to ensure robust behavior:
 
 ```typescript
 // Test with empty data
@@ -451,7 +403,7 @@ await template.render(fullDataSet);
 await template.render({ name: 'User@123<>"' });
 ```
 
-### Validate Templates
+Validate templates to catch missing variables and other issues:
 
 ```typescript
 import { VariableResolver } from '@finqu/aptl';
@@ -469,7 +421,7 @@ if (missing.length > 0) {
 }
 ```
 
-### Use Type Safety
+Use TypeScript interfaces for type safety when rendering templates:
 
 ```typescript
 interface AgentData {
@@ -485,13 +437,9 @@ function renderAgent(data: AgentData): Promise<string> {
 }
 ```
 
----
-
 ## Security
 
-### Sanitize User Input
-
-Never directly inject untrusted user input:
+Never directly inject untrusted user input - always sanitize data first:
 
 ```typescript
 // ✅ Good: Sanitize input
@@ -505,7 +453,7 @@ const safeData = {
 await engine.render(template, safeData);
 ```
 
-### Validate Data Types
+Validate data types to ensure data matches expected schemas:
 
 ```typescript
 function validateData(data: any): boolean {
@@ -522,7 +470,7 @@ if (validateData(userData)) {
 }
 ```
 
-### Avoid Exposing Sensitive Information
+Avoid exposing sensitive information in your prompts:
 
 ```aptl
 // ❌ Avoid exposing sensitive data in prompts
@@ -538,15 +486,13 @@ if (validateData(userData)) {
 @end
 ```
 
----
-
 ## Maintainability
 
-### Comment Your Templates
+Add comments to your templates to explain their purpose and logic:
 
 ```aptl
 // Agent identity and capabilities
-@section identity(role="system")
+@section identity
   You are @{agentName}.
 @end
 
@@ -562,7 +508,7 @@ if (validateData(userData)) {
 @end
 ```
 
-### Version Your Templates
+Version your templates to track changes over time:
 
 ```aptl
 // Version: 2.1.0
@@ -574,7 +520,7 @@ if (validateData(userData)) {
 @end
 ```
 
-### Document Required Data
+Document required data at the top of your templates:
 
 ```aptl
 // Required data:
@@ -591,18 +537,16 @@ if (validateData(userData)) {
 @end
 ```
 
-### Use Consistent Formatting
+Use consistent formatting conventions:
 
 - Indent with 2 spaces
 - Use blank lines to separate sections
 - Keep line length reasonable (< 100 chars)
 - Use consistent naming conventions
 
----
-
 ## AI Prompt Engineering Specifics
 
-### Use Few-Shot Examples Effectively
+Use few-shot examples effectively to teach desired behavior patterns:
 
 ```aptl
 @examples
@@ -612,7 +556,7 @@ if (validateData(userData)) {
 @end
 ```
 
-### Be Explicit About Tone and Style
+Be explicit about tone and style to ensure appropriate communication:
 
 ```aptl
 @section tone
@@ -632,26 +576,26 @@ if (validateData(userData)) {
 @end
 ```
 
-### Specify Output Format
+Specify the exact output format you expect from the AI:
 
 ```aptl
 @section output_format
   Provide your response in this format:
-  
+
   **Summary**: [One sentence summary]
-  
+
   **Analysis**:
   - Point 1
   - Point 2
   - Point 3
-  
+
   **Recommendation**: [Actionable recommendation]
-  
+
   **Confidence**: [Low/Medium/High]
 @end
 ```
 
-### Include Constraints and Limitations
+Include clear constraints and limitations to define boundaries:
 
 ```aptl
 @section constraints
@@ -659,14 +603,12 @@ if (validateData(userData)) {
   • Keep responses under 500 words
   • Cite sources when making factual claims
   • Acknowledge when uncertain
-  
+
   You must not:
   • Make medical diagnoses
   • Provide financial advice
   • Share personal opinions on controversial topics
 @end
 ```
-
----
 
 [← API Reference](api-reference) | [Back to Home](index)

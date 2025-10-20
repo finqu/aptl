@@ -7,25 +7,14 @@ title: Examples
 
 Practical APTL templates for common AI prompt engineering use cases.
 
-## Table of Contents
-
-- [AI Agent System Prompts](#ai-agent-system-prompts)
-- [Code Review Agent](#code-review-agent)
-- [Customer Support Bot](#customer-support-bot)
-- [Content Generation](#content-generation)
-- [Few-Shot Learning](#few-shot-learning)
-- [Multi-Model Prompts](#multi-model-prompts)
-
----
-
 ## AI Agent System Prompts
 
 ### Basic Agent Identity
 
 ```aptl
-@section identity(role="system")
+@section identity
   You are @{agentName}, a @{agentRole} specialized in @{domain}.
-  
+
   @if credentials
     Your credentials and expertise:
     @each credential in credentials
@@ -36,7 +25,7 @@ Practical APTL templates for common AI prompt engineering use cases.
 
 @section objective
   Your primary goal is to @{primaryGoal}.
-  
+
   @if secondaryGoals
     Secondary objectives:
     @each goal in secondaryGoals
@@ -74,18 +63,16 @@ Practical APTL templates for common AI prompt engineering use cases.
 }
 ```
 
----
-
 ## Code Review Agent
 
 ```aptl
-@section identity(role="system")
+@section identity
   You are a senior code reviewer with expertise in @{language}.
 @end
 
 @section task
   Review the following code and provide feedback on:
-  
+
   @if reviewAspects
     @each aspect in reviewAspects
       - @{aspect}
@@ -117,17 +104,17 @@ Practical APTL templates for common AI prompt engineering use cases.
 
 @section format
   Provide your review in this format:
-  
+
   **Summary**: Brief overall assessment
-  
+
   **Issues**:
   @each issue in expectedIssueTypes
     - @{issue}
   @end
-  
+
   **Suggestions**:
   - Improvement recommendations
-  
+
   **Positive Aspects**:
   - What was done well
 @end
@@ -152,14 +139,12 @@ Practical APTL templates for common AI prompt engineering use cases.
 }
 ```
 
----
-
 ## Customer Support Bot
 
 ```aptl
-@section identity(role="system")
+@section identity
   You are @{botName}, a customer support assistant for @{companyName}.
-  
+
   @if supportedLanguages
     You can communicate in: @{supportedLanguages|"English"}
   @end
@@ -170,7 +155,7 @@ Practical APTL templates for common AI prompt engineering use cases.
   @each capability in capabilities
     • @{capability}
   @end
-  
+
   @if limitations
     You cannot:
     @each limitation in limitations
@@ -241,20 +226,18 @@ Practical APTL templates for common AI prompt engineering use cases.
 }
 ```
 
----
-
 ## Content Generation
 
 ### Blog Post Writer
 
 ```aptl
-@section identity(role="system")
+@section identity
   You are a professional content writer specializing in @{niche}.
 @end
 
 @section task
   Write a blog post about: @{topic}
-  
+
   Target audience: @{audience|"general readers"}
   Tone: @{tone|"informative"}
   Length: @{wordCount|"800-1000"} words
@@ -262,7 +245,7 @@ Practical APTL templates for common AI prompt engineering use cases.
 
 @section structure
   Follow this structure:
-  
+
   1. **Hook**: Engaging opening that captures attention
   2. **Introduction**: Context and why this matters
   3. **Main Content**:
@@ -290,14 +273,12 @@ Practical APTL templates for common AI prompt engineering use cases.
 @end
 ```
 
----
-
 ## Few-Shot Learning
 
 ### Text Classification
 
 ```aptl
-@section identity(role="system")
+@section identity
   You are a text classifier that categorizes customer feedback.
 @end
 
@@ -318,7 +299,7 @@ Practical APTL templates for common AI prompt engineering use cases.
 
 @section task
   Classify this feedback: "@{input}"
-  
+
   Respond with:
   - Category: [category name]
   - Confidence: [0.0-1.0]
@@ -340,14 +321,12 @@ Practical APTL templates for common AI prompt engineering use cases.
 }
 ```
 
----
-
 ## Multi-Model Prompts
 
 ### Template with Model-Specific Formatting
 
 ```aptl
-@section identity(role="system", model="gpt-4")
+@section identity(role="system", model="gpt-5")
   You are an AI assistant with deep knowledge in @{domain}.
 @end
 
@@ -373,24 +352,22 @@ Practical APTL templates for common AI prompt engineering use cases.
 
 @section output_format(format="markdown")
   Provide your response in this format:
-  
+
   ## Analysis
-  
+
   [Your analysis here]
-  
+
   ## Key Points
-  
+
   - Point 1
   - Point 2
   - Point 3
-  
+
   ## Recommendations
-  
+
   [Actionable recommendations]
 @end
 ```
-
----
 
 ## Template Inheritance Example
 
@@ -425,7 +402,7 @@ Practical APTL templates for common AI prompt engineering use cases.
 
 @section identity(override=true)
   You are a specialized medical information assistant.
-  
+
   **Important**: You provide information only. Always recommend consulting healthcare professionals for medical decisions.
 @end
 
@@ -434,15 +411,13 @@ Practical APTL templates for common AI prompt engineering use cases.
   • Use evidence-based information
   • Avoid definitive diagnoses
   • Recommend professional consultation
-  
+
 @end
 
-@section medical_disclaimer(new=true)
+@section medical_disclaimer
   **Disclaimer**: This information is for educational purposes only and not a substitute for professional medical advice.
 @end
 ```
-
----
 
 ## Integration Examples
 
@@ -453,7 +428,7 @@ import { APTLEngine } from '@finqu/aptl';
 import { ChatOpenAI } from 'langchain/chat_models/openai';
 import { SystemMessage } from 'langchain/schema';
 
-const engine = new APTLEngine('gpt-4');
+const engine = new APTLEngine('gpt-5');
 const template = `...`; // Your APTL template
 
 const systemPrompt = await engine.render(template, data);
@@ -470,21 +445,19 @@ const response = await chat.call([
 import { APTLEngine } from '@finqu/aptl';
 import OpenAI from 'openai';
 
-const engine = new APTLEngine('gpt-4');
+const engine = new APTLEngine('gpt-5');
 const template = `...`; // Your APTL template
 
 const systemPrompt = await engine.render(template, data);
 const openai = new OpenAI();
 
 const completion = await openai.chat.completions.create({
-  model: 'gpt-4',
+  model: 'gpt-5',
   messages: [
     { role: 'system', content: systemPrompt },
     // ... other messages
   ],
 });
 ```
-
----
 
 [← Advanced Features](advanced-features) | [Next: API Reference →](api-reference)

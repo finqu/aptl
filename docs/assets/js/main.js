@@ -104,7 +104,7 @@
     if (!tocContent || !contentWrapper) return;
 
     // Get all headings (h2-h4)
-    const headings = contentWrapper.querySelectorAll('h2, h3, h4');
+    const headings = contentWrapper.querySelectorAll('h2');
 
     if (headings.length === 0) {
       tocContent.innerHTML =
@@ -166,9 +166,7 @@
   // ==========================================
   function initTOCActiveState() {
     const tocLinks = document.querySelectorAll('.toc-link');
-    const headings = document.querySelectorAll(
-      '.content-wrapper h2, .content-wrapper h3, .content-wrapper h4',
-    );
+    const headings = document.querySelectorAll('.content-wrapper h2');
 
     if (tocLinks.length === 0 || headings.length === 0) return;
 
@@ -226,13 +224,12 @@
   }
 
   // ==========================================
-  // Syntax Highlighting
+  // Syntax Highlighting with Prism.js
   // ==========================================
   function initSyntaxHighlighting() {
-    if (typeof hljs !== 'undefined') {
-      document.querySelectorAll('pre code').forEach((block) => {
-        hljs.highlightElement(block);
-      });
+    if (typeof Prism !== 'undefined') {
+      // Prism automatically highlights on page load, but we can force re-highlight if needed
+      Prism.highlightAll();
     }
   }
 

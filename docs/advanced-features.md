@@ -7,24 +7,13 @@ title: Advanced Features
 
 Learn about APTL's advanced capabilities for building sophisticated AI prompt templates.
 
-## Table of Contents
-
-- [Template Inheritance](#template-inheritance)
-- [Output Formatters](#output-formatters)
-- [Template Registry](#template-registry)
-- [Variable Resolution](#variable-resolution)
-- [Error Handling](#error-handling)
-- [Custom Directives](#custom-directives)
-
----
 
 ## Template Inheritance
 
-Template inheritance allows you to create reusable base templates that child templates can extend and customize.
+Template inheritance allows you to create reusable base templates that child templates can extend and customize. This is one of APTL's most powerful features for building modular, maintainable prompt templates.
 
-### Basic Inheritance
+Here's a simple example of a base template that defines the structure:
 
-**Base template (base.aptl):**
 ```aptl
 @section identity(overridable=true)
   You are an AI assistant.
@@ -40,7 +29,8 @@ Template inheritance allows you to create reusable base templates that child tem
 @end
 ```
 
-**Child template:**
+A child template can extend it and customize specific sections:
+
 ```aptl
 @extends "base.aptl"
 
@@ -49,11 +39,9 @@ Template inheritance allows you to create reusable base templates that child tem
 @end
 ```
 
-### Section Merge Strategies
+**Section Merge Strategies**
 
-#### Override
-
-Completely replace the parent's section:
+When a child template extends a parent, you can control how sections are combined using different attributes. To completely replace the parent's section, use `override`:
 
 ```aptl
 @section name(override=true)
@@ -61,9 +49,7 @@ Completely replace the parent's section:
 @end
 ```
 
-#### Prepend
-
-Add content before the parent's section:
+To add content before the parent's section, use `prepend`:
 
 ```aptl
 @section name(prepend=true)
@@ -71,11 +57,9 @@ Add content before the parent's section:
 @end
 ```
 
-**Result:** Child content + Parent content
+This produces: Child content + Parent content
 
-#### Append
-
-Add content after the parent's section:
+To add content after the parent's section, use `append`:
 
 ```aptl
 @section name(append=true)
@@ -83,30 +67,18 @@ Add content after the parent's section:
 @end
 ```
 
-**Result:** Parent content + Child content
+This produces: Parent content + Child content
 
-#### New Section
+**Multi-Level Inheritance**
 
-Create a new section that doesn't exist in parent:
+APTL supports inheritance chains, allowing you to build complex template hierarchies. Here's how it works across three levels:
 
-```aptl
-@section newSection(new=true)
-  This is a brand new section
-@end
-```
-
-### Multi-Level Inheritance
-
-APTL supports inheritance chains:
-
-**grandparent.aptl:**
 ```aptl
 @section base
   Base content
 @end
 ```
 
-**parent.aptl:**
 ```aptl
 @extends "grandparent.aptl"
 
@@ -115,7 +87,6 @@ APTL supports inheritance chains:
 @end
 ```
 
-**child.aptl:**
 ```aptl
 @extends "parent.aptl"
 
@@ -124,24 +95,20 @@ APTL supports inheritance chains:
 @end
 ```
 
-**Output:**
+This produces:
 ```
 Base content
 Parent addition
 Child addition
 ```
 
----
-
 ## Output Formatters
 
-Control how sections are formatted in the output.
+Control how sections are formatted in the output. APTL provides several built-in formatters that automatically handle section formatting, including intelligent heading level management for nested sections.
 
-### Available Formatters
+**Plain Formatter (Default)**
 
-#### Plain (Default)
-
-No special formatting:
+The plain formatter outputs content without any special formatting:
 
 ```aptl
 @section name
@@ -154,13 +121,17 @@ Output:
 Content
 ```
 
-#### Markdown
+**Markdown Formatter**
 
-Format as Markdown:
+The Markdown formatter automatically adds heading markers based on the section name and intelligently tracks heading levels for nested sections:
 
 ```aptl
 @section documentation(format="markdown")
-  Content here
+  This is the main documentation section.
+
+  @section subsection
+    This subsection gets the appropriate heading level.
+  @end
 @end
 ```
 
@@ -168,12 +139,18 @@ Output:
 ```markdown
 ## Documentation
 
-Content here
+This is the main documentation section.
+
+### Subsection
+
+This subsection gets the appropriate heading level.
 ```
 
-#### JSON
+The formatter automatically increments heading levels for nested sections, ensuring proper Markdown hierarchy.
 
-Format as JSON:
+**JSON Formatter**
+
+Format sections as JSON objects:
 
 ```aptl
 @section data(format="json")
@@ -188,36 +165,48 @@ Output:
 }
 ```
 
-#### Structured
+**Structured Formatter**
 
-Format with XML-style tags:
+The structured formatter works similarly to the Markdown formatter but wraps the top-level section in XML-style tags while using Markdown headings for nested sections:
 
 ```aptl
 @section info(format="structured")
-  Content
+  Main content here.
+
+  @section details
+    Detailed information.
+  @end
 @end
 ```
 
 Output:
 ```xml
 <info>
-Content
+Main content here.
+
+## Details
+
+Detailed information.
 </info>
 ```
 
-### Setting Default Formatter
+This makes it easy to combine the structure of XML with the readability of Markdown for nested content.
+
+**Setting Default Formatter**
+
+You can configure a default formatter for your engine:
 
 ```typescript
 import { APTLEngine, MarkdownFormatter } from '@finqu/aptl';
 
-const engine = new APTLEngine('gpt-4', {
+const engine = new APTLEngine('gpt-5', {
   defaultFormatter: new MarkdownFormatter()
 });
 ```
 
-### Custom Formatters
+**Custom Formatters**
 
-Create custom output formatters:
+Create custom output formatters by implementing the `OutputFormatter` interface:
 
 ```typescript
 import { OutputFormatter } from '@finqu/aptl';
@@ -233,19 +222,17 @@ class CustomFormatter implements OutputFormatter {
 }
 ```
 
----
-
 ## Template Registry
 
-Manage and organize multiple templates.
+Manage and organize multiple templates with the Template Registry. This powerful feature allows you to load templates from directories, register them programmatically, and manage template collections efficiently.
 
-### Basic Usage
+Here's how to set up and use the template registry:
 
 ```typescript
 import { APTLEngine, TemplateRegistry } from '@finqu/aptl';
 import { LocalFileSystem } from '@finqu/aptl/local-filesystem';
 
-const engine = new APTLEngine('gpt-4');
+const engine = new APTLEngine('gpt-5');
 const fileSystem = new LocalFileSystem('./templates');
 const registry = new TemplateRegistry(engine, { fileSystem });
 
@@ -263,7 +250,7 @@ const output = await template.render({
 });
 ```
 
-### Register Templates Programmatically
+You can also register templates programmatically without loading from files:
 
 ```typescript
 registry.register('welcome', `
@@ -273,14 +260,14 @@ registry.register('welcome', `
 `);
 ```
 
-### List Templates
+To see what templates are available, list them:
 
 ```typescript
 const templateNames = registry.list();
 console.log('Available templates:', templateNames);
 ```
 
-### Check Template Existence
+Check if a specific template exists before using it:
 
 ```typescript
 if (registry.has('my-template')) {
@@ -289,23 +276,21 @@ if (registry.has('my-template')) {
 }
 ```
 
-### Unregister Templates
+Remove templates when you no longer need them:
 
 ```typescript
 registry.unregister('template-name');
 ```
 
-### Refresh Templates
-
-Reload templates from tracked directories:
+Reload templates from tracked directories to pick up changes:
 
 ```typescript
 await registry.refresh();
 ```
 
-### In-Memory File System
+**In-Memory File System**
 
-For testing or demos, use the in-memory file system:
+For testing or demos, use the in-memory file system instead of loading from disk:
 
 ```typescript
 import { ObjectFileSystem } from '@finqu/aptl';
@@ -318,15 +303,11 @@ const fileSystem = new ObjectFileSystem({
 const registry = new TemplateRegistry(engine, fileSystem);
 ```
 
----
-
 ## Variable Resolution
 
-Advanced variable resolution features.
+Advanced variable resolution features for accessing and validating template data.
 
-### Path Resolution
-
-The variable resolver supports complex paths with default values:
+The variable resolver is the engine that powers APTL's data access, supporting complex paths with dot notation, bracket notation, and default values. Here's how to use it programmatically:
 
 ```typescript
 import { VariableResolver } from '@finqu/aptl';
@@ -361,7 +342,7 @@ resolver.resolve('config.timeout|30', data); // 30 (uses default)
 resolver.resolve('settings.debug|false', data); // false (uses default)
 ```
 
-### Default Value Types
+**Default Value Types**
 
 The resolver supports multiple default value types:
 
@@ -369,14 +350,14 @@ The resolver supports multiple default value types:
 - **Numbers**: `@{var|42}` or `@{var|3.14}`
 - **Booleans**: `@{var|true}` or `@{var|false}`
 
-**Important:**
+**Important notes:**
 - String defaults require quotes: `|"value"` not `|value`
 - Default is only used when variable is `undefined` or `null`
 - Empty strings `""` and zero `0` are valid values and won't trigger defaults
 
-### Extract All Variables
+**Extract All Variables**
 
-Extract all variable references from a template:
+You can extract all variable references from a template string:
 
 ```typescript
 const template = `
@@ -389,16 +370,14 @@ const variables = resolver.extractVariables(template);
 // ['user.name', 'user.email', 'items[0].name']
 ```
 
-### Check Variable Existence
+Check if a variable path exists in your data:
 
 ```typescript
 const exists = resolver.exists('user.profile.name', data); // true
 const missing = resolver.exists('user.invalid.path', data); // false
 ```
 
-### Validate Template Variables
-
-Check if all variables in a template exist in data:
+Validate that all variables in a template exist in your data:
 
 ```typescript
 const template = `@{user.name} - @{user.email}`;
@@ -408,17 +387,13 @@ const missingVars = resolver.validateTemplate(template, data);
 // ['user.email']
 ```
 
----
-
 ## Error Handling
 
-APTL provides specific error types for different failure scenarios.
+APTL provides specific error types for different failure scenarios, making it easier to handle and debug issues.
 
-### Error Types
+**APTLSyntaxError**
 
-#### APTLSyntaxError
-
-Thrown when template syntax is invalid:
+This error is thrown when template syntax is invalid:
 
 ```typescript
 import { APTLSyntaxError } from '@finqu/aptl';
@@ -433,9 +408,9 @@ try {
 }
 ```
 
-#### APTLRuntimeError
+**APTLRuntimeError**
 
-Thrown during template execution:
+This error is thrown during template execution:
 
 ```typescript
 import { APTLRuntimeError } from '@finqu/aptl';
@@ -450,9 +425,9 @@ try {
 }
 ```
 
-#### APTLValidationError
+**APTLValidationError**
 
-Thrown when template validation fails:
+This error is thrown when template validation fails:
 
 ```typescript
 import { APTLValidationError } from '@finqu/aptl';
@@ -466,7 +441,9 @@ try {
 }
 ```
 
-### Error Recovery
+**Error Recovery**
+
+Here's a pattern for comprehensive error handling:
 
 ```typescript
 try {
@@ -486,19 +463,17 @@ try {
 }
 ```
 
----
-
 ## Custom Directives
 
-Extend APTL with custom directives.
+Extend APTL with custom directives to add new functionality tailored to your needs. APTL provides three base classes for different directive types, making it easy to create directives that fit seamlessly into the template system.
 
-### Directive Base Classes
+**Directive Base Classes:**
 
-- **`InlineDirective`** - No body (e.g., `@extends`, `@include`)
-- **`BlockDirective`** - Has `@end` terminator (e.g., `@section`)
-- **`ConditionalDirective`** - Block with branching (e.g., `@if`, `@each`)
+- **`InlineDirective`** - No body, single-line directives (e.g., `@extends`, `@include`, `@timestamp`)
+- **`BlockDirective`** - Has `@end` terminator for multi-line content (e.g., `@section`, `@uppercase`)
+- **`ConditionalDirective`** - Block with branching logic (e.g., `@if`, `@each`, `@switch`)
 
-### Creating a Simple Inline Directive
+Here's a simple inline directive that outputs the current timestamp:
 
 ```typescript
 import { InlineDirective, DirectiveContext } from '@finqu/aptl';
@@ -514,12 +489,12 @@ class TimestampDirective extends InlineDirective {
 }
 ```
 
-Usage:
+Usage in a template:
 ```aptl
 Current time: @timestamp
 ```
 
-### Creating a Block Directive
+Block directives can process multi-line content. Here's a directive that converts its content to uppercase:
 
 ```typescript
 import { BlockDirective, DirectiveContext } from '@finqu/aptl';
@@ -536,19 +511,21 @@ class UppercaseDirective extends BlockDirective {
 }
 ```
 
-Usage:
+Usage in a template:
 ```aptl
 @uppercase
   this will be uppercase
 @end
 ```
 
-### Registering Custom Directives
+**Registering Custom Directives**
+
+After creating a custom directive, you need to register it with both the directive registry and the tokenizer:
 
 ```typescript
 import { APTLEngine } from '@finqu/aptl';
 
-const engine = new APTLEngine('gpt-4');
+const engine = new APTLEngine('gpt-5');
 const directive = new TimestampDirective();
 
 // Register with both registry and tokenizer
@@ -556,7 +533,9 @@ engine.directiveRegistry.register(directive);
 engine.tokenizer.registerDirective(directive.name);
 ```
 
-### Advanced: Directive with Arguments
+**Directive with Arguments**
+
+For more advanced use cases, you can create directives that accept and parse arguments:
 
 ```typescript
 class RepeatDirective extends BlockDirective {
@@ -577,20 +556,16 @@ class RepeatDirective extends BlockDirective {
 }
 ```
 
-Usage:
+Usage in a template:
 ```aptl
 @repeat 3
   Repeated line
 @end
 ```
 
-Output:
+This produces the output:
 ```
 Repeated line
 Repeated line
 Repeated line
 ```
-
----
-
-[← Directives](directives) | [Next: Examples →](examples)
