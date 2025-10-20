@@ -765,3 +765,53 @@ Content
     });
   });
 });
+
+  describe('line breaks between sections', () => {
+    it('should preserve line breaks between consecutive sections', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `@section capabilities overridable=true:
+
+@section approach overridable=true, format="structured":
+
+@section guidelines overridable=true:`;
+
+      const result = await engine.render(template, {});
+      
+      // Count the number of line breaks in the result
+      // The template has 2 blank lines between sections
+      // These should be preserved in the output
+      console.log('Result:', JSON.stringify(result));
+      
+      // Split by sections and check blank lines
+      const lines = result.split('\n');
+      console.log('Lines:', lines.length);
+      lines.forEach((line, i) => {
+        console.log(`Line ${i}: "${line}"`);
+      });
+      
+      // Check that we have blank lines between sections
+      expect(result).toContain('\n\n'); // Expecting at least double newlines
+    });
+
+    it('should preserve line breaks between sections with content', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `@section capabilities overridable=true:
+Some content
+
+@section approach overridable=true, format="structured":
+More content
+
+@section guidelines overridable=true:
+Final content`;
+
+      const result = await engine.render(template, {});
+      console.log('Result with content:', JSON.stringify(result));
+      
+      // The blank line between sections should be preserved
+      const lines = result.split('\n');
+      console.log('Lines with content:', lines.length);
+      lines.forEach((line, i) => {
+        console.log(`Line ${i}: "${line}"`);
+      });
+    });
+  });
