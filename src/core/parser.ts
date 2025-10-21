@@ -196,6 +196,11 @@ export class Parser implements DirectiveParser {
         children.push(inlineBody);
       }
 
+      // Consume the newline after the inline directive to normalize spacing behavior
+      if (!this.isAtEnd() && this.peek().type === TokenType.NEWLINE) {
+        this.advance();
+      }
+
       return {
         type: NodeType.DIRECTIVE,
         name: directiveName,
@@ -268,6 +273,11 @@ export class Parser implements DirectiveParser {
     // Consume @end if present (some directives like extends might not have @end)
     if (this.peek().type === TokenType.END) {
       this.advance(); // consume @end
+
+      // Consume the newline after @end to normalize spacing behavior
+      if (!this.isAtEnd() && this.peek().type === TokenType.NEWLINE) {
+        this.advance();
+      }
     }
 
     return {

@@ -113,10 +113,11 @@ export class Compiler {
     return {
       render: (data: Record<string, any>) => {
         try {
-          // Inject formatter registry into data context for section directive
+          // Inject formatter registry and preserveWhitespace option into data context for directives
           const dataWithRegistry = {
             ...data,
             __formatterRegistry__: this.formatterRegistry,
+            __preserveWhitespace__: this.options.preserveWhitespace,
           };
 
           const context: RenderContext = {
@@ -165,11 +166,10 @@ export class Compiler {
       .map((line) =>
         line.replace(/^[ \t]+|[ \t]+$/g, '').replace(/[ \t]+/g, ' '),
       ) // Clean each line individually
-      .join('\n')
-      .trim(); // Rejoin with newlines
-    // .replace(/\n{3,}/g, '\n\n') // Collapse multiple empty lines to maximum 2
-    // .replace(/^\n+/, '') // Remove leading newlines
-    // .replace(/\n+$/, '\n'); // Single trailing newline
+      .join('\n') // Rejoin with newlines
+      .replace(/\n{3,}/g, '\n\n') // Collapse multiple empty lines to maximum 2
+      .replace(/^\n+/, '') // Remove leading newlines
+      .replace(/\n+$/, '\n'); // Single trailing newline
   }
 
   private renderNode(

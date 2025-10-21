@@ -323,6 +323,13 @@ export class SectionDirective extends BlockDirective {
       );
     }
 
+    // For inline sections, add a trailing newline to match block section behavior
+    // Block sections have the newline after @end preserved as a TEXT node
+    // Inline sections need to add it explicitly
+    if (context.node.isInline) {
+      return sectionContent + '\n';
+    }
+
     return sectionContent;
   }
 
@@ -365,8 +372,16 @@ export class SectionDirective extends BlockDirective {
       children: children.length > 0 ? children : undefined,
     };
 
+    // Check if whitespace preservation is enabled
+    const preserveWhitespace = context.data.__preserveWhitespace__ as boolean;
+
     // Format using the formatter
-    // Add a trailing newline to preserve spacing between sections
-    return formatter.formatSection(section) + '\n';
+    // Add two newlines to preserve spacing between sections
+    // (parser consumes one newline after directives, so we add two to get one blank line)
+    // But only if whitespace is NOT being preserved (when preserveWhitespace is true,
+    // the original newlines are kept and cleanWhitespace doesn't run)
+    return (
+      formatter.formatSection(section) + (preserveWhitespace ? '' : '\n\n')
+    );
   }
 }
