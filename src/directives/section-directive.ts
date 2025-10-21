@@ -366,6 +366,7 @@ export class SectionDirective extends BlockDirective {
     };
 
     // Format using the formatter
-    return formatter.formatSection(section);
+    // Add a trailing newline to preserve spacing between sections
+    return formatter.formatSection(section) + '\n';
   }
 }
