@@ -325,12 +325,17 @@ content2
       const template = `
 @section intro format="markdown"
 Introduction text
+@section nestedIntro format="markdown"
+Intro of nested section
+@end
 @end
             `.trim();
 
       const result = await engine.render(template);
-      expect(result).toContain('## Intro');
+      expect(result).toContain('# Intro');
       expect(result).toContain('Introduction text');
+      expect(result).toContain('## NestedIntro');
+      expect(result).toContain('Intro of nested section');
     });
 
     it('should render section with json format', async () => {
@@ -479,7 +484,7 @@ This is the introduction
             `.trim();
 
       const result = await engine.render(template);
-      expect(result).toContain('## Welcome to APTL');
+      expect(result).toContain('# Welcome to APTL');
       expect(result).toContain('This is the introduction');
       expect(result).not.toContain('## Intro');
     });
@@ -761,7 +766,7 @@ Content
       expect(result).not.toContain('Identity spec from base');
 
       // Should still be formatted with markdown
-      expect(result).toContain('## Identity');
+      expect(result).toContain('# Identity');
     });
   });
 });

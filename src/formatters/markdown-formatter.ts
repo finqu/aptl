@@ -10,7 +10,7 @@ export class MarkdownFormatter implements OutputFormatter {
     return sections.map((section) => this.formatSection(section)).join('\n\n');
   }
 
-  formatSection(section: Section, level: number = 2): string {
+  formatSection(section: Section, level: number = 1): string {
     const titleAttr = section.attributes.title;
     let result = '';
 
