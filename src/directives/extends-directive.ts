@@ -58,7 +58,7 @@ export function normalizeTemplatePath(path: string): string {
 }
 
 /**
- * Extract section nodes from the current template's AST
+ * Extract section nodes from the current template's AST (only top-level sections)
  */
 function extractChildSections(templateNode: any): Map<string, SectionInfo> {
   const sections = new Map<string, SectionInfo>();
@@ -243,8 +243,13 @@ export class ExtendsDirective extends InlineDirective {
         override?: boolean;
         prepend?: boolean;
         append?: boolean;
+        attributes?: Record<string, any>; // Add attributes from child section
       }
     > = {};
+
+    // Track which sections are being completely replaced (not prepend/append)
+    // This is used to skip rendering of nested sections in the parent template
+    const replacedSections = new Set<string>();
 
     for (const [name, section] of childSections) {
       // Render the current section's children
@@ -262,6 +267,9 @@ export class ExtendsDirective extends InlineDirective {
       // Restore original level
       context.data.__sectionLevel__ = originalLevel;
 
+      // Get the child section's attributes
+      const childAttributes = section.node.parsedArgs?.attributes || {};
+
       // Check if there's already an override from a deeper child
       if (existingOverrides && existingOverrides[name]) {
         const existingOverride = existingOverrides[name];
@@ -275,6 +283,7 @@ export class ExtendsDirective extends InlineDirective {
             override: section.override,
             prepend: true,
             append: section.append,
+            attributes: childAttributes,
           };
         }
         // If both use append, chain them: existing appends to current
@@ -285,11 +294,16 @@ export class ExtendsDirective extends InlineDirective {
             override: section.override,
             prepend: section.prepend,
             append: true,
+            attributes: childAttributes,
           };
         }
         // Otherwise, just pass through the existing override
         else {
           sectionOverrides[name] = existingOverride;
+          // Mark as replaced if it's a complete override
+          if (!existingOverride.prepend && !existingOverride.append) {
+            replacedSections.add(name);
+          }
         }
       } else {
         // No existing override - use current content
@@ -299,15 +313,23 @@ export class ExtendsDirective extends InlineDirective {
           override: section.override,
           prepend: section.prepend,
           append: section.append,
+          attributes: childAttributes,
         };
+
+        // Mark as replaced if it's a complete override (not prepend/append)
+        if (!section.prepend && !section.append) {
+          replacedSections.add(name);
+        }
       }
     }
 
     // Render the parent template with section overrides in the data context
     // The section directive will check for __sectionOverrides__ in the data
+    // Also pass __replacedSections__ so nested sections can check if their parent was replaced
     const extendedData = {
       ...context.data,
       __sectionOverrides__: sectionOverrides,
+      __replacedSections__: replacedSections,
     };
 
     let output = parentTemplate.render(extendedData);

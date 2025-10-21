@@ -802,25 +802,25 @@ Content 3
   it('should preserve line breaks between mixed sections (formatted and non-formatted)', async () => {
     const engine = new APTLEngine('gpt-5.1');
     const template = `@section capabilities overridable=true
-Help merchants succeed
+Help users succeed
 @end
 
 @section approach overridable=true, format="structured"
-## Platform Guidance
+## Guidance
 - Instructions
 @end
 
 @section guidelines overridable=true
-## Available Analytics
-Access to: sales, revenue
+## Available Resources
+Access to: data, reports
 @end`;
 
     const result = await engine.render(template);
 
     // Check that there's a blank line between capabilities and approach
-    expect(result).toContain('Help merchants succeed\n\n<approach>');
+    expect(result).toContain('Help users succeed\n\n<approach>');
     // Check that there's a blank line between approach and guidelines
-    expect(result).toContain('</approach>\n\n## Available Analytics');
+    expect(result).toContain('</approach>\n\n## Available Resources');
   });
 
   it('should handle multiple consecutive formatted sections correctly', async () => {
@@ -848,24 +848,24 @@ Third section content
   it('should not duplicate content before @if directive in nested sections', async () => {
     const engine = new APTLEngine('gpt-5.1');
     const template = `@section platform-context format="md" title="Platform Context"
-  - The merchant uses the Finqu commerce platform
-  - All guidance should be tailored to Finqu's features and workflows
+  - The user is working with the application platform
+  - All guidance should be tailored to the platform's features and workflows
   - Never suggest alternative platforms or ask which platform they use
 
   @section interface-context format="md" title="Interface Context"
     - Communicate exclusively in en
 
-    @if merchantLocale
-      - Locale: @{merchantLocale}
+    @if userLocale
+      - Locale: @{userLocale}
     @end
-    @if merchantTimezone
-      - Timezone: @{merchantTimezone}
+    @if userTimezone
+      - Timezone: @{userTimezone}
     @end
   @end
 @end`;
 
     const data = {
-      // merchantLocale and merchantTimezone are not provided, so @if blocks should not render
+      // userLocale and userTimezone are not provided, so @if blocks should not render
     };
 
     const result = await engine.render(template, data);

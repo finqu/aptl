@@ -161,6 +161,21 @@ export class SectionDirective extends BlockDirective {
   ): Section[] {
     const children: Section[] = [];
 
+    // Get section overrides from context for nested section replacement
+    const sectionOverrides = context.data.__sectionOverrides__ as
+      | Record<
+          string,
+          {
+            content: string;
+            overridable?: boolean;
+            override?: boolean;
+            prepend?: boolean;
+            append?: boolean;
+            attributes?: Record<string, any>;
+          }
+        >
+      | undefined;
+
     for (const child of node.children) {
       if (
         child.type === NodeType.DIRECTIVE &&
@@ -185,23 +200,64 @@ export class SectionDirective extends BlockDirective {
           parentLevel + 1,
         );
 
-        // Render the child section's content (excluding nested @section directives)
-        // This prevents double-rendering of deeply nested sections
-        const childContent = childDirectiveNode.children
-          .filter(
-            (c) =>
-              !(
-                c.type === NodeType.DIRECTIVE &&
-                (c as DirectiveNode).name === 'section'
-              ),
-          )
-          .map((c) => (context.renderNode ? context.renderNode(c) : ''))
-          .join('');
+        // Check if there's an override for this nested section
+        let childContent: string;
+        let effectiveAttributes = childAttributes; // Use parent's attributes by default
+        if (sectionOverrides && sectionOverrides[childName]) {
+          const override = sectionOverrides[childName];
+          // Use the override content instead of rendering from the parent's AST
+          // This handles the case where a child template has a top-level section
+          // that overrides a nested section in the parent template
+          if (override.prepend || override.append) {
+            // For prepend/append, render original and combine with override
+            const originalContent = childDirectiveNode.children
+              .filter(
+                (c) =>
+                  !(
+                    c.type === NodeType.DIRECTIVE &&
+                    (c as DirectiveNode).name === 'section'
+                  ),
+              )
+              .map((c) => (context.renderNode ? context.renderNode(c) : ''))
+              .join('');
+
+            childContent = override.prepend
+              ? override.content + '\n' + originalContent
+              : originalContent + '\n' + override.content;
+          } else {
+            // Complete override - use child's content AND attributes
+            childContent = override.content;
+            // Use child's attributes instead of parent's to avoid inheriting format
+            effectiveAttributes = override.attributes || {};
+
+            // If the child's override doesn't have a 'format' attribute but the parent did,
+            // set title=false to prevent the formatter from adding a heading
+            if (!effectiveAttributes.format && childAttributes.format) {
+              effectiveAttributes = { ...effectiveAttributes, title: 'false' };
+            }
+          }
+        } else {
+          // No override - render the child section's content (excluding nested @section directives)
+          // This prevents double-rendering of deeply nested sections
+          childContent = childDirectiveNode.children
+            .filter(
+              (c) =>
+                !(
+                  c.type === NodeType.DIRECTIVE &&
+                  (c as DirectiveNode).name === 'section'
+                ),
+            )
+            .map((c) => (context.renderNode ? context.renderNode(c) : ''))
+            .join('');
+        }
 
         // Create Section object for this child with level information
         const childSection: Section = {
           name: childName,
-          attributes: { ...childAttributes, __level: String(parentLevel + 1) },
+          attributes: {
+            ...effectiveAttributes,
+            __level: String(parentLevel + 1),
+          },
           content: childContent.trim(),
           children: nestedChildren.length > 0 ? nestedChildren : undefined,
         };
@@ -227,9 +283,27 @@ export class SectionDirective extends BlockDirective {
     // Get current section nesting level (defaults to 0 for root level)
     const currentLevel = (context.data.__sectionLevel__ as number) || 0;
 
+    // Check if we're nested inside a section that was completely replaced
+    // This must be checked BEFORE looking for section overrides
+    const replacedSections = context.data.__replacedSections__ as
+      | Set<string>
+      | undefined;
+    const parentSectionName = context.data.__parentSectionName__ as
+      | string
+      | undefined;
+
+    if (
+      replacedSections &&
+      parentSectionName &&
+      replacedSections.has(parentSectionName)
+    ) {
+      // This section is nested within a parent section that was completely replaced
+      // Skip rendering this section (it should have been part of the override content)
+      return '';
+    }
+
     // Check if model attribute exists FIRST (before rendering)
     const modelAttr = attributes.model;
-
     if (modelAttr) {
       // Get current model from context data
       const currentModel = context.data.model as string;
@@ -262,6 +336,7 @@ export class SectionDirective extends BlockDirective {
             override?: boolean;
             prepend?: boolean;
             append?: boolean;
+            attributes?: Record<string, any>;
           }
         >
       | undefined;
@@ -281,9 +356,11 @@ export class SectionDirective extends BlockDirective {
     // If this section has a format attribute, increment the section level for children
     const childLevel = formatAttr ? currentLevel + 1 : currentLevel;
     const originalLevel = context.data.__sectionLevel__;
+    const originalParentSectionName = context.data.__parentSectionName__;
 
-    // Set the new level for children
+    // Set the new level for children and track current section as parent
     context.data.__sectionLevel__ = childLevel;
+    context.data.__parentSectionName__ = name;
 
     // When a format attribute is present, we should NOT render nested @section directives
     // as part of the content, because they will be extracted and rendered by the formatter
@@ -307,10 +384,12 @@ export class SectionDirective extends BlockDirective {
       })
       .join('');
 
-    // Restore the original level
+    // Restore the original level and parent section name
     context.data.__sectionLevel__ = originalLevel;
+    context.data.__parentSectionName__ = originalParentSectionName;
 
     // Apply section override logic if present
+    let wasOverridden = false;
     if (sectionOverrides && sectionOverrides[name]) {
       const override = sectionOverrides[name];
       const isOverridable =
@@ -332,6 +411,7 @@ export class SectionDirective extends BlockDirective {
             );
           }
           sectionContent = override.content;
+          wasOverridden = true; // Mark that this section was completely replaced
         } else {
           // No modifier and not overridable - keep original
           sectionContent = originalContent;
@@ -350,6 +430,7 @@ export class SectionDirective extends BlockDirective {
         attributes,
         formatAttr,
         sectionContent,
+        wasOverridden, // Pass whether this was completely replaced
       );
     }
 
@@ -372,6 +453,7 @@ export class SectionDirective extends BlockDirective {
     attributes: Record<string, any>,
     formatName: string,
     sectionContent: string,
+    wasOverridden: boolean = false,
   ): string {
     // Get formatter registry from context data
     const formatterRegistry = context.data.__formatterRegistry__;
@@ -396,6 +478,9 @@ export class SectionDirective extends BlockDirective {
 
     // Extract nested sections from the node (but use sectionContent for main content)
     // Pass the current level so nested sections know their depth
+    // Always extract nested sections even if the section was overridden, because
+    // the child template might have top-level sections that override nested sections
+    // in the parent template
     const children = this.extractNestedSections(
       context.node,
       context,

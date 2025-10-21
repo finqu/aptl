@@ -277,4 +277,96 @@ Child
       expect(result).not.toContain('Grandparent');
     });
   });
+
+  describe('Nested Section Override', () => {
+    it('should properly override nested sections in parent template', async () => {
+      // Parent template with nested sections
+      await fileSystem.writeFile(
+        'parent.aptl',
+        `@section identity overridable=true, format="md", title="Role & Objective"
+  You are a general AI assistant.
+
+  @section objective overridable=true, format="md"
+    Your goal is to help users achieve their goals.
+  @end
+@end`,
+      );
+
+      // Child template overriding both parent and nested sections
+      const child = `@extends "parent.aptl"
+
+@section identity
+  You are a specialized AI assistant focused on task orchestration. Your mission is to analyze and decompose complex requests into clear, structured execution plans.
+@end
+
+@section objective
+  Coordinate complex tasks by:
+  - Analyzing user intent and extracting goals
+  - Breaking down requests into actionable steps
+  - Identifying required context and dependencies
+  - Routing steps to appropriate agents
+  - Ensuring logical execution order
+@end`;
+
+      const result = await engine.render(child);
+
+      // Should contain the child's identity override
+      expect(result).toContain(
+        'You are a specialized AI assistant focused on task orchestration',
+      );
+
+      // Should contain the child's objective override
+      expect(result).toContain('Coordinate complex tasks by:');
+      expect(result).toContain('- Analyzing user intent and extracting goals');
+
+      // Should NOT contain the parent's nested objective section
+      expect(result).not.toContain(
+        'Your goal is to help users achieve their goals',
+      );
+
+      // Should NOT contain the parent's identity content
+      expect(result).not.toContain('You are a general AI assistant');
+
+      // Should have proper markdown formatting for the outer section
+      expect(result).toContain('# Role & Objective');
+
+      // The child's objective section should NOT appear as a separate heading
+      // since it's overriding the nested section in the parent
+      const objectiveHeadings = result.match(/## Objective/g);
+      expect(objectiveHeadings).toBeNull(); // Should not have "## Objective" heading
+    });
+
+    it('should preserve nested sections when parent nested section is not overridden', async () => {
+      // Parent template with nested sections
+      await fileSystem.writeFile(
+        'parent2.aptl',
+        `@section outer overridable=true, format="md"
+  Outer content
+
+  @section inner overridable=true, format="md"
+    Inner content
+  @end
+@end`,
+      );
+
+      // Child only overrides outer, not inner
+      const child = `@extends "parent2.aptl"
+
+@section outer
+  New outer content
+@end`;
+
+      const result = await engine.render(child);
+
+      // Should contain the child's outer override
+      expect(result).toContain('New outer content');
+
+      // Should still contain the parent's inner section
+      expect(result).toContain('## Inner');
+      expect(result).toContain('Inner content');
+
+      // Should NOT contain the parent's outer content
+      expect(result).not.toContain('Outer content');
+    });
+  });
 });
