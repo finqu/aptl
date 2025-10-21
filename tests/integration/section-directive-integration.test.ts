@@ -844,4 +844,40 @@ Third section content
     const emptyLines = lines.filter((line) => line === '').length;
     expect(emptyLines).toBeGreaterThanOrEqual(2); // At least 2 blank lines between 3 sections
   });
+
+  it('should not duplicate content before @if directive in nested sections', async () => {
+    const engine = new APTLEngine('gpt-5.1');
+    const template = `@section platform-context format="md" title="Platform Context"
+  - The merchant uses the Finqu commerce platform
+  - All guidance should be tailored to Finqu's features and workflows
+  - Never suggest alternative platforms or ask which platform they use
+
+  @section interface-context format="md" title="Interface Context"
+    - Communicate exclusively in en
+
+    @if merchantLocale
+      - Locale: @{merchantLocale}
+    @end
+    @if merchantTimezone
+      - Timezone: @{merchantTimezone}
+    @end
+  @end
+@end`;
+
+    const data = {
+      // merchantLocale and merchantTimezone are not provided, so @if blocks should not render
+    };
+
+    const result = await engine.render(template, data);
+
+    // Count how many times "Communicate exclusively in en" appears
+    const matches = result.match(/Communicate exclusively in en/g);
+    expect(matches).not.toBeNull();
+    expect(matches?.length).toBe(1); // Should appear only once, not twice
+
+    // Also verify the line doesn't appear twice consecutively
+    expect(result).not.toContain(
+      'Communicate exclusively in en\n\n### Interface Context\n- Communicate exclusively in en',
+    );
+  });
 });

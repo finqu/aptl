@@ -151,15 +151,15 @@ export class SectionDirective extends BlockDirective {
   }
 
   /**
-   * Extract nested section directives as Section children
+   * Extract nested section directives as Section children and render their content
+   * (excluding their own nested sections, which will be extracted recursively)
    */
   private extractNestedSections(
     node: DirectiveNode,
     context: DirectiveContext,
     parentLevel: number = 0,
-  ): { content: string; children: Section[] } {
+  ): Section[] {
     const children: Section[] = [];
-    let contentParts: string[] = [];
 
     for (const child of node.children) {
       if (
@@ -179,36 +179,38 @@ export class SectionDirective extends BlockDirective {
           childDirectiveNode.parsedArgs;
 
         // Recursively extract nested sections with incremented level
-        const nestedResult = this.extractNestedSections(
+        const nestedChildren = this.extractNestedSections(
           childDirectiveNode,
           context,
           parentLevel + 1,
         );
 
+        // Render the child section's content (excluding nested @section directives)
+        // This prevents double-rendering of deeply nested sections
+        const childContent = childDirectiveNode.children
+          .filter(
+            (c) =>
+              !(
+                c.type === NodeType.DIRECTIVE &&
+                (c as DirectiveNode).name === 'section'
+              ),
+          )
+          .map((c) => (context.renderNode ? context.renderNode(c) : ''))
+          .join('');
+
         // Create Section object for this child with level information
         const childSection: Section = {
           name: childName,
           attributes: { ...childAttributes, __level: String(parentLevel + 1) },
-          content: nestedResult.content.trim(),
-          children:
-            nestedResult.children.length > 0
-              ? nestedResult.children
-              : undefined,
+          content: childContent.trim(),
+          children: nestedChildren.length > 0 ? nestedChildren : undefined,
         };
 
         children.push(childSection);
-      } else {
-        // Render non-section nodes as content
-        if (context.renderNode) {
-          contentParts.push(context.renderNode(child));
-        }
       }
     }
 
-    return {
-      content: contentParts.join(''),
-      children,
-    };
+    return children;
   }
 
   /**
@@ -283,7 +285,20 @@ export class SectionDirective extends BlockDirective {
     // Set the new level for children
     context.data.__sectionLevel__ = childLevel;
 
-    const originalContent = context.node.children
+    // When a format attribute is present, we should NOT render nested @section directives
+    // as part of the content, because they will be extracted and rendered by the formatter
+    // This prevents double-rendering of nested sections
+    const childrenToRender = formatAttr
+      ? context.node.children.filter(
+          (child) =>
+            !(
+              child.type === NodeType.DIRECTIVE &&
+              (child as DirectiveNode).name === 'section'
+            ),
+        )
+      : context.node.children;
+
+    const originalContent = childrenToRender
       .map((child) => {
         if (context.renderNode) {
           return context.renderNode(child);
@@ -381,7 +396,7 @@ export class SectionDirective extends BlockDirective {
 
     // Extract nested sections from the node (but use sectionContent for main content)
     // Pass the current level so nested sections know their depth
-    const { children } = this.extractNestedSections(
+    const children = this.extractNestedSections(
       context.node,
       context,
       currentLevel,
