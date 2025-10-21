@@ -165,10 +165,11 @@ export class Compiler {
       .map((line) =>
         line.replace(/^[ \t]+|[ \t]+$/g, '').replace(/[ \t]+/g, ' '),
       ) // Clean each line individually
-      .join('\n') // Rejoin with newlines
-      .replace(/\n{3,}/g, '\n\n') // Collapse multiple empty lines to maximum 2
-      .replace(/^\n+/, '') // Remove leading newlines
-      .replace(/\n+$/, '\n'); // Single trailing newline
+      .join('\n')
+      .trim(); // Rejoin with newlines
+    // .replace(/\n{3,}/g, '\n\n') // Collapse multiple empty lines to maximum 2
+    // .replace(/^\n+/, '') // Remove leading newlines
+    // .replace(/\n+$/, '\n'); // Single trailing newline
   }
 
   private renderNode(

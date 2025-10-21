@@ -777,6 +777,8 @@ Content 1
 Content 2
 @end
 
+
+
 @section three format="structured"
 Content 3
 @end`;
@@ -785,8 +787,8 @@ Content 3
 
     // Each formatted section should be followed by a blank line
     // This ensures proper spacing between consecutive formatted sections
-    expect(result).toContain('</one>\n\n<two>');
-    expect(result).toContain('</two>\n\n<three>');
+    expect(result).toContain('</one>\n\n\n<two>');
+    expect(result).toContain('</two>\n\n\n\n\n<three>');
   });
 
   it('should preserve line breaks between mixed sections (formatted and non-formatted)', async () => {
@@ -808,9 +810,9 @@ Access to: sales, revenue
     const result = await engine.render(template);
 
     // Check that there's a blank line between capabilities and approach
-    expect(result).toContain('Help merchants succeed\n\n<approach>');
+    expect(result).toContain('Help merchants succeed\n\n\n<approach>');
     // Check that there's a blank line between approach and guidelines
-    expect(result).toContain('</approach>\n\n## Available Analytics');
+    expect(result).toContain('</approach>\n\n\n## Available Analytics');
   });
 
   it('should handle multiple consecutive formatted sections correctly', async () => {
