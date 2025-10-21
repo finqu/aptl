@@ -427,5 +427,66 @@ Child
       expect(result).not.toContain('## Instructions');
       expect(result).not.toContain('## Examples');
     });
+
+    it('should append to parent section with nested sections in correct order', async () => {
+      // This tests that when a child uses append=true on a section that contains
+      // nested sections with @include directives and conditional content,
+      // the appended content appears at the END of the parent section content,
+      // not in the middle of it
+
+      const base = `@section context format="md"
+  @section platform-context format="md", title="Platform Context"
+    The merchant uses the Finqu platform.
+  @end
+
+  @section user-context format="md", title="User Context"
+    User preferences and settings.
+  @end
+
+  @if includeOptional
+    Optional content here.
+  @end
+@end`;
+
+      const child = `@extends "base"
+
+@section context, append=true
+  @section additional-context format="md", title="Additional Context"
+    This should appear at the END of the context section.
+  @end
+@end`;
+
+      await fileSystem.writeFile('base.aptl', base);
+
+      const result = await engine.render(child, {
+        includeOptional: true,
+      });
+
+      // Find the positions of each section in the output
+      const platformPos = result.indexOf('## Platform Context');
+      const userPos = result.indexOf('## User Context');
+      const optionalPos = result.indexOf('Optional content here');
+      const additionalPos = result.indexOf('## Additional Context');
+
+      // Verify all sections are present
+      expect(platformPos).toBeGreaterThan(-1);
+      expect(userPos).toBeGreaterThan(-1);
+      expect(optionalPos).toBeGreaterThan(-1);
+      expect(additionalPos).toBeGreaterThan(-1);
+
+      // Verify the order: Platform -> User -> Optional -> Additional
+      // The appended content should come AFTER all parent content
+      expect(userPos).toBeGreaterThan(platformPos);
+      expect(optionalPos).toBeGreaterThan(userPos);
+      expect(additionalPos).toBeGreaterThan(optionalPos);
+
+      // Additional context should be the last section in the context
+      const contextSectionEnd = result.length;
+      const distanceToEnd = contextSectionEnd - additionalPos;
+
+      // Should be closer to the end than to the platform context
+      const distanceToStart = additionalPos - platformPos;
+      expect(distanceToEnd).toBeLessThan(distanceToStart);
+    });
   });
 });

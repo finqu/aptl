@@ -390,17 +390,62 @@ export class SectionDirective extends BlockDirective {
 
     // Apply section override logic if present
     let wasOverridden = false;
+    let shouldExtractNestedSections = true; // By default, extract nested sections for formatter
+
     if (sectionOverrides && sectionOverrides[name]) {
       const override = sectionOverrides[name];
       const isOverridable =
         attributes.overridable === 'true' || attributes.overridable === true;
 
-      if (override.prepend) {
-        // Prepend child content to parent content
-        sectionContent = override.content + '\n' + originalContent;
-      } else if (override.append) {
-        // Append child content to parent content
-        sectionContent = originalContent + '\n' + override.content;
+      if (override.prepend || override.append) {
+        // For prepend/append, we need to render nested sections inline with the content
+        // rather than extracting them for the formatter, so they appear in the correct order
+        if (formatAttr) {
+          // Set the correct level for nested sections before rendering them (same as childLevel)
+          const prevLevel = context.data.__sectionLevel__;
+          context.data.__sectionLevel__ = childLevel;
+
+          // Render nested sections inline
+          const nestedSectionsContent = context.node.children
+            .filter(
+              (child) =>
+                child.type === NodeType.DIRECTIVE &&
+                (child as DirectiveNode).name === 'section',
+            )
+            .map((child) => {
+              if (context.renderNode) {
+                return context.renderNode(child);
+              }
+              return '';
+            })
+            .join('');
+
+          // Restore the original level
+          context.data.__sectionLevel__ = prevLevel;
+
+          // Combine originalContent (non-section children) with rendered nested sections
+          // Nested sections should come BEFORE originalContent to preserve document order
+          const fullOriginalContent = nestedSectionsContent
+            ? nestedSectionsContent + '\n\n' + originalContent
+            : originalContent;
+
+          // Now prepend or append to the full content
+          if (override.prepend) {
+            sectionContent = override.content + '\n' + fullOriginalContent;
+          } else {
+            sectionContent = fullOriginalContent + '\n' + override.content;
+          }
+
+          // Don't extract nested sections again in renderWithFormatter
+          shouldExtractNestedSections = false;
+        } else {
+          // No format attribute - simple prepend/append
+          if (override.prepend) {
+            sectionContent = override.content + '\n' + originalContent;
+          } else {
+            sectionContent = originalContent + '\n' + override.content;
+          }
+        }
       } else {
         // Default behavior: override/replace
         // Check if section is overridable when child tries to override
@@ -431,6 +476,7 @@ export class SectionDirective extends BlockDirective {
         formatAttr,
         sectionContent,
         wasOverridden, // Pass whether this was completely replaced
+        shouldExtractNestedSections, // Pass whether to extract nested sections
       );
     }
 
@@ -454,6 +500,7 @@ export class SectionDirective extends BlockDirective {
     formatName: string,
     sectionContent: string,
     wasOverridden: boolean = false,
+    shouldExtractNestedSections: boolean = true,
   ): string {
     // Get formatter registry from context data
     const formatterRegistry = context.data.__formatterRegistry__;
@@ -481,11 +528,11 @@ export class SectionDirective extends BlockDirective {
     // Always extract nested sections even if the section was overridden, because
     // the child template might have top-level sections that override nested sections
     // in the parent template
-    const children = this.extractNestedSections(
-      context.node,
-      context,
-      currentLevel,
-    );
+    // However, if shouldExtractNestedSections is false (prepend/append case),
+    // skip extraction because nested sections have already been rendered inline
+    const children = shouldExtractNestedSections
+      ? this.extractNestedSections(context.node, context, currentLevel)
+      : [];
 
     // Build Section object with the (possibly overridden) content
     const section: Section = {
