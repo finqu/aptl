@@ -765,3 +765,73 @@ Content
     });
   });
 });
+
+describe('line breaks between sections', () => {
+  it('should preserve line breaks between consecutive sections with format attribute', async () => {
+    const engine = new APTLEngine('gpt-5.1');
+    const template = `@section one format="structured"
+Content 1
+@end
+
+@section two format="structured"
+Content 2
+@end
+
+@section three format="structured"
+Content 3
+@end`;
+
+    const result = await engine.render(template);
+
+    // Each formatted section should be followed by a blank line
+    // This ensures proper spacing between consecutive formatted sections
+    expect(result).toContain('</one>\n\n<two>');
+    expect(result).toContain('</two>\n\n<three>');
+  });
+
+  it('should preserve line breaks between mixed sections (formatted and non-formatted)', async () => {
+    const engine = new APTLEngine('gpt-5.1');
+    const template = `@section capabilities overridable=true
+Help merchants succeed
+@end
+
+@section approach overridable=true, format="structured"
+## Platform Guidance
+- Instructions
+@end
+
+@section guidelines overridable=true
+## Available Analytics
+Access to: sales, revenue
+@end`;
+
+    const result = await engine.render(template);
+
+    // Check that there's a blank line between capabilities and approach
+    expect(result).toContain('Help merchants succeed\n\n<approach>');
+    // Check that there's a blank line between approach and guidelines
+    expect(result).toContain('</approach>\n\n## Available Analytics');
+  });
+
+  it('should handle multiple consecutive formatted sections correctly', async () => {
+    const engine = new APTLEngine('gpt-5.1');
+    const template = `@section first format="markdown"
+First section content
+@end
+
+@section second format="json"
+Second section content
+@end
+
+@section third format="plain"
+Third section content
+@end`;
+
+    const result = await engine.render(template);
+    const lines = result.split('\n');
+
+    // Count empty lines - there should be blank lines between sections
+    const emptyLines = lines.filter((line) => line === '').length;
+    expect(emptyLines).toBeGreaterThanOrEqual(2); // At least 2 blank lines between 3 sections
+  });
+});
