@@ -7,7 +7,7 @@
 
 Stop wrestling with string concatenation and messy JSON. Write clean, maintainable prompt templates with inheritance, conditionals, and type-safe data injection—compile to optimized output for any LLM.
 
-[![npm version](https://img.shields.io/npm/v/@finqu/aptl.svg)](https://www.npmjs.com/package/@finqu/aptl)
+[![GitHub Package](https://img.shields.io/badge/package-GitHub%20Packages-blue.svg)](https://github.com/finqu/aptl/pkgs/npm/aptl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -30,7 +30,7 @@ Building AI prompts shouldn't feel like writing assembly code. APTL brings moder
 ### Installation
 
 ```bash
-npm install @finqu/aptl
+npm install @finqu/aptl --registry=https://npm.pkg.github.com
 ```
 
 ### Your First Template
@@ -94,17 +94,17 @@ console.log(output);
 You are CodeAssist Pro, a senior software engineer specialized in full-stack development.
 
 Credentials:
-  • 10+ years experience
-  • TypeScript expert
+• 10+ years experience
+• TypeScript expert
 
 Your primary goal is to write clean, maintainable code.
 
 Examples of great responses:
-  Input: Optimize this loop
-  Output: Use map() instead of forEach for transformation
+Input: Optimize this loop
+Output: Use map() instead of forEach for transformation
 
-  Input: Fix memory leak
-  Output: Remove event listener in cleanup function
+Input: Fix memory leak
+Output: Remove event listener in cleanup function
 ```
 
 ---
@@ -185,8 +185,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 ## Links
 
 - [GitHub Repository](https://github.com/finqu/aptl)
-- [NPM Package](https://www.npmjs.com/package/@finqu/aptl)
+- [GitHub Package](https://github.com/finqu/aptl/pkgs/npm/aptl)
 - [Documentation](https://finqu.github.io/aptl)
 - [Finqu Homepage](https://finqu.com)
 - [Report Issues](https://github.com/finqu/aptl/issues)
-- [Discussions](https://github.com/finqu/aptl/discussions)
