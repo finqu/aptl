@@ -61,7 +61,9 @@ export function normalizeTemplatePath(path: string): string {
 /**
  * Extract section metadata (name and format attribute) from a parent template by parsing its source
  */
-function extractParentSections(parentTemplate: any): Map<string, { hasFormat: boolean }> {
+function extractParentSections(
+  parentTemplate: any,
+): Map<string, { hasFormat: boolean }> {
   const sections = new Map<string, { hasFormat: boolean }>();
 
   // Try to get the parent template source
@@ -76,11 +78,13 @@ function extractParentSections(parentTemplate: any): Map<string, { hasFormat: bo
   // Handles attributes with commas like: @section identity overridable=true, format="md"
   const sectionRegex = /@section\s+(\w+)(?:\s+([^@\n]+))?/g;
   let match;
-  
+
   while ((match = sectionRegex.exec(parentSource)) !== null) {
     const sectionName = match[1];
     const attributesString = match[2]; // e.g., 'overridable=true, format="md"'
-    const hasFormat = attributesString ? /format\s*=/.test(attributesString) : false;
+    const hasFormat = attributesString
+      ? /format\s*=/.test(attributesString)
+      : false;
     sections.set(sectionName, { hasFormat });
   }
 
@@ -288,7 +292,7 @@ export class ExtendsDirective extends InlineDirective {
       // If parent has format, nested sections should be level 1 (##)
       // If parent has no format, nested sections should be level 0 (#)
       const originalLevel = context.data.__sectionLevel__;
-      
+
       const parentSection = parentSections.get(name);
       if (parentSection && parentSection.hasFormat) {
         context.data.__sectionLevel__ = 1;

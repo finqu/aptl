@@ -413,16 +413,16 @@ Child
 
       // Should have correct heading levels
       expect(result).toContain('# Role & Objective');
-      
+
       // Child's objective should not have a heading (as tested before)
       const objectiveHeadings = result.match(/## Objective/g);
       expect(objectiveHeadings).toBeNull();
-      
+
       // New sections in body should be top-level headings (# not ##)
       // because body is not formatted, so its children should start at level 1
       expect(result).toContain('# Instructions');
       expect(result).toContain('# Examples');
-      
+
       // Should NOT have second-level headings for instructions/examples
       expect(result).not.toContain('## Instructions');
       expect(result).not.toContain('## Examples');
