@@ -73,7 +73,7 @@ export class StructuredFormatter implements OutputFormatter {
         section.name.charAt(0).toUpperCase() + section.name.slice(1);
 
       const hashes = '#'.repeat(Math.min(level, 6)); // Max heading level is 6
-      result = `${hashes} ${displayTitle}\n\n`;
+      result = `${hashes} ${displayTitle}\n`;
 
       // Add parent content if present
       if (section.content && section.content.trim()) {

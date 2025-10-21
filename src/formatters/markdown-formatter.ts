@@ -20,7 +20,7 @@ export class MarkdownFormatter implements OutputFormatter {
       const displayTitle = titleAttr || this.capitalizeFirst(section.name);
       const heading = this.createHeadingWithTitle(displayTitle, level);
 
-      result = heading + `\n\n${section.content}`;
+      result = heading + `\n${section.content}`;
 
       // Handle nested sections with increased level
       if (section.children && section.children.length > 0) {
