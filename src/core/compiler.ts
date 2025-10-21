@@ -81,7 +81,10 @@ export class Compiler {
     // Parse all directives in the AST
     await this.parseDirectives(ast);
 
-    return this.compileAST(ast);
+    // Compile AST and preserve original source
+    const compiled = this.compileAST(ast);
+    compiled.source = template;
+    return compiled;
   }
 
   /**

@@ -20,6 +20,7 @@ export interface SectionInfo {
   prepend?: boolean;
   append?: boolean;
   isNew?: boolean;
+  hasFormat?: boolean;
 }
 
 /**
@@ -58,8 +59,34 @@ export function normalizeTemplatePath(path: string): string {
 }
 
 /**
- * Extract section nodes from the current template's AST (only top-level sections)
+ * Extract section metadata (name and format attribute) from a parent template by parsing its source
  */
+function extractParentSections(parentTemplate: any): Map<string, { hasFormat: boolean }> {
+  const sections = new Map<string, { hasFormat: boolean }>();
+
+  // Try to get the parent template source
+  const parentSource = parentTemplate.source;
+  if (!parentSource) {
+    // If source is not available, we can't extract section info
+    return sections;
+  }
+
+  // Use a regex to extract section directives and their attributes
+  // This regex matches: @section name or @section name(attributes)
+  // Handles attributes with commas like: @section identity overridable=true, format="md"
+  const sectionRegex = /@section\s+(\w+)(?:\s+([^@\n]+))?/g;
+  let match;
+  
+  while ((match = sectionRegex.exec(parentSource)) !== null) {
+    const sectionName = match[1];
+    const attributesString = match[2]; // e.g., 'overridable=true, format="md"'
+    const hasFormat = attributesString ? /format\s*=/.test(attributesString) : false;
+    sections.set(sectionName, { hasFormat });
+  }
+
+  return sections;
+}
+
 function extractChildSections(templateNode: any): Map<string, SectionInfo> {
   const sections = new Map<string, SectionInfo>();
 
@@ -89,6 +116,7 @@ function extractChildSections(templateNode: any): Map<string, SectionInfo> {
           prepend: attributes.prepend === 'true' || attributes.prepend === true,
           append: attributes.append === 'true' || attributes.append === true,
           isNew: attributes.new === 'true' || attributes.new === true,
+          hasFormat: !!attributes.format,
         });
       }
     }
@@ -213,6 +241,9 @@ export class ExtendsDirective extends InlineDirective {
     // Extract sections from the current (child) template
     const childSections = extractChildSections(context.templateNode);
 
+    // Extract sections from the parent template to know which have format attributes
+    const parentSections = extractParentSections(parentTemplate);
+
     if (!context.renderNode) {
       throw new APTLRuntimeError(
         '@extends directive requires renderNode function in context',
@@ -253,12 +284,15 @@ export class ExtendsDirective extends InlineDirective {
 
     for (const [name, section] of childSections) {
       // Render the current section's children
-      // Set __sectionLevel__ to 1 so that nested formatted sections will be at nesting level 1
-      // (which becomes heading level 2 = ## after formatter adds +1)
-      // The parent section with format="md" will be at nesting level 0, rendering as # heading
-      // So nested sections in the override should be one level deeper (##)
+      // Set __sectionLevel__ based on whether the parent section has a format attribute
+      // If parent has format, nested sections should be level 1 (##)
+      // If parent has no format, nested sections should be level 0 (#)
       const originalLevel = context.data.__sectionLevel__;
-      context.data.__sectionLevel__ = 1;
+      
+      const parentSection = parentSections.get(name);
+      if (parentSection && parentSection.hasFormat) {
+        context.data.__sectionLevel__ = 1;
+      }
 
       const currentSectionContent = section.node.children
         .map((child) => context.renderNode!(child, context.data))

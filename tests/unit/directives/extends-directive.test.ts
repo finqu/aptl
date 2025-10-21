@@ -368,5 +368,64 @@ Child
       // Should NOT contain the parent's outer content
       expect(result).not.toContain('Outer content');
     });
+
+    it('should maintain correct heading levels when child adds new formatted sections', async () => {
+      // Parent template with formatted sections
+      await fileSystem.writeFile(
+        'parent3.aptl',
+        `@section identity overridable=true, format="md", title="Role & Objective"
+  You are a general AI assistant.
+
+  @section objective overridable=true, format="md"
+    Your goal is to help users achieve their goals.
+  @end
+@end
+
+@section body overridable=true
+  // Placeholder for body content
+@end`,
+      );
+
+      // Child overrides sections and adds new formatted sections within body
+      const child = `@extends "parent3.aptl"
+
+@section identity
+  You are a specialized task orchestration assistant.
+@end
+
+@section objective
+  Coordinate complex tasks by analyzing user intent and breaking down requests.
+@end
+
+@section body
+  @section instructions format="md"
+    - Analyze user requests
+    - Break down into steps
+    - Route to appropriate handlers
+  @end
+
+  @section examples format="md"
+    Example workflow processes
+  @end
+@end`;
+
+      const result = await engine.render(child);
+
+      // Should have correct heading levels
+      expect(result).toContain('# Role & Objective');
+      
+      // Child's objective should not have a heading (as tested before)
+      const objectiveHeadings = result.match(/## Objective/g);
+      expect(objectiveHeadings).toBeNull();
+      
+      // New sections in body should be top-level headings (# not ##)
+      // because body is not formatted, so its children should start at level 1
+      expect(result).toContain('# Instructions');
+      expect(result).toContain('# Examples');
+      
+      // Should NOT have second-level headings for instructions/examples
+      expect(result).not.toContain('## Instructions');
+      expect(result).not.toContain('## Examples');
+    });
   });
 });
