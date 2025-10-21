@@ -59,12 +59,15 @@ export function normalizeTemplatePath(path: string): string {
 }
 
 /**
- * Extract section metadata (name and format attribute) from a parent template by parsing its source
+ * Extract section metadata (name, format attribute, and nesting level) from a parent template by parsing its source
  */
 function extractParentSections(
   parentTemplate: any,
-): Map<string, { hasFormat: boolean }> {
-  const sections = new Map<string, { hasFormat: boolean }>();
+): Map<string, { hasFormat: boolean; nestingLevel: number }> {
+  const sections = new Map<
+    string,
+    { hasFormat: boolean; nestingLevel: number }
+  >();
 
   // Try to get the parent template source
   const parentSource = parentTemplate.source;
@@ -73,19 +76,30 @@ function extractParentSections(
     return sections;
   }
 
-  // Use a regex to extract section directives and their attributes
-  // This regex matches: @section name or @section name(attributes)
-  // Handles attributes with commas like: @section identity overridable=true, format="md"
-  const sectionRegex = /@section\s+(\w+)(?:\s+([^@\n]+))?/g;
-  let match;
+  // Parse sections and track nesting level by counting indentation or @section/@end pairs
+  // This is a simplified approach - we track nesting by counting open sections
+  const lines = parentSource.split('\n');
+  const sectionStack: string[] = []; // Stack of currently open section names
 
-  while ((match = sectionRegex.exec(parentSource)) !== null) {
-    const sectionName = match[1];
-    const attributesString = match[2]; // e.g., 'overridable=true, format="md"'
-    const hasFormat = attributesString
-      ? /format\s*=/.test(attributesString)
-      : false;
-    sections.set(sectionName, { hasFormat });
+  for (const line of lines) {
+    // Check for @section directive
+    const sectionMatch = line.match(/@section\s+(\S+)(?:\s+([^@\n]+))?/);
+    if (sectionMatch) {
+      const sectionName = sectionMatch[1].replace(/[",]/g, ''); // Remove quotes and commas
+      const attributesString = sectionMatch[2];
+      const hasFormat = attributesString
+        ? /format\s*=/.test(attributesString)
+        : false;
+      const nestingLevel = sectionStack.length; // Current nesting depth
+
+      sections.set(sectionName, { hasFormat, nestingLevel });
+      sectionStack.push(sectionName);
+    }
+
+    // Check for @end directive (closes the most recent section)
+    if (line.match(/@end/)) {
+      sectionStack.pop();
+    }
   }
 
   return sections;
@@ -288,14 +302,16 @@ export class ExtendsDirective extends InlineDirective {
 
     for (const [name, section] of childSections) {
       // Render the current section's children
-      // Set __sectionLevel__ based on whether the parent section has a format attribute
-      // If parent has format, nested sections should be level 1 (##)
-      // If parent has no format, nested sections should be level 0 (#)
+      // Set __sectionLevel__ based on the parent section's format and nesting level
       const originalLevel = context.data.__sectionLevel__;
 
       const parentSection = parentSections.get(name);
       if (parentSection && parentSection.hasFormat) {
-        context.data.__sectionLevel__ = 1;
+        // The parent section has a format attribute, so its children need to be rendered
+        // at the appropriate nesting level. The nestingLevel tells us how deeply nested
+        // the parent section is (0 = root, 1 = nested once, etc.)
+        // Children of a formatted section should be at parentNestingLevel + 1
+        context.data.__sectionLevel__ = parentSection.nestingLevel + 1;
       }
 
       const currentSectionContent = section.node.children

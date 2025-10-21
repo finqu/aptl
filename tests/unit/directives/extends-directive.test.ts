@@ -434,12 +434,20 @@ Child
       // the appended content appears at the END of the parent section content,
       // not in the middle of it
 
-      const base = `@section context format="md"
+      const includeTest = `@section included-section format="md", title="Included Section"
+This is included content.
+@end`;
+
+      await fileSystem.writeFile('include-test.aptl', includeTest);
+
+      const base = `@section context format="md", overridable=true
   @section platform-context format="md", title="Platform Context"
     The merchant uses the Finqu platform.
   @end
 
-  @section user-context format="md", title="User Context"
+  @include "include-test.aptl"
+
+  @section user-context format="md", title="User Context", overridable=true
     User preferences and settings.
   @end
 
@@ -450,11 +458,40 @@ Child
 
       const child = `@extends "base"
 
+@section user-context, prepend=true
+  @section bazbar format="md", title="Bazbar"
+    Customized user preferences based on recent activity.
+  @end
+@end
+
 @section context, append=true
   @section additional-context format="md", title="Additional Context"
-    This should appear at the END of the context section.
+    @section foobar format="md", title="Foobar"
+      This should appear at the END of the context section.
+    @end
   @end
 @end`;
+
+      const expectedResult = `# Context
+## Platform Context
+The merchant uses the Finqu platform.
+
+## Included Section
+This is included content.
+
+## User Context
+### Bazbar
+Customized user preferences based on recent activity.
+
+User preferences and settings.
+
+Optional content here.
+
+## Additional Context
+
+### Foobar
+This should appear at the END of the context section.
+`;
 
       await fileSystem.writeFile('base.aptl', base);
 
@@ -462,6 +499,7 @@ Child
         includeOptional: true,
       });
 
+      expect(result).toBe(expectedResult);
       // Find the positions of each section in the output
       const platformPos = result.indexOf('## Platform Context');
       const userPos = result.indexOf('## User Context');

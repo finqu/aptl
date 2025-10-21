@@ -398,20 +398,16 @@ export class SectionDirective extends BlockDirective {
         attributes.overridable === 'true' || attributes.overridable === true;
 
       if (override.prepend || override.append) {
-        // For prepend/append, we need to render nested sections inline with the content
-        // rather than extracting them for the formatter, so they appear in the correct order
+        // For prepend/append, we need to render all children in document order
+        // rather than extracting sections separately, to preserve order of @include, @if, etc.
         if (formatAttr) {
           // Set the correct level for nested sections before rendering them (same as childLevel)
           const prevLevel = context.data.__sectionLevel__;
           context.data.__sectionLevel__ = childLevel;
 
-          // Render nested sections inline
-          const nestedSectionsContent = context.node.children
-            .filter(
-              (child) =>
-                child.type === NodeType.DIRECTIVE &&
-                (child as DirectiveNode).name === 'section',
-            )
+          // Render ALL children in document order (sections, includes, conditionals, etc.)
+          // This preserves the original order of all directives and content
+          const allChildrenContent = context.node.children
             .map((child) => {
               if (context.renderNode) {
                 return context.renderNode(child);
@@ -423,17 +419,11 @@ export class SectionDirective extends BlockDirective {
           // Restore the original level
           context.data.__sectionLevel__ = prevLevel;
 
-          // Combine originalContent (non-section children) with rendered nested sections
-          // Nested sections should come BEFORE originalContent to preserve document order
-          const fullOriginalContent = nestedSectionsContent
-            ? nestedSectionsContent + '\n\n' + originalContent
-            : originalContent;
-
           // Now prepend or append to the full content
           if (override.prepend) {
-            sectionContent = override.content + '\n' + fullOriginalContent;
+            sectionContent = override.content + '\n' + allChildrenContent;
           } else {
-            sectionContent = fullOriginalContent + '\n' + override.content;
+            sectionContent = allChildrenContent + '\n' + override.content;
           }
 
           // Don't extract nested sections again in renderWithFormatter
