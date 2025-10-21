@@ -1,5 +1,8 @@
 # APTL (AI Prompt Template Language)
 
+> **⚠️ Active Development Notice**
+> This project is under active development and not yet production-ready. APIs and features may change as we iterate toward a stable 1.0 release. Please expect potential breaking changes until we reach 1.0.0.
+
 **A modern template engine designed specifically for AI system prompts.**
 
 Stop wrestling with string concatenation and messy JSON. Write clean, maintainable prompt templates with inheritance, conditionals, and type-safe data injection—compile to optimized output for any LLM.
