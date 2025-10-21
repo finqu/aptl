@@ -248,9 +248,19 @@ export class ExtendsDirective extends InlineDirective {
 
     for (const [name, section] of childSections) {
       // Render the current section's children
+      // Set __sectionLevel__ to 1 so that nested formatted sections will be at nesting level 1
+      // (which becomes heading level 2 = ## after formatter adds +1)
+      // The parent section with format="md" will be at nesting level 0, rendering as # heading
+      // So nested sections in the override should be one level deeper (##)
+      const originalLevel = context.data.__sectionLevel__;
+      context.data.__sectionLevel__ = 1;
+
       const currentSectionContent = section.node.children
         .map((child) => context.renderNode!(child, context.data))
         .join('');
+
+      // Restore original level
+      context.data.__sectionLevel__ = originalLevel;
 
       // Check if there's already an override from a deeper child
       if (existingOverrides && existingOverrides[name]) {

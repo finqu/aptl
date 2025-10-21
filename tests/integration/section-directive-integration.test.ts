@@ -753,6 +753,10 @@ Content
 
 @section identity
   Identity spec from child (override)
+
+  @section headingTest format="md"
+    Identity Heading Test
+  @end
 @end
 `,
       });
@@ -767,6 +771,7 @@ Content
 
       // Should still be formatted with markdown
       expect(result).toContain('# Identity');
+      expect(result).toContain('## HeadingTest');
     });
   });
 });

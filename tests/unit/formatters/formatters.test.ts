@@ -79,7 +79,7 @@ describe('Formatters', () => {
       };
 
       const result = formatter.formatSection(section);
-      expect(result).toContain('## Identity');
+      expect(result).toContain('# Identity');
       expect(result).toContain('I am an AI assistant');
     });
 
@@ -94,7 +94,7 @@ describe('Formatters', () => {
       // Attributes are directive control, not content - should not be displayed
       expect(result).not.toContain('**role**');
       expect(result).not.toContain('**model**');
-      expect(result).toContain('## Test');
+      expect(result).toContain('# Test');
       expect(result).toContain('Content');
     });
 
@@ -116,7 +116,7 @@ describe('Formatters', () => {
       expect(result).not.toContain('format');
       expect(result).not.toContain('role');
       expect(result).not.toContain('overridable');
-      expect(result).toContain('## Test');
+      expect(result).toContain('# Test');
       expect(result).toContain('Content');
     });
 

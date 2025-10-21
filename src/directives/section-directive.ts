@@ -156,6 +156,7 @@ export class SectionDirective extends BlockDirective {
   private extractNestedSections(
     node: DirectiveNode,
     context: DirectiveContext,
+    parentLevel: number = 0,
   ): { content: string; children: Section[] } {
     const children: Section[] = [];
     let contentParts: string[] = [];
@@ -177,16 +178,17 @@ export class SectionDirective extends BlockDirective {
         const { name: childName, attributes: childAttributes } =
           childDirectiveNode.parsedArgs;
 
-        // Recursively extract nested sections
+        // Recursively extract nested sections with incremented level
         const nestedResult = this.extractNestedSections(
           childDirectiveNode,
           context,
+          parentLevel + 1,
         );
 
-        // Create Section object for this child
+        // Create Section object for this child with level information
         const childSection: Section = {
           name: childName,
-          attributes: childAttributes,
+          attributes: { ...childAttributes, __level: String(parentLevel + 1) },
           content: nestedResult.content.trim(),
           children:
             nestedResult.children.length > 0
@@ -219,6 +221,9 @@ export class SectionDirective extends BlockDirective {
     }
 
     const { name, attributes } = context.node.parsedArgs;
+
+    // Get current section nesting level (defaults to 0 for root level)
+    const currentLevel = (context.data.__sectionLevel__ as number) || 0;
 
     // Check if model attribute exists FIRST (before rendering)
     const modelAttr = attributes.model;
@@ -271,6 +276,13 @@ export class SectionDirective extends BlockDirective {
     const formatAttr = attributes.format;
 
     // Render the original section content by rendering all children
+    // If this section has a format attribute, increment the section level for children
+    const childLevel = formatAttr ? currentLevel + 1 : currentLevel;
+    const originalLevel = context.data.__sectionLevel__;
+
+    // Set the new level for children
+    context.data.__sectionLevel__ = childLevel;
+
     const originalContent = context.node.children
       .map((child) => {
         if (context.renderNode) {
@@ -279,6 +291,9 @@ export class SectionDirective extends BlockDirective {
         return '';
       })
       .join('');
+
+    // Restore the original level
+    context.data.__sectionLevel__ = originalLevel;
 
     // Apply section override logic if present
     if (sectionOverrides && sectionOverrides[name]) {
@@ -361,13 +376,21 @@ export class SectionDirective extends BlockDirective {
       );
     }
 
+    // Get current section nesting level (defaults to 0 for root level)
+    const currentLevel = (context.data.__sectionLevel__ as number) || 0;
+
     // Extract nested sections from the node (but use sectionContent for main content)
-    const { children } = this.extractNestedSections(context.node, context);
+    // Pass the current level so nested sections know their depth
+    const { children } = this.extractNestedSections(
+      context.node,
+      context,
+      currentLevel,
+    );
 
     // Build Section object with the (possibly overridden) content
     const section: Section = {
       name,
-      attributes,
+      attributes: { ...attributes, __level: String(currentLevel) },
       content: sectionContent.trim(),
       children: children.length > 0 ? children : undefined,
     };
