@@ -431,6 +431,50 @@ export class Tokenizer {
     while (!this.isAtEnd()) {
       const char = this.peek();
 
+      // Handle quoted strings as complete units when on a directive line
+      // This prevents special characters inside quotes from being tokenized separately
+      if (this.onDirectiveLine && (char === '"' || char === "'")) {
+        const quote = char;
+        value += char;
+        this.advance(); // consume opening quote
+
+        // Consume everything until the closing quote
+        while (!this.isAtEnd() && this.peek() !== quote) {
+          const innerChar = this.peek();
+
+          // Handle escape sequences inside quoted strings
+          if (innerChar === '\\' && this.peekNext() === quote) {
+            value += innerChar; // the backslash
+            this.advance();
+            value += this.peek(); // the escaped quote
+            this.advance();
+          } else if (innerChar === '\n' || innerChar === '\r') {
+            // Don't allow newlines inside quoted strings
+            throw new APTLSyntaxError(
+              'Unterminated string literal (newline in string)',
+              this.line,
+              startColumn,
+            );
+          } else {
+            value += innerChar;
+            this.advance();
+          }
+        }
+
+        if (this.isAtEnd()) {
+          throw new APTLSyntaxError(
+            'Unterminated string literal',
+            this.line,
+            startColumn,
+          );
+        }
+
+        // Consume closing quote
+        value += this.peek();
+        this.advance();
+        continue;
+      }
+
       // Handle escape sequences
       if (char === '\\') {
         this.advance(); // consume the backslash

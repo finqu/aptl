@@ -558,6 +558,18 @@ Grandchild 2 content
   });
 
   describe('edge cases', () => {
+    it('should handle section title with colon without triggering inline syntax', async () => {
+      const engine = new APTLEngine('gpt-5.1');
+      const template = `
+@section example title="Step 1: This shouldn't be parsed as inline"
+Example content
+@end
+            `.trim();
+
+      const result = await engine.render(template);
+      expect(result).toContain('Example content');
+    });
+
     it('should handle section without parentheses around attributes', async () => {
       const engine = new APTLEngine('gpt-5.1');
       const template = `
