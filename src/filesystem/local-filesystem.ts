@@ -9,22 +9,17 @@
  * Installation: npm install --save-dev @types/node
  */
 
+/// <reference types="node" />
+
 import {
   FileSystem,
   FileStats,
   FileSystemEntry,
   FileSystemError,
 } from '@/filesystem';
-
-// Note: These imports will cause TypeScript errors if @types/node is not installed
-// This is intentional - LocalFileSystem is optional and only for Node.js environments
-/* eslint-disable @typescript-eslint/no-var-requires */
-declare const require: any;
-declare const process: any;
-
-const fs = require('fs/promises');
-const fsSync = require('fs');
-const path = require('path');
+import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
+import * as path from 'path';
 
 export class LocalFileSystem implements FileSystem {
   private basePath: string;
@@ -34,7 +29,7 @@ export class LocalFileSystem implements FileSystem {
    */
   constructor(basePath?: string) {
     // Normalize and resolve the base path to prevent symlink exploitation
-    this.basePath = path.resolve(basePath || process.cwd());
+    this.basePath = path.resolve(basePath || (typeof process !== 'undefined' ? process.cwd() : '.'));
   }
 
   /**

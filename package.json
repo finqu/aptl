@@ -65,11 +65,9 @@
   ],
   "author": "Finqu",
   "license": "MIT",
-  "dependencies": {
-    "handlebars": "^4.7.7"
-  },
   "devDependencies": {
     "@types/jest": "^27.0.2",
+    "@types/node": "^24.9.1",
     "jest": "^27.0.6",
     "prettier": "^3.6.2",
     "rolldown": "1.0.0-beta.43",
