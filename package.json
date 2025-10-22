@@ -1,6 +1,6 @@
 {
   "name": "@finqu/aptl",
-  "version": "1.0.0-alpha.25",
+  "version": "1.0.0-alpha.26",
   "description": "A template engine for rendering human-readable templates with simple conditionals and easy data injection.",
   "type": "module",
   "main": "./dist/cjs/index.cjs",
