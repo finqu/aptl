@@ -170,7 +170,7 @@ with multiple lines
         currentAction: 'edit',
       });
       expect(result).toBe(
-        'User is viewing Dashboard (ID: 123). and is performing the edit action.'
+        'User is viewing Dashboard (ID: 123). and is performing the edit action.',
       );
     });
 
@@ -214,8 +214,7 @@ Some other content here`;
     });
 
     it('should handle multiple consecutive inline directives with mixed @end usage', async () => {
-      const template =
-        '@if(a): A@end, @if(b): B@end, @section c: C';
+      const template = '@if(a): A@end, @if(b): B@end, @section c: C';
       const result = await engine.render(template, {
         a: true,
         b: true,
@@ -254,8 +253,7 @@ Some other content here`;
     });
 
     it('should support deeply nested inline directives', async () => {
-      const template =
-        '@if(a): A @if(b): B @if(c): C@end@end@end.';
+      const template = '@if(a): A @if(b): B @if(c): C@end@end@end.';
       const result = await engine.render(template, {
         a: true,
         b: true,
@@ -265,8 +263,7 @@ Some other content here`;
     });
 
     it('should handle inline section within inline if', async () => {
-      const template =
-        '@if(show): @section msg: @{text}@end@end!';
+      const template = '@if(show): @section msg: @{text}@end@end!';
       const result = await engine.render(template, {
         show: true,
         text: 'Hello',
