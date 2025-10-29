@@ -526,5 +526,172 @@ This should appear at the END of the context section.
       const distanceToStart = additionalPos - platformPos;
       expect(distanceToEnd).toBeLessThan(distanceToStart);
     });
+
+    it('should handle complex inheritance with conditional content inside appended sections', async () => {
+      // Parent template with includes and conditionals
+      await fileSystem.writeFile(
+        'snippets/general-boundaries.aptl',
+        `- Always maintain a professional and helpful tone.
+- Respect user privacy and data security.`,
+      );
+
+      await fileSystem.writeFile(
+        'base-platform.aptl',
+        `@section identity overridable=true, format="md", title="Role"
+  You are an AI assistant helping merchants on the Finqu commerce platform.
+@end
+
+@section capabilities overridable=true, format="md", title="Capabilities"
+  // Placeholder for role-specific capabilities
+@end
+
+@section instructions overridable=true, format="md", title="Instructions"
+  Follow the user's instructions carefully and provide accurate, relevant, and helpful responses.
+@end
+
+@section boundaries overridable=true, format="md", title="Boundaries"
+  @include "snippets/general-boundaries.aptl"
+
+  @if executionMode
+    @if executionMode.isLastStep
+      - Do not ask follow-up questions unless absolutely critical information is missing.
+    @else
+      - Never ask questions or offer options, try to complete the task and pass concrete outputs to the next workflow step.
+    @end
+  @end
+@end`,
+      );
+
+      // Child template extending and overriding sections
+      const child = `@extends "base-platform.aptl"
+
+@section identity
+  You are an assistant working as part of a workflow to help merchants on the Finqu commerce platform. You are an expert content strategist and copywriter for e-commerce. You help merchants create compelling content that drives engagement and conversions.
+@end
+
+@section capabilities
+  - Write persuasive product descriptions, blog posts, email campaigns, and social media content.
+  - Optimize content for SEO to improve search engine rankings and visibility by utilizing the given SEO tools.
+  - Optimize store navigation for better user experience and conversions.
+  - Maintain brand consistency through intelligent inference from existing content.
+@end
+
+@section instructions
+  1. Think about the given task so that you fully understand what is being asked.
+  2. Analyze merchant brand voice and content style from existing materials.
+  3. Use your expertise to determine the best approach to complete the content task.
+  4. Utilize available SEO tools to gather necessary information for optimization.
+  5. Craft the content that addresses the request in merchant brand context.
+  6. Validate your content to ensure it is engaging, SEO-optimized, and aligned with brand voice. Reiterate if necessary.
+@end
+
+@section boundaries append=true
+  - Do not perform tasks outside of content creation, optimization, and strategy.
+  - Never write custom forms or code snippets.
+@end`;
+
+      // Test with executionMode.isLastStep = true
+      const resultLastStep = await engine.render(child, {
+        executionMode: {
+          isLastStep: true,
+        },
+      });
+
+      // Verify identity override
+      expect(resultLastStep).toContain(
+        'You are an assistant working as part of a workflow',
+      );
+      expect(resultLastStep).toContain(
+        'expert content strategist and copywriter',
+      );
+      expect(resultLastStep).not.toContain(
+        'You are an AI assistant helping merchants on the Finqu',
+      );
+
+      // Verify capabilities override
+      expect(resultLastStep).toContain(
+        '- Write persuasive product descriptions',
+      );
+      expect(resultLastStep).toContain('- Optimize content for SEO');
+      expect(resultLastStep).not.toContain(
+        '// Placeholder for role-specific capabilities',
+      );
+
+      // Verify instructions override
+      expect(resultLastStep).toContain('1. Think about the given task');
+      expect(resultLastStep).toContain('2. Analyze merchant brand voice');
+      expect(resultLastStep).not.toContain(
+        "Follow the user's instructions carefully",
+      );
+
+      // Verify boundaries append - should have BOTH parent content (with conditional) AND child content
+      expect(resultLastStep).toContain(
+        '- Always maintain a professional and helpful tone',
+      );
+      expect(resultLastStep).toContain(
+        '- Respect user privacy and data security',
+      );
+      expect(resultLastStep).toContain(
+        '- Do not ask follow-up questions unless absolutely critical information is missing',
+      );
+      expect(resultLastStep).toContain(
+        '- Do not perform tasks outside of content creation',
+      );
+      expect(resultLastStep).toContain(
+        '- Never write custom forms or code snippets',
+      );
+
+      // Should NOT contain the else branch
+      expect(resultLastStep).not.toContain(
+        '- Never ask questions or offer options',
+      );
+
+      // Verify order: parent content should come before appended child content
+      const parentBoundaryPos = resultLastStep.indexOf(
+        '- Always maintain a professional',
+      );
+      const conditionalBoundaryPos = resultLastStep.indexOf(
+        '- Do not ask follow-up questions',
+      );
+      const childBoundaryPos = resultLastStep.indexOf(
+        '- Do not perform tasks outside',
+      );
+
+      expect(conditionalBoundaryPos).toBeGreaterThan(parentBoundaryPos);
+      expect(childBoundaryPos).toBeGreaterThan(conditionalBoundaryPos);
+
+      // Test with executionMode.isLastStep = false
+      const resultNotLastStep = await engine.render(child, {
+        executionMode: {
+          isLastStep: false,
+        },
+      });
+
+      // Should have the else branch instead
+      expect(resultNotLastStep).toContain(
+        '- Never ask questions or offer options',
+      );
+      expect(resultNotLastStep).toContain(
+        'try to complete the task and pass concrete outputs',
+      );
+      expect(resultNotLastStep).not.toContain(
+        '- Do not ask follow-up questions unless absolutely critical',
+      );
+
+      // Test without executionMode (conditional should not render)
+      const resultNoMode = await engine.render(child, {});
+
+      // Should still have parent and child boundaries, but NOT the conditional content
+      expect(resultNoMode).toContain(
+        '- Always maintain a professional and helpful tone',
+      );
+      expect(resultNoMode).toContain(
+        '- Do not perform tasks outside of content creation',
+      );
+      expect(resultNoMode).not.toContain('- Do not ask follow-up questions');
+      expect(resultNoMode).not.toContain(
+        '- Never ask questions or offer options',
+      );
+    });
   });
 });
