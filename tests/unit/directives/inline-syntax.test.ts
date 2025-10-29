@@ -159,4 +159,119 @@ with multiple lines
       expect(result).toContain('content with spaces');
     });
   });
+
+  describe('Inline Directive with @end Terminator', () => {
+    it('should support consecutive inline directives with @end', async () => {
+      const template =
+        'User is viewing @{currentResource}@if(currentResourceId): (ID: @{currentResourceId})@end. @if(currentAction): and is performing the @{currentAction} action@end.';
+      const result = await engine.render(template, {
+        currentResource: 'Dashboard',
+        currentResourceId: '123',
+        currentAction: 'edit',
+      });
+      expect(result).toBe(
+        'User is viewing Dashboard (ID: 123). and is performing the edit action.'
+      );
+    });
+
+    it('should handle inline directive with @end followed by more content', async () => {
+      const template =
+        '@if(hasWarning): ⚠️ Warning: @{warningMessage}@end - Please proceed with caution.';
+      const result = await engine.render(template, {
+        hasWarning: true,
+        warningMessage: 'System maintenance scheduled',
+      });
+      expect(result).toContain('⚠️ Warning: System maintenance scheduled');
+      expect(result).toContain('Please proceed with caution');
+    });
+
+    it('should handle inline @each with @end', async () => {
+      const template =
+        'Items: @each(item in items):[@{item}]@end. Total: @{items.length}';
+      const result = await engine.render(template, {
+        items: ['A', 'B', 'C'],
+      });
+      expect(result).toContain('Items: [A][B][C]');
+      expect(result).toContain('Total: 3');
+    });
+
+    it('should work without @end for single-line inline (backward compatible)', async () => {
+      const template = `@section title: Main Title
+Some other content here`;
+      const result = await engine.render(template);
+      expect(result).toContain('Main Title');
+      expect(result).toContain('Some other content here');
+    });
+
+    it('should handle @end with conditional that evaluates to false', async () => {
+      const template =
+        '@if(showWarning): Warning text@end Normal text continues';
+      const result = await engine.render(template, {
+        showWarning: false,
+      });
+      expect(result).not.toContain('Warning text');
+      expect(result).toContain('Normal text continues');
+    });
+
+    it('should handle multiple consecutive inline directives with mixed @end usage', async () => {
+      const template =
+        '@if(a): A@end, @if(b): B@end, @section c: C';
+      const result = await engine.render(template, {
+        a: true,
+        b: true,
+      });
+      expect(result).toContain('A, B, C');
+    });
+  });
+
+  describe('Nested Inline Directives with @end', () => {
+    it('should support nested inline directives with @end', async () => {
+      const template =
+        '@if(user): Welcome @if(user.isPremium): Premium member @end@{user.name}@end!';
+      const result = await engine.render(template, {
+        user: { name: 'Alice', isPremium: true },
+      });
+      expect(result).toContain('Welcome Premium member Alice!');
+    });
+
+    it('should handle nested inline with outer false condition', async () => {
+      const template =
+        '@if(user): Welcome @if(user.isPremium): Premium @end@{user.name}@end!';
+      const result = await engine.render(template, {
+        user: null,
+      });
+      expect(result).toBe('!');
+    });
+
+    it('should handle nested inline with inner false condition', async () => {
+      const template =
+        '@if(user): Welcome @if(user.isPremium): Premium @end@{user.name}@end!';
+      const result = await engine.render(template, {
+        user: { name: 'Bob', isPremium: false },
+      });
+      expect(result).toContain('Welcome Bob!');
+      expect(result).not.toContain('Premium');
+    });
+
+    it('should support deeply nested inline directives', async () => {
+      const template =
+        '@if(a): A @if(b): B @if(c): C@end@end@end.';
+      const result = await engine.render(template, {
+        a: true,
+        b: true,
+        c: true,
+      });
+      expect(result).toBe('A B C.');
+    });
+
+    it('should handle inline section within inline if', async () => {
+      const template =
+        '@if(show): @section msg: @{text}@end@end!';
+      const result = await engine.render(template, {
+        show: true,
+        text: 'Hello',
+      });
+      expect(result).toContain('Hello!');
+    });
+  });
 });

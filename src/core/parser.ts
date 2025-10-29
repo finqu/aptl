@@ -327,7 +327,7 @@ export class Parser implements DirectiveParser {
   }
 
   /**
-   * Parse the inline body (everything until end of line)
+   * Parse the inline body (everything until @end, end of line, or end of input)
    * Returns a single node or group of nodes
    */
   private parseInlineBody(): ASTNode | null {
@@ -335,11 +335,41 @@ export class Parser implements DirectiveParser {
     const startColumn = this.peek().column;
     const nodes: ASTNode[] = [];
 
-    // Parse until end of line or end of input
-    while (!this.isAtEnd() && this.peek().line === startLine) {
-      const node = this.parseStatement();
-      if (node) {
-        nodes.push(node);
+    // Parse until @end, end of line, or end of input
+    while (!this.isAtEnd()) {
+      const token = this.peek();
+
+      // Stop at @end token
+      if (token.type === TokenType.END) {
+        this.advance(); // consume @end
+        break;
+      }
+
+      // Stop at newline
+      if (token.type === TokenType.NEWLINE) {
+        break;
+      }
+
+      // For inline directives, we need to parse content more carefully
+      // We cannot use parseStatement() directly because parseText() will
+      // consume newlines, which would break inline directive boundaries
+      if (token.type === TokenType.TEXT) {
+        // Parse text but stop at newlines
+        nodes.push(this.parseInlineText());
+      } else if (token.type === TokenType.VARIABLE) {
+        nodes.push(this.parseVariable());
+      } else if (token.type === TokenType.DIRECTIVE) {
+        // Nested directive
+        const directive = this.parseDirective();
+        if (directive) {
+          nodes.push(directive);
+        }
+      } else {
+        // For other token types, parse normally
+        const node = this.parseStatement();
+        if (node) {
+          nodes.push(node);
+        }
       }
     }
 
@@ -361,6 +391,69 @@ export class Parser implements DirectiveParser {
       column: startColumn,
     };
     return templateNode;
+  }
+
+  /**
+   * Parse text for inline directives - stops at newlines instead of consuming them
+   */
+  private parseInlineText(): TextNode {
+    const startToken = this.peek();
+    let value = '';
+
+    // Handle the first token (could be TEXT or various punctuation or STRING)
+    if (startToken.type === TokenType.TEXT) {
+      value = this.advance().value;
+    } else if (startToken.type === TokenType.STRING) {
+      // Re-add quotes for string literals in text context
+      const token = this.advance();
+      value = `"${token.value}"`;
+    } else if (
+      startToken.type === TokenType.PUNCTUATION ||
+      startToken.type === TokenType.OPERATOR ||
+      startToken.type === TokenType.LPAREN ||
+      startToken.type === TokenType.RPAREN ||
+      startToken.type === TokenType.ASSIGN ||
+      startToken.type === TokenType.COLON
+    ) {
+      value = this.advance().value;
+    }
+
+    // Combine consecutive text, punctuation, and string tokens
+    // But DO NOT consume newlines (unlike parseText)
+    while (!this.isAtEnd()) {
+      const nextToken = this.peek();
+
+      // Stop at newlines for inline text
+      if (nextToken.type === TokenType.NEWLINE) {
+        break;
+      }
+
+      if (nextToken.type === TokenType.TEXT) {
+        value += this.advance().value;
+      } else if (nextToken.type === TokenType.STRING) {
+        // Re-add quotes for string literals
+        const token = this.advance();
+        value += `"${token.value}"`;
+      } else if (
+        nextToken.type === TokenType.PUNCTUATION ||
+        nextToken.type === TokenType.OPERATOR ||
+        nextToken.type === TokenType.LPAREN ||
+        nextToken.type === TokenType.RPAREN ||
+        nextToken.type === TokenType.ASSIGN ||
+        nextToken.type === TokenType.COLON
+      ) {
+        value += this.advance().value;
+      } else {
+        break;
+      }
+    }
+
+    return {
+      type: NodeType.TEXT,
+      value,
+      line: startToken.line,
+      column: startToken.column,
+    };
   }
 
   private checkForDirectiveBody(): boolean {

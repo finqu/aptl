@@ -470,12 +470,10 @@ export class SectionDirective extends BlockDirective {
       );
     }
 
-    // For inline sections, add a trailing newline to match block section behavior
-    // Block sections have the newline after @end preserved as a TEXT node
-    // Inline sections need to add it explicitly
-    if (context.node.isInline) {
-      return sectionContent + '\n';
-    }
+    // Note: We no longer add automatic trailing newlines for inline sections.
+    // With @end support, inline directives can be chained on the same line.
+    // If a newline is desired, it should be explicit in the template or will
+    // naturally occur when the inline directive ends at EOL (without @end).
 
     return sectionContent;
   }
