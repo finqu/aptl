@@ -536,6 +536,14 @@ This should appear at the END of the context section.
       );
 
       await fileSystem.writeFile(
+        'snippets/technical-boundaries.aptl',
+        `@section technical-boundaries format="md", title="Technical Boundaries"
+  - Do not write or debug code.
+  - Avoid technical explanations unless specifically requested.
+@end`,
+      );
+
+      await fileSystem.writeFile(
         'base-platform.aptl',
         `@section identity overridable=true, format="md", title="Role"
   You are an AI assistant helping merchants on the Finqu commerce platform.
@@ -549,14 +557,64 @@ This should appear at the END of the context section.
   Follow the user's instructions carefully and provide accurate, relevant, and helpful responses.
 @end
 
+@section communication format="md", title="Communication Style"
+  @if personalization.preferredLanguage
+    - Communicate exclusively in @{personalization.preferredLanguage}
+  @else
+    - Communicate exclusively in @{language|"English"}
+  @end
+  @switch personalizationSettings.communicationStyle
+    @case "concise"
+      - Focus on key points and avoid unnecessary details.
+    @case "detailed"
+      - Provide comprehensive explanations with background context and detailed steps.
+    @default
+      - Balance brevity with necessary detail without being overly verbose or too brief.
+  @end
+  @switch personalizationSettings.preferredAgentPersonality
+    @case "professional"
+      - Use a professional tone. Maintain formality and clarity.
+    @case "friendly"
+      - Use a friendly and approachable tone.
+    @case "formal"
+      - Use formal language and structured responses with respectful distance.
+    @default
+      - Use a relaxed and conversational tone while maintaining expertise.
+  @end
+  @switch personalizationSettings.technicalSkillLevel
+    @case "some_experience"
+      - User is comfortable with basic technical concepts and terminology related to web and e-commerce technologies.
+    @case "experienced"
+      - User can handle intermediate technical concepts and terminology related to web and e-commerce technologies.
+    @case "expert"
+      - User understands advanced technical concepts and terminology related to web and e-commerce technologies.
+    @default
+      - Avoid technical jargon and explain concepts in simple terms as user may have limited technical skills in web and e-commerce technologies.
+  @end
+  @switch personalizationSettings.experienceLevel
+    @case "some_experience"
+      - User is familiar with basic concepts and practices of e-commerce.
+    @case "experienced"
+      - User has considerable experience with e-commerce and understands a wide range of topics.
+    @case "expert"
+      - User has extensive experience with e-commerce and can handle complex scenarios and advanced topics.
+    @default
+      - User is new to e-commerce and may need guidance on basic concepts and practices.
+  @end
+@end
+
 @section boundaries overridable=true, format="md", title="Boundaries"
   @include "snippets/general-boundaries.aptl"
 
+  @include "snippets/technical-boundaries.aptl"
+
   @if executionMode
-    @if executionMode.isLastStep
-      - Do not ask follow-up questions unless absolutely critical information is missing.
-    @else
-      - Never ask questions or offer options, try to complete the task and pass concrete outputs to the next workflow step.
+    @section execution-mode-boundaries format="md", title="Execution Mode Boundaries"
+      @if executionMode.isLastStep
+        - Do not ask follow-up questions unless absolutely critical information is missing.
+      @else
+        - Never ask questions or offer options, try to complete the task and pass concrete outputs to the next workflow step.
+      @end
     @end
   @end
 @end`,
@@ -596,6 +654,8 @@ This should appear at the END of the context section.
           isLastStep: true,
         },
       });
+
+      console.log('Rendered Output:\n', resultLastStep);
 
       // Verify identity override
       expect(resultLastStep).toContain(
@@ -640,6 +700,8 @@ This should appear at the END of the context section.
       expect(resultLastStep).toContain(
         '- Never write custom forms or code snippets',
       );
+
+      expect(resultLastStep).toContain('## Technical Boundaries');
 
       // Should NOT contain the else branch
       expect(resultLastStep).not.toContain(
